@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\URL;
 
 class SolicitudInternetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $registros = DB::table('solicitud_internet as si')
+        $usuario = $request->user();
+        $rol = $usuario->rol->nombre ?? null;
+
+        $query = DB::table('solicitud_internet as si')
             ->join('areas as a', 'a.id', '=', 'si.id_area')
             ->join('datos_equipos as de', 'de.id', '=', 'si.id_equipo')
             ->select(
@@ -19,10 +23,13 @@ class SolicitudInternetController extends Controller
                 'de.no_inventario', 'si.tipo_conexion', 'si.tel_ext',
                 'si.correo', 'si.estatus'
             )
-            ->orderBy('si.id', 'desc')
-            ->get();
+            ->orderBy('si.id', 'desc');
 
-        return response()->json($registros);
+        if ($rol !== 'Administrador') {
+            $query->where('si.id_usuario_crea', $usuario->id);
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -137,4 +144,25 @@ class SolicitudInternetController extends Controller
     $pdf = Pdf::loadView('pdf.solicitud_internet', ['s' => $s]);
     return $pdf->stream("formato288_{$id}.pdf");
 }
+
+    public function pdfUrl($id)
+    {
+        $existe = DB::table('solicitud_internet')->where('id', $id)->exists();
+        if (!$existe) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $url = URL::temporarySignedRoute(
+            'solicitud-internet.pdf.firmado',
+            now()->addMinutes(5),
+            ['id' => $id]
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    public function imprimirFirmado($id)
+    {
+        return $this->pdf($id);
+    }
 }

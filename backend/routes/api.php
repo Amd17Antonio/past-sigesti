@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Api\CatalogoTelefoniaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SolicitudController;
@@ -16,8 +17,27 @@ use App\Http\Controllers\Api\ReporteController;
 use App\Http\Controllers\Api\AreaController;
 use App\Http\Controllers\Api\SolicitudUieController;
 use App\Http\Controllers\Api\EquipoBajaController;
+use App\Http\Controllers\Api\SolicitudCorreoController;
+use App\Http\Controllers\Api\SolicitudVpnController;
 
 Route::post('/login', [AuthController::class, 'login']);
+
+// --------------------------------------------------------------
+// Rutas firmadas para descarga de PDF sin necesitar el token en
+// headers (window.open no manda Authorization). Protegidas por
+// firma temporal de 5 minutos generada desde /pdf-url de cada módulo.
+// --------------------------------------------------------------
+Route::get('/solicitud-vpn/{id}/pdf-firmado', [SolicitudVpnController::class, 'imprimirFirmado'])
+    ->name('solicitud-vpn.pdf.firmado')
+    ->middleware('signed');
+
+Route::get('/solicitud-correo/{id}/pdf-firmado', [SolicitudCorreoController::class, 'imprimirFirmado'])
+    ->name('solicitud-correo.pdf.firmado')
+    ->middleware('signed');
+
+Route::get('/solicitud-internet/{id}/pdf-firmado', [SolicitudInternetController::class, 'imprimirFirmado'])
+    ->name('solicitud-internet.pdf.firmado')
+    ->middleware('signed');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -26,73 +46,63 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/areas', [AreaController::class, 'index']);
 
     Route::get('/mantenimientos', [MantenimientoController::class, 'index']);
-Route::get('/mantenimientos/alertas', [MantenimientoController::class, 'alertas']);
-Route::get('/equipos/{id}/mantenimientos', [MantenimientoController::class, 'historial'])->whereNumber('id');
-Route::post('/equipos/{id}/mantenimientos', [MantenimientoController::class, 'store'])->whereNumber('id');
-Route::delete('/mantenimientos/{id}', [MantenimientoController::class, 'destroy'])->whereNumber('id');
+    Route::get('/mantenimientos/alertas', [MantenimientoController::class, 'alertas']);
+    Route::get('/equipos/{id}/mantenimientos', [MantenimientoController::class, 'historial'])->whereNumber('id');
+    Route::post('/equipos/{id}/mantenimientos', [MantenimientoController::class, 'store'])->whereNumber('id');
+    Route::delete('/mantenimientos/{id}', [MantenimientoController::class, 'destroy'])->whereNumber('id');
 
-Route::get('/reportes/poa', [ReporteController::class, 'poa']);
-Route::get('/reportes/actividades', [ReporteController::class, 'actividades']);
+    Route::get('/reportes/poa', [ReporteController::class, 'poa']);
+    Route::get('/reportes/actividades', [ReporteController::class, 'actividades']);
 
-Route::get('/dictamenes', [DictamenController::class, 'index']);
-Route::get('/dictamenes/solicitudes-disponibles', [DictamenController::class, 'solicitudesDisponibles']);
-Route::get('/dictamenes/solicitud/{idSolicitud}/equipos', [DictamenController::class, 'equiposDeSolicitud']);
-Route::get('/dictamenes/siguiente-folio', [DictamenController::class, 'siguienteFolio']);
-Route::post('/dictamenes', [DictamenController::class, 'store']);
-Route::get('/dictamenes/{id}', [DictamenController::class, 'show'])->whereNumber('id');
-Route::put('/dictamenes/{id}', [DictamenController::class, 'update'])->whereNumber('id');
+    Route::get('/dictamenes', [DictamenController::class, 'index']);
+    Route::get('/dictamenes/solicitudes-disponibles', [DictamenController::class, 'solicitudesDisponibles']);
+    Route::get('/dictamenes/solicitud/{idSolicitud}/equipos', [DictamenController::class, 'equiposDeSolicitud']);
+    Route::get('/dictamenes/siguiente-folio', [DictamenController::class, 'siguienteFolio']);
+    Route::post('/dictamenes', [DictamenController::class, 'store']);
+    Route::get('/dictamenes/{id}', [DictamenController::class, 'show'])->whereNumber('id');
+    Route::put('/dictamenes/{id}', [DictamenController::class, 'update'])->whereNumber('id');
 
-Route::get('/notificaciones', [NotificacionController::class, 'index']);
-Route::get('/notificaciones/contador', [NotificacionController::class, 'contador']);
-Route::put('/notificaciones/{id}/leida', [NotificacionController::class, 'marcarLeida'])->whereNumber('id');
-Route::put('/notificaciones/marcar-todas', [NotificacionController::class, 'marcarTodasLeidas']);
+    Route::get('/notificaciones', [NotificacionController::class, 'index']);
+    Route::get('/notificaciones/contador', [NotificacionController::class, 'contador']);
+    Route::put('/notificaciones/{id}/leida', [NotificacionController::class, 'marcarLeida'])->whereNumber('id');
+    Route::put('/notificaciones/marcar-todas', [NotificacionController::class, 'marcarTodasLeidas']);
 
     Route::get('/users', [UserController::class, 'index']);
-Route::post('/users', [UserController::class, 'store']);
-Route::get('/users/{id}', [UserController::class, 'show']);
-Route::put('/users/{id}', [UserController::class, 'update']);
-Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
-Route::get('/roles', [UserController::class, 'roles']);
-Route::get('/usuarios', [UserController::class, 'index']);
-Route::post('/usuarios', [UserController::class, 'store']);
-Route::get('/usuarios/{id}', [UserController::class, 'show']);
-Route::put('/usuarios/{id}', [UserController::class, 'update']);
-Route::delete('/usuarios/{id}', [UserController::class, 'destroy']);
+    Route::get('/roles', [UserController::class, 'roles']);
+    Route::get('/usuarios', [UserController::class, 'index']);
+    Route::post('/usuarios', [UserController::class, 'store']);
+    Route::get('/usuarios/{id}', [UserController::class, 'show']);
+    Route::put('/usuarios/{id}', [UserController::class, 'update']);
+    Route::delete('/usuarios/{id}', [UserController::class, 'destroy']);
 
-Route::get('/equipos', [EquipoController::class, 'index']);
-Route::get('/equipos/{id}', [EquipoController::class, 'show'])->whereNumber('id');
-Route::put('/equipos/{id}', [EquipoController::class, 'update'])->whereNumber('id');
-Route::delete('/equipos/{id}', [EquipoController::class, 'destroy'])->whereNumber('id');
-Route::get('/equipos', [EquipoController::class, 'index']);
-Route::get('/equipos/{id}', [EquipoController::class, 'show'])->whereNumber('id');
-Route::put('/equipos/{id}', [EquipoController::class, 'update'])->whereNumber('id');
-Route::delete('/equipos/{id}', [EquipoController::class, 'destroy'])->whereNumber('id');
+    Route::get('/equipos', [EquipoController::class, 'index']);
+    Route::get('/equipos/{id}', [EquipoController::class, 'show'])->whereNumber('id');
+    Route::post('/equipos', [EquipoController::class, 'store']);
+    Route::put('/equipos/{id}', [EquipoController::class, 'update'])->whereNumber('id');
+    Route::delete('/equipos/{id}', [EquipoController::class, 'destroy'])->whereNumber('id');
+    Route::get('/equipos/buscar/{noInventario}', [EquipoController::class, 'buscar']);
+    Route::get('/equipos/verificar-serie/{noSerie}', [EquipoController::class, 'verificarSerie']);
 
-Route::get('/equipos/{id}/software', [EquipoController::class, 'software'])->whereNumber('id');
-Route::post('/equipos/{id}/software', [EquipoController::class, 'agregarSoftware'])->whereNumber('id');
-Route::delete('/software-equipo/{idRegistro}', [EquipoController::class, 'eliminarSoftware']);
+    Route::get('/equipos/{id}/software', [EquipoController::class, 'software'])->whereNumber('id');
+    Route::post('/equipos/{id}/software', [EquipoController::class, 'agregarSoftware'])->whereNumber('id');
+    Route::delete('/software-equipo/{idRegistro}', [EquipoController::class, 'eliminarSoftware']);
 
-Route::get('/equipos/{id}/extras', [EquipoController::class, 'extras'])->whereNumber('id');
-Route::put('/equipos/{id}/extras', [EquipoController::class, 'guardarExtras'])->whereNumber('id');
+    Route::get('/equipos/{id}/extras', [EquipoController::class, 'extras'])->whereNumber('id');
+    Route::put('/equipos/{id}/extras', [EquipoController::class, 'guardarExtras'])->whereNumber('id');
 
-Route::get('/equipos/{id}/dictamenes', [EquipoController::class, 'dictamenes'])->whereNumber('id');
-
-Route::get('/equipos/{id}/software', [EquipoController::class, 'software'])->whereNumber('id');
-Route::post('/equipos/{id}/software', [EquipoController::class, 'agregarSoftware'])->whereNumber('id');
-Route::delete('/software-equipo/{idRegistro}', [EquipoController::class, 'eliminarSoftware']);
-
-Route::get('/equipos/{id}/extras', [EquipoController::class, 'extras'])->whereNumber('id');
-Route::put('/equipos/{id}/extras', [EquipoController::class, 'guardarExtras'])->whereNumber('id');
-
-Route::get('/equipos/{id}/dictamenes', [EquipoController::class, 'dictamenes'])->whereNumber('id');
+    Route::get('/equipos/{id}/dictamenes', [EquipoController::class, 'dictamenes'])->whereNumber('id');
 
     Route::get('/solicitudes/poa', [SolicitudController::class, 'poa']);
     Route::post('/solicitudes/{id}/seguimiento', [SolicitudController::class, 'seguimiento']);
     Route::post('/solicitudes/{id}/cerrar', [SolicitudController::class, 'cerrar']);
-
     Route::get('/solicitudes/pendientes', [SolicitudController::class, 'pendientes']);
     Route::get('/solicitudes/asignadas', [SolicitudController::class, 'asignadas']);
+    Route::get('/solicitudes/mis-asignadas', [SolicitudController::class, 'misAsignadas']);
     Route::get('/solicitudes/historial', [SolicitudController::class, 'historial']);
     Route::post('/solicitudes', [SolicitudController::class, 'store']);
     Route::get('/solicitudes/asignables', [SolicitudController::class, 'asignables']);
@@ -102,72 +112,67 @@ Route::get('/equipos/{id}/dictamenes', [EquipoController::class, 'dictamenes'])-
     Route::post('/catalogos/{slug}', [CatalogoController::class, 'store']);
     Route::put('/catalogos/{slug}/{id}', [CatalogoController::class, 'update']);
     Route::delete('/catalogos/{slug}/{id}', [CatalogoController::class, 'destroy']);
-
-    Route::get('/dictamenes', [DictamenController::class, 'index']);
+    Route::post('/catalogos/modelos-con-marca', [CatalogoController::class, 'storeModelo']);
 
     Route::get('/encuesta/preguntas', [EncuestaController::class, 'preguntas']);
     Route::get('/encuesta/{idSolicitud}/estado', [EncuestaController::class, 'yaEvaluada']);
     Route::post('/encuesta', [EncuestaController::class, 'store']);
     Route::get('/encuesta/resumen', [EncuestaController::class, 'resumen']);
 
-    Route::get('/equipos/buscar/{noInventario}', [EquipoController::class, 'buscar']);
-    Route::post('/equipos', [EquipoController::class, 'store']);
-
-    Route::get('/solicitudes/poa', [SolicitudController::class, 'poa']);
-    Route::post('/solicitudes/{id}/cerrar', [SolicitudController::class, 'cerrar']);
-
-    Route::get('/equipos/verificar-serie/{noSerie}', [EquipoController::class, 'verificarSerie']);
-
-    Route::post('/catalogos/modelos-con-marca', [CatalogoController::class, 'storeModelo']);
     Route::get('/telefonia/categorias', [SolicitudTelefoniaController::class, 'categorias']);
     Route::get('/telefonia/usuarios/buscar/{extension}', [SolicitudTelefoniaController::class, 'buscarUsuarioPorExtension']);
     Route::post('/telefonia/usuarios', [SolicitudTelefoniaController::class, 'storeUsuario']);
+    Route::get('/telefonia/tipos-clave', [SolicitudTelefoniaController::class, 'tiposClave']);
 
     Route::get('/solicitud-telefono', [SolicitudTelefoniaController::class, 'index']);
     Route::post('/solicitud-telefono', [SolicitudTelefoniaController::class, 'store']);
     Route::put('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'update']);
     Route::delete('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'destroy']);
-    Route::get('/telefonia/tipos-clave', [SolicitudTelefoniaController::class, 'tiposClave']);
 
     Route::get('/catalogo-telefonos', [CatalogoTelefoniaController::class, 'index']);
-Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
-Route::delete('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'destroy']);
+    Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
+    Route::delete('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'destroy']);
 
-Route::get('/catalogos-telefonos', [CatalogoController::class, 'telefonos']);
-Route::put('/catalogos-telefonos/{id}', [CatalogoController::class, 'updateTelefono']);
-Route::delete('/catalogos-telefonos/{id}', [CatalogoController::class, 'destroyTelefono']);
-
-Route::get('/catalogo-telefonos', [CatalogoTelefoniaController::class, 'index']);
-Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
-Route::delete('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'destroy']);
+    Route::get('/catalogos-telefonos', [CatalogoController::class, 'telefonos']);
+    Route::put('/catalogos-telefonos/{id}', [CatalogoController::class, 'updateTelefono']);
+    Route::delete('/catalogos-telefonos/{id}', [CatalogoController::class, 'destroyTelefono']);
 
     Route::get('/solicitud-internet', [SolicitudInternetController::class, 'index']);
     Route::post('/solicitud-internet', [SolicitudInternetController::class, 'store']);
     Route::put('/solicitud-internet/{id}', [SolicitudInternetController::class, 'update']);
     Route::delete('/solicitud-internet/{id}', [SolicitudInternetController::class, 'destroy']);
     Route::get('/solicitud-internet/{id}/pdf', [SolicitudInternetController::class, 'pdf']);
+    Route::get('/solicitud-internet/{id}/pdf-url', [SolicitudInternetController::class, 'pdfUrl']);
 
+    Route::get('/solicitud-correo', [SolicitudCorreoController::class, 'index']);
+    Route::get('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'show']);
+    Route::post('/solicitud-correo', [SolicitudCorreoController::class, 'store']);
+    Route::put('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'update']);
+    Route::delete('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'destroy']);
+    Route::get('/solicitud-correo/{id}/pdf', [SolicitudCorreoController::class, 'imprimir']);
+    Route::get('/solicitud-correo/{id}/pdf-url', [SolicitudCorreoController::class, 'pdfUrl']);
+
+    Route::get('/solicitud-vpn', [SolicitudVpnController::class, 'index']);
+    Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
+    Route::post('/solicitud-vpn', [SolicitudVpnController::class, 'store']);
+    Route::put('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'update']);
+    Route::delete('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'destroy']);
+    Route::get('/solicitud-vpn/{id}/pdf', [SolicitudVpnController::class, 'imprimir']);
+    Route::get('/solicitud-vpn/{id}/pdf-url', [SolicitudVpnController::class, 'pdfUrl']);
 
     Route::get('/equipos-baja', [EquipoBajaController::class, 'index']);
-Route::get('/equipos-baja/exportar', [EquipoBajaController::class, 'exportar']);
+    Route::get('/equipos-baja/exportar', [EquipoBajaController::class, 'exportar']);
 
-Route::post('/{id}/cerrar-dictamen', [SolicitudUieController::class, 'cerrarDictamen']);
-Route::get('/solicitudes/mis-asignadas', [SolicitudController::class, 'misAsignadas']);
-
-    //Route::get('/{id}', [SolicitudUieController::class, 'show']);
-
-Route::prefix('solicitudes-uie')->group(function () {
-    Route::get('/', [SolicitudUieController::class, 'index']);
-    Route::get('/{id}', [SolicitudUieController::class, 'show']);
-    Route::get('/{id}/archivos', [SolicitudUieController::class, 'archivos']); 
-    Route::post('/{id}/equipo', [SolicitudUieController::class, 'agregarEquipo']);
-    Route::post('/{id}/autorizar-dictamen', [SolicitudUieController::class, 'autorizarDictamen']);
-    Route::post('/{id}/cerrar-dictamen', [SolicitudUieController::class, 'cerrarDictamen']);
-    Route::post('/{id}/desautorizar-dictamen', [SolicitudUieController::class, 'desautorizarDictamen']);
-    Route::post('/{id}/duplicar', [SolicitudUieController::class, 'duplicar']);
-    Route::put('/{id}', [SolicitudUieController::class, 'update']);
-    Route::post('/{id}/baja', [SolicitudUieController::class, 'baja']);
+    Route::prefix('solicitudes-uie')->group(function () {
+        Route::get('/', [SolicitudUieController::class, 'index']);
+        Route::get('/{id}', [SolicitudUieController::class, 'show']);
+        Route::get('/{id}/archivos', [SolicitudUieController::class, 'archivos']);
+        Route::post('/{id}/equipo', [SolicitudUieController::class, 'agregarEquipo']);
+        Route::post('/{id}/autorizar-dictamen', [SolicitudUieController::class, 'autorizarDictamen']);
+        Route::post('/{id}/cerrar-dictamen', [SolicitudUieController::class, 'cerrarDictamen']);
+        Route::post('/{id}/desautorizar-dictamen', [SolicitudUieController::class, 'desautorizarDictamen']);
+        Route::post('/{id}/duplicar', [SolicitudUieController::class, 'duplicar']);
+        Route::put('/{id}', [SolicitudUieController::class, 'update']);
+        Route::post('/{id}/baja', [SolicitudUieController::class, 'baja']);
+    });
 });
-Route::get('/areas', [AreaController::class, 'index']);
-});
-

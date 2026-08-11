@@ -21,6 +21,8 @@ import SolicitudesUie from './pages/SolicitudesUie';
 import EquiposBaja from './pages/EquiposBaja';
 import Metas from './pages/consultas/Metas';
 import MisAsignadas from './pages/MisAsignadas';
+import SolicitudesCorreo from './pages/SolicitudesCorreo';
+import SolicitudesVpn from './pages/SolicitudesVpn';
 
 
 function App() {
@@ -41,6 +43,8 @@ function App() {
           <Route path="/dictamenes" element={<Dictamenes />} />
           <Route path="/solicitudes/nueva" element={<SolicitudNueva />} />
           <Route path="/identidad" element={<Identidad />} />
+          <Route path="/solicitud-correo" element={<SolicitudesCorreo />} />
+          <Route path="/solicitud-vpn" element={<SolicitudesVpn />} />
           <Route path="/solicitud-internet" element={<SolicitudInternet />} />
           <Route path="/solicitudes" element={<Solicitudes />} />
           <Route path="/solicitud-telefono" element={<SolicitudTelefono />} />

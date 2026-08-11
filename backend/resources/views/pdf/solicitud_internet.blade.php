@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <title>Solicitud de internet {{ $s->id }}</title>
     <style>
         @page {
             size: letter;

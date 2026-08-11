@@ -3,26 +3,11 @@ import { getSolicitudesTelefonia, eliminarSolicitudTelefonia } from '../services
 import SolicitudTelefoniaWizard from '../components/telefonia/SolicitudTelefoniaWizard';
 import SortIcon from '../components/common/SortIcon';
 import EditarSolicitudTelefoniaModal from '../components/telefonia/EditarSolicitudTelefoniaModal';
-
-interface SolicitudTelefoniaRow {
-  id: number;
-  tramite: string;
-  nombre: string;
-  extension: string | null;
-  puesto: string | null;
-  estatus: string;
-  correo_institucional: string | null;
-  edificio: string | null;
-  nivel: string | null;
-}
-
-const ESTATUS_COLOR: Record<string, string> = {
-  GENERADA: 'bg-blue-100 text-blue-700',
-  EN_PROCESO: 'bg-yellow-100 text-yellow-700',
-  AUTORIZADA: 'bg-green-100 text-green-700',
-  RECHAZADA: 'bg-red-100 text-red-700',
-  FINALIZADA: 'bg-gray-200 text-gray-600',
-};
+import {
+  ESTATUS_TELEFONIA_LABEL,
+  TRAMITES_TELEFONIA,
+  type SolicitudTelefoniaRow,
+} from '../types/SolicitudTelefonia';
 
 const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -37,6 +22,7 @@ export default function SolicitudTelefono() {
   const [solicitudes, setSolicitudes] = useState<SolicitudTelefoniaRow[]>([]);
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
+  const [filtroTramite, setFiltroTramite] = useState('todos');
   const [porPagina, setPorPagina] = useState(10);
   const [pagina, setPagina] = useState(1);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -60,7 +46,6 @@ export default function SolicitudTelefono() {
 
   const handleImprimir = (s: SolicitudTelefoniaRow) => {
     const ventana = window.open('', '_blank', 'width=600,height=700');
-
     if (!ventana) return;
 
     ventana.document.write(`
@@ -70,13 +55,12 @@ export default function SolicitudTelefono() {
         </head>
         <body style="font-family:sans-serif;padding:20px;">
           <h2>Solicitud de Telefonía #${s.id}</h2>
-
           <p><strong>Trámite:</strong> ${s.tramite.replace(/_/g, ' ')}</p>
           <p><strong>Usuario:</strong> ${s.nombre}</p>
           <p><strong>Extensión:</strong> ${s.extension ?? '-'}</p>
           <p><strong>Puesto:</strong> ${s.puesto ?? '-'}</p>
           <p><strong>Correo:</strong> ${s.correo_institucional ?? '-'}</p>
-          <p><strong>Estatus:</strong> ${s.estatus}</p>
+          <p><strong>Estatus:</strong> ${ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}</p>
         </body>
       </html>
     `);
@@ -108,9 +92,10 @@ export default function SolicitudTelefono() {
         return String(s[key] ?? '').toLowerCase().includes(filtro.toLowerCase());
       });
       const pasaEstatus = filtroEstatus === 'todos' || s.estatus === filtroEstatus;
-      return pasaColumnas && pasaEstatus;
+      const pasaTramite = filtroTramite === 'todos' || s.tramite === filtroTramite;
+      return pasaColumnas && pasaEstatus && pasaTramite;
     });
-  }, [solicitudes, filtros, filtroEstatus]);
+  }, [solicitudes, filtros, filtroEstatus, filtroTramite]);
 
   const ordenadas = useMemo(() => {
     if (!sortKey) return filtradas;
@@ -171,11 +156,24 @@ export default function SolicitudTelefono() {
               <tr className="bg-gray-50">
                 {COLUMNAS.map((c) => (
                   <th key={c.key} className="p-1">
-                    <input
-                      value={filtros[c.key] ?? ''}
-                      onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
-                      className="border p-1 w-full text-xs font-normal"
-                    />
+                    {c.key === 'tramite' ? (
+                      <select
+                        value={filtroTramite}
+                        onChange={(e) => { setFiltroTramite(e.target.value); setPagina(1); }}
+                        className="border p-1 w-full text-xs font-normal"
+                      >
+                        <option value="todos">Todos</option>
+                        {TRAMITES_TELEFONIA.map((t) => (
+                          <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        value={filtros[c.key] ?? ''}
+                        onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
+                        className="border p-1 w-full text-xs font-normal"
+                      />
+                    )}
                   </th>
                 ))}
                 <th className="p-1">
@@ -185,7 +183,9 @@ export default function SolicitudTelefono() {
                     className="border p-1 w-full text-xs font-normal"
                   >
                     <option value="todos">Todos</option>
-                    {Object.keys(ESTATUS_COLOR).map((e) => <option key={e} value={e}>{e}</option>)}
+                    {Object.entries(ESTATUS_TELEFONIA_LABEL).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
                   </select>
                 </th>
                 <th className="p-1"></th>
@@ -200,11 +200,7 @@ export default function SolicitudTelefono() {
                   <td className="p-2">{s.extension ?? '-'}</td>
                   <td className="p-2">{s.puesto ?? '-'}</td>
                   <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                  <td className="p-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${ESTATUS_COLOR[s.estatus] ?? ''}`}>
-                      {s.estatus}
-                    </span>
-                  </td>
+                  <td className="p-2">{ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}</td>
                   <td className="p-2 flex gap-2">
                     <button onClick={() => handleImprimir(s)} title="Imprimir">🖨</button>
                     <button onClick={() => setEditando(s)} title="Editar">✏️</button>

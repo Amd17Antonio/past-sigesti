@@ -19,6 +19,7 @@ export const RUTAS_POR_ROL: Record<string, string[]> = {
     '/consultas/metas', '/consultas/actividades', '/consultas/equipos',
     '/catalogos/usuarios', '/catalogos/telefonos', '/catalogos/:slug',
     '/solicitud-internet', '/solicitud-telefono',
+    '/solicitud-correo', '/solicitud-vpn',
   ],
   'Capturista': [
     '/solicitudes-uie', '/solicitudes', '/asignadas', '/pendientes', '/historial',
@@ -26,6 +27,7 @@ export const RUTAS_POR_ROL: Record<string, string[]> = {
   'Soporte Técnico': [
     '/asignadas', '/pendientes', '/historial',
     '/solicitud-internet', '/solicitud-telefono',
+    '/solicitud-correo', '/solicitud-vpn',
   ],
   'Recursos Materiales': [
     '/equipos-baja',

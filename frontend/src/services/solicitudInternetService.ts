@@ -39,8 +39,15 @@ export const eliminarSolicitudInternet = async (id: number) => {
   return data;
 };
 
+//export const descargarPdfSolicitudInternet = async (id: number) => {
+//  const response = await axiosClient.get(`/solicitud-internet/${id}/pdf`, {
+//    responseType: 'blob',
+//  });
+//  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+//  window.open(url, '_blank');
+//};
+
 export const descargarPdfSolicitudInternet = async (id: number) => {
-  const response = await axiosClient.get(`/solicitud-internet/${id}/pdf`, { responseType: 'blob' });
-  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-  window.open(url, '_blank');
+  const { data } = await axiosClient.get(`/solicitud-internet/${id}/pdf-url`);
+  window.open(data.url, '_blank');
 };

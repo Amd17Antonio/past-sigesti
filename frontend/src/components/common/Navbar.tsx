@@ -132,6 +132,8 @@ export default function Navbar() {
               />
               <NavLink to="/solicitud-internet" className={linkClass}>Internet</NavLink>
               <NavLink to="/solicitud-telefono" className={linkClass}>Teléfono</NavLink>
+              <NavLink to="/solicitud-correo" className={linkClass}>Correo</NavLink>
+              <NavLink to="/solicitud-vpn" className={linkClass}>VPN</NavLink>
               <NotificationBell />
             </>
           )}
@@ -154,13 +156,15 @@ export default function Navbar() {
               <NavLink to="/historial" className={linkClass}>Historial</NavLink>
               <NavLink to="/solicitud-internet" className={linkClass}>Internet</NavLink>
               <NavLink to="/solicitud-telefono" className={linkClass}>Teléfono</NavLink>
+              <NavLink to="/solicitud-correo" className={linkClass}>Correo</NavLink>
+              <NavLink to="/solicitud-vpn" className={linkClass}>VPN</NavLink>
               <NotificationBell />
             </>
           )}
 
-          {rol === 'Recursos Materiales' && (
-  <NavLink to="/equipos-baja" className={linkClass}>Equipos para Baja</NavLink>
-)}
+           {rol === 'Recursos Materiales' && (
+            <NavLink to="/equipos-baja" className={linkClass}>Equipos para Baja</NavLink>
+          )}
 
           {rol === 'Usuario Solicitante' && (
             <>
@@ -168,14 +172,14 @@ export default function Navbar() {
               <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
               <NavLink to="/historial" className={linkClass}>Historial</NavLink>
               <NavLink to="/dictamenes" className={linkClass}>Consultar Dictamen</NavLink>
-              <a
-  href="http://tiny.cc/Identidad-SHTFP"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="px-4 py-4 text-sm font-medium whitespace-nowrap hover:bg-purple-700"
->
-  Identidad
-</a>
+               <a
+                href="http://tiny.cc/Identidad-SHTFP"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-4 text-sm font-medium whitespace-nowrap hover:bg-purple-700"
+              >
+                Identidad
+              </a>
             </>
           )}
         </div>

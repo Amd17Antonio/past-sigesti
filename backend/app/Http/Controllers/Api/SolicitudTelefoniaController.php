@@ -13,13 +13,21 @@ class SolicitudTelefoniaController extends Controller
         'JEFE_SECRETARIA', 'CAMBIO_DID', 'CAMBIO_CATEGORIA', 'OTROS',
     ];
 
-    public function index()
+    public function index(Request $request)
     {
-        $registros = DB::table('v_solicitudes_telefonia')
-            ->orderBy('id', 'desc')
-            ->get();
+        $usuario = $request->user();
+        $rol = $usuario->rol->nombre ?? null;
 
-        return response()->json($registros);
+        $query = DB::table('v_solicitudes_telefonia as v')
+            ->leftJoin('solicitudes_telefonia as st', 'st.id', '=', 'v.id')
+            ->select('v.*', 'st.usuario_mov')
+            ->orderBy('v.id', 'desc');
+
+        if ($rol !== 'Administrador') {
+            $query->where('st.usuario_mov', $usuario->usuario);
+        }
+
+        return response()->json($query->get());
     }
 
     public function buscarUsuarioPorExtension(string $extension)

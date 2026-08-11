@@ -4,29 +4,11 @@ import {
   eliminarSolicitudInternet,
   descargarPdfSolicitudInternet,
 } from '../services/solicitudInternetService';
+import { ESTATUS_INTERNET_LABEL, type SolicitudInternetRow } from '../types/SolicitudInternet';
 
 import NuevaSolicitudInternetModal from '../components/internet/NuevaSolicitudInternetModal';
 import EditarSolicitudInternetModal from '../components/internet/EditarSolicitudInternetModal';
 import SortIcon from '../components/common/SortIcon';
-
-interface SolicitudInternetRow {
-  id: number;
-  tipo_solicitud: string;
-  usuario_internet: string;
-  area: string;
-  no_inventario: string;
-  tipo_conexion: string;
-  tel_ext: number;
-  correo: string;
-  estatus: string;
-}
-
-const ESTATUS_LABEL: Record<string, string> = {
-  generado_uie: 'CREADO EN CGD',  
-  atendiendo_dt: 'ATENDIENDO DGTI',
-  activo: 'SERVICIO ACTIVO',
-  baja: 'BAJA',
-};
 
 const COLUMNAS: { key: keyof SolicitudInternetRow; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -48,7 +30,6 @@ export default function SolicitudInternet() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState<SolicitudInternetRow | null>(null);
 
-  // Ordenamiento
   const [sortKey, setSortKey] = useState<keyof SolicitudInternetRow | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -71,17 +52,12 @@ export default function SolicitudInternet() {
 
   const handleEliminar = async (id: number) => {
     if (!window.confirm(`¿Eliminar la solicitud #${id}?`)) return;
-
     await eliminarSolicitudInternet(id);
     cargar();
   };
 
   const handleFiltroColumna = (key: string, value: string) => {
-    setFiltros({
-      ...filtros,
-      [key]: value,
-    });
-
+    setFiltros({ ...filtros, [key]: value });
     setPagina(1);
   };
 
@@ -89,45 +65,28 @@ export default function SolicitudInternet() {
     return solicitudes.filter((s) => {
       const pasaColumnas = COLUMNAS.every(({ key }) => {
         const filtro = filtros[key];
-
         if (!filtro) return true;
-
-        return String(s[key] ?? '')
-          .toLowerCase()
-          .includes(filtro.toLowerCase());
+        return String(s[key] ?? '').toLowerCase().includes(filtro.toLowerCase());
       });
-
-      const pasaEstatus =
-        filtroEstatus === 'todos' || s.estatus === filtroEstatus;
-
+      const pasaEstatus = filtroEstatus === 'todos' || s.estatus === filtroEstatus;
       return pasaColumnas && pasaEstatus;
     });
   }, [solicitudes, filtros, filtroEstatus]);
 
-  // Ordenamiento
   const ordenadas = useMemo(() => {
     if (!sortKey) return filtradas;
-
     return [...filtradas].sort((a, b) => {
       const va = a[sortKey] ?? '';
       const vb = b[sortKey] ?? '';
-
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
-
       return 0;
     });
   }, [filtradas, sortKey, sortDir]);
 
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(ordenadas.length / porPagina)
-  );
-
+  const totalPaginas = Math.max(1, Math.ceil(ordenadas.length / porPagina));
   const paginaSegura = Math.min(pagina, totalPaginas);
-
   const inicio = (paginaSegura - 1) * porPagina;
-
   const paginadas = ordenadas.slice(inicio, inicio + porPagina);
 
   return (
@@ -147,22 +106,13 @@ export default function SolicitudInternet() {
 
           <div className="flex items-center gap-2 text-sm">
             <span>Mostrar</span>
-
             <select
               value={porPagina}
-              onChange={(e) => {
-                setPorPagina(Number(e.target.value));
-                setPagina(1);
-              }}
+              onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }}
               className="border rounded p-1"
             >
-              {[10, 25, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
+              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
-
             <span>registros</span>
           </div>
         </div>
@@ -179,14 +129,10 @@ export default function SolicitudInternet() {
                   >
                     <span className="inline-flex items-center gap-1">
                       {c.label}
-                      <SortIcon
-                        active={sortKey === c.key}
-                        direction={sortDir}
-                      />
+                      <SortIcon active={sortKey === c.key} direction={sortDir} />
                     </span>
                   </th>
                 ))}
-
                 <th className="p-2 text-left">Estatus</th>
                 <th className="p-2 text-left">Acciones</th>
               </tr>
@@ -196,33 +142,23 @@ export default function SolicitudInternet() {
                   <th key={c.key} className="p-1">
                     <input
                       value={filtros[c.key] ?? ''}
-                      onChange={(e) =>
-                        handleFiltroColumna(c.key, e.target.value)
-                      }
+                      onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
                       className="border p-1 w-full text-xs font-normal"
                     />
                   </th>
                 ))}
-
                 <th className="p-1">
                   <select
                     value={filtroEstatus}
-                    onChange={(e) => {
-                      setFiltroEstatus(e.target.value);
-                      setPagina(1);
-                    }}
+                    onChange={(e) => { setFiltroEstatus(e.target.value); setPagina(1); }}
                     className="border p-1 w-full text-xs font-normal"
                   >
                     <option value="todos">Todos</option>
-
-                    {Object.entries(ESTATUS_LABEL).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
+                    {Object.entries(ESTATUS_INTERNET_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
                 </th>
-
                 <th></th>
               </tr>
             </thead>
@@ -238,31 +174,11 @@ export default function SolicitudInternet() {
                   <td className="p-2">{s.tipo_conexion}</td>
                   <td className="p-2">{s.tel_ext}</td>
                   <td className="p-2">{s.correo}</td>
-                  <td className="p-2">
-                    {ESTATUS_LABEL[s.estatus] ?? s.estatus}
-                  </td>
-
+                  <td className="p-2">{ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}</td>
                   <td className="p-2 flex gap-3">
-                    <button
-                      onClick={() => descargarPdfSolicitudInternet(s.id)}
-                      title="Imprimir / Descargar PDF"
-                    >
-                      🖨
-                    </button>
-
-                    <button
-                      onClick={() => setEditando(s)}
-                      title="Editar"
-                    >
-                      ✏️
-                    </button>
-
-                    <button
-                      onClick={() => handleEliminar(s.id)}
-                      title="Eliminar"
-                    >
-                      🗑
-                    </button>
+                    <button onClick={() => descargarPdfSolicitudInternet(s.id)} title="Imprimir / Descargar PDF">🖨</button>
+                    <button onClick={() => setEditando(s)} title="Editar">✏️</button>
+                    <button onClick={() => handleEliminar(s.id)} title="Eliminar">🗑</button>
                   </td>
                 </tr>
               ))}
@@ -270,18 +186,13 @@ export default function SolicitudInternet() {
           </table>
         </div>
 
-        {paginadas.length === 0 && (
-          <p className="text-gray-500 mt-4">Sin resultados</p>
-        )}
+        {paginadas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
 
         <div className="flex justify-between items-center mt-4 text-sm">
           <span>
-            Mostrando registros del{' '}
-            {ordenadas.length === 0 ? 0 : inicio + 1} al{' '}
-            {Math.min(inicio + porPagina, ordenadas.length)} de un total de{' '}
-            {ordenadas.length} registros
+            Mostrando registros del {ordenadas.length === 0 ? 0 : inicio + 1} al{' '}
+            {Math.min(inicio + porPagina, ordenadas.length)} de un total de {ordenadas.length} registros
           </span>
-
           <div className="flex gap-2">
             <button
               onClick={() => setPagina((p) => Math.max(1, p - 1))}
@@ -290,15 +201,9 @@ export default function SolicitudInternet() {
             >
               Anterior
             </button>
-
-            <span className="px-3 py-1 bg-purple-800 text-white rounded">
-              {paginaSegura}
-            </span>
-
+            <span className="px-3 py-1 bg-purple-800 text-white rounded">{paginaSegura}</span>
             <button
-              onClick={() =>
-                setPagina((p) => Math.min(totalPaginas, p + 1))
-              }
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
               disabled={paginaSegura === totalPaginas}
               className="px-3 py-1 border rounded disabled:opacity-40"
             >
@@ -309,10 +214,7 @@ export default function SolicitudInternet() {
       </div>
 
       {mostrarModal && (
-        <NuevaSolicitudInternetModal
-          onClose={() => setMostrarModal(false)}
-          onCreado={cargar}
-        />
+        <NuevaSolicitudInternetModal onClose={() => setMostrarModal(false)} onCreado={cargar} />
       )}
 
       {editando && (
