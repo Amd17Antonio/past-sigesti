@@ -90,8 +90,52 @@ class SolicitudInternetController extends Controller
     return response()->json(['id' => $id, 'message' => 'Solicitud de internet creada'], 201);
 }
 
-    public function update(Request $request, int $id)
+    public const ESTATUS_LABELS = [
+    'generado_uie' => 'GENERADO POR UIE',
+    'atendiendo_dt' => 'ATENDIENDO POR DIRECCIÓN GENERAL DE TECNOLOGÍAS E INNOVACIÓN DIGITAL',
+    'activo' => 'SERVICIO ACTIVO',
+    'baja' => 'BAJA DEL SERVICIO',
+    'eliminado' => 'ELIMINADO',
+];
+
+public function show(int $id)
 {
+    $s = DB::table('solicitud_internet as si')
+        ->join('areas as a', 'a.id', '=', 'si.id_area')
+        ->join('datos_equipos as de', 'de.id', '=', 'si.id_equipo')
+        ->leftJoin('cat_tipo_equipo as te', 'te.id', '=', 'de.id_tipo')
+        ->leftJoin('cat_marca as ma', 'ma.id', '=', 'de.id_marca')
+        ->join('cat_cargo as c', 'c.id', '=', 'si.id_cargo')
+        ->select(
+            'si.*', 'a.area', 'de.no_inventario', 'de.mac_ethernet', 'de.mac_wifi',
+            'te.TipoEquipo as tipo_equipo', 'ma.marca', 'c.cargo'
+        )
+        ->where('si.id', $id)
+        ->first();
+
+    if (!$s) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    return response()->json(['solicitud' => $s]);
+}
+
+public function update(Request $request, int $id)
+{
+    $actual = DB::table('solicitud_internet')->where('id', $id)->first();
+
+    if (!$actual) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    // Una vez que Tecnologías la tomó, ya no se edita libremente:
+    // el único camino es el cambio de estatus.
+    if ($actual->estatus !== 'generado_uie') {
+        return response()->json([
+            'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse. Usa el cambio de estatus para darle seguimiento.',
+        ], 422);
+    }
+
     $data = $request->validate([
         'usuario_internet' => 'sometimes|string|max:150',
         'correo' => 'sometimes|email|max:150',
@@ -110,6 +154,77 @@ class SolicitudInternetController extends Controller
     ]);
 
     return response()->json(['message' => 'Solicitud actualizada']);
+}
+
+public function cambiarEstatus(Request $request, int $id)
+{
+    $usuario = $request->user();
+
+    $solicitud = DB::table('solicitud_internet')->where('id', $id)->first();
+    if (!$solicitud) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    $data = $request->validate([
+        'estatus' => 'required|in:generado_uie,atendiendo_dt,activo,baja',
+        'folio_glpi' => 'nullable|string|max:50',
+        'observacion_glpi' => 'nullable|string',
+        'motivo_baja' => 'nullable|string',
+    ]);
+
+    $nuevo = $data['estatus'];
+    $update = [
+        'estatus' => $nuevo,
+        'usuario_mov' => $usuario->usuario,
+        'updated_at' => now(),
+    ];
+
+    if ($nuevo === 'atendiendo_dt') {
+        $request->validate(['folio_glpi' => 'required|string|max:50'], [
+            'folio_glpi.required' => 'El folio GLPI es obligatorio para pasar a este estatus.',
+        ]);
+        $update['folio_glpi'] = $data['folio_glpi'];
+        $update['observacion_glpi'] = $data['observacion_glpi'] ?? null;
+        $update['fecha_atendiendo_dt'] = now();
+    }
+
+    if ($nuevo === 'activo') {
+        if ($solicitud->estatus === 'activo') {
+            return response()->json(['message' => 'Esta solicitud ya se encuentra activa.'], 422);
+        }
+
+        // Evita que el mismo equipo tenga dos accesos a internet activos a la vez
+        $yaActivo = DB::table('solicitud_internet')
+            ->where('id_equipo', $solicitud->id_equipo)
+            ->where('estatus', 'activo')
+            ->where('id', '<>', $id)
+            ->exists();
+
+        if ($yaActivo) {
+            return response()->json([
+                'message' => 'Este equipo ya cuenta con un acceso a internet activo. Da de baja el acceso anterior antes de activar uno nuevo.',
+            ], 422);
+        }
+
+        $update['fecha_activo'] = now();
+    }
+
+    if ($nuevo === 'baja') {
+        $request->validate(['motivo_baja' => 'required|string|min:5'], [
+            'motivo_baja.required' => 'El motivo de baja es obligatorio.',
+            'motivo_baja.min' => 'Describe el motivo de baja con más detalle.',
+        ]);
+        $update['motivo_baja'] = $data['motivo_baja'];
+        $update['fecha_baja'] = now();
+    }
+
+    if ($nuevo === 'generado_uie' && !$solicitud->fecha_generado_uie) {
+        $update['fecha_generado_uie'] = now();
+    }
+
+    DB::table('solicitud_internet')->where('id', $id)->update($update);
+
+    return response()->json(['message' => 'Estatus actualizado correctamente']);
 }
 
     public function destroy(int $id)

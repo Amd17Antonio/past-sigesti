@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TRAMITES } from './TramitesConfig';
 import BuscarPorExtension from './BuscarPorExtension';
 import ResumenUsuarioTelefonia from './ResumenUsuarioTelefonia';
-import RegistrarUsuarioTelefoniaModal from './RegistrarUsuarioTelefoniaModal';
-import { formatMac, isValidMac } from '../../utils/mac';
 
 import {
   getCategoriasTelefonia, crearSolicitudTelefonia,
@@ -12,65 +10,258 @@ import {
 interface Props {
   onClose: () => void;
   onCreado: () => void;
+  onBack: () => void;
 }
 
-function Shell({ titulo, children, onClose }: { titulo: string; children: React.ReactNode; onClose: () => void }) {
+// TODO: reemplazar por catálogo real (getCatalogo('complejos')) cuando exista en backend.
+const COMPLEJOS = [
+  'Complejo Administrativo',
+  'Complejo Judicial',
+];
+
+function ResumenActualCambioUsuario({ usuario }: { usuario: any }) {
+  const nombreCompleto = [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno]
+    .filter(Boolean).join(' ');
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
-      <div className="bg-white rounded shadow-lg w-[36rem] max-w-[95vw] overflow-hidden">
-        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
-          {titulo}
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
-        </div>
-        <div className="p-5 space-y-4">{children}</div>
+    <div className="border rounded overflow-hidden">
+      <div className="bg-gray-100 px-4 py-2 font-semibold text-sm text-gray-700 border-b">
+        Datos del Usuario Actual
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-white">
+        <CampoLectura label="Nombre Usuario" value={nombreCompleto || '-'} />
+        <CampoLectura label="No. de Extensión" value={usuario.extension} />
+        <CampoLectura label="Dependencia" value={usuario.direccion || usuario.puesto} />
+        <CampoLectura label="Equipo (Tipo)" value={usuario.modelo} />
+        <CampoLectura label="Edificio" value={usuario.edificio} />
+        <CampoLectura label="Nivel" value={usuario.nivel} />
       </div>
     </div>
   );
 }
 
+function ResumenPersonaTelefonia({ titulo, usuario }: { titulo: string; usuario: any }) {
+  const nombreCompleto = [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno]
+    .filter(Boolean).join(' ');
+  return (
+    <div className="border rounded overflow-hidden">
+      <div className="bg-gray-100 px-4 py-2 font-semibold text-sm text-gray-700 border-b">
+        {titulo}
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-white">
+        <CampoLectura label="Nombre Usuario" value={nombreCompleto || '-'} />
+        <CampoLectura label="No. de Extensión" value={usuario.extension} />
+        <CampoLectura label="Dependencia" value={usuario.direccion || usuario.puesto} />
+        <CampoLectura label="Equipo (Tipo)" value={usuario.modelo} />
+        <CampoLectura label="Edificio" value={usuario.edificio} />
+        <CampoLectura label="Nivel" value={usuario.nivel} />
+      </div>
+    </div>
+  );
+}
+
+function getUbicaciones(complejo: string): { value: string; label: string }[] {
+  if (complejo === 'Complejo Administrativo') {
+    return Array.from({ length: 8 }, (_, i) => ({ value: String(i + 1), label: `Edificio ${i + 1}` }));
+  }
+  if (complejo === 'Complejo Judicial') {
+    return Array.from({ length: 16 }, (_, i) => ({ value: String(i + 1), label: `Edificio ${i + 1}` }));
+  }
+  return [];
+}
+
+// Lista genérica usada donde no hay un "complejo" seleccionable (ej. Modificar Datos),
+// ya que ahí solo se edita la ubicación de un usuario ya existente.
+const UBICACIONES = Array.from({ length: 16 }, (_, i) => ({ value: String(i + 1), label: `Edificio ${i + 1}` }));
+
+const NIVELES = [
+  { value: 'PB', label: 'Planta Baja' },
+  { value: '1', label: 'Nivel 1' },
+  { value: '2', label: 'Nivel 2' },
+  { value: '3', label: 'Nivel 3' },
+];
+
+function formatearFechaHora(fecha: Date) {
+  const dd = String(fecha.getDate()).padStart(2, '0');
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+  const yyyy = fecha.getFullYear();
+  const hh = String(fecha.getHours()).padStart(2, '0');
+  const min = String(fecha.getMinutes()).padStart(2, '0');
+  const ss = String(fecha.getSeconds()).padStart(2, '0');
+  return { fecha: `${dd}/${mm}/${yyyy}`, hora: `${hh}:${min}:${ss}` };
+}
+
+// ---------- Shell reutilizable con el estilo de "Nueva Solicitud" ----------
+
+function Shell({
+  titulo, children, onClose, onBack, footer, mostrarFechaHora = false, accionDerecha,
+}: {
+  titulo: string;
+  children: React.ReactNode;
+  onClose: () => void;
+  onBack: () => void;
+  footer: React.ReactNode;
+  mostrarFechaHora?: boolean;
+  accionDerecha?: React.ReactNode;
+}) {
+  const [{ fecha, hora }] = useState(() => formatearFechaHora(new Date()));
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
+      <div className="bg-white rounded-lg shadow-xl w-[42rem] max-w-[95vw] max-h-[92vh] overflow-hidden flex flex-col">
+        <div className="bg-blue-600 text-white px-6 py-4 font-semibold text-lg flex justify-between items-center shrink-0">
+          {titulo}
+          <button onClick={onClose} className="text-white/80 hover:text-white text-xl leading-none">✕</button>
+        </div>
+
+        <div className="px-6 pt-3 shrink-0 flex justify-between items-center">
+          <button
+            onClick={onBack}
+            className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+          >
+            <span>«</span> Regresar al menú
+          </button>
+          {accionDerecha ?? (mostrarFechaHora && (
+            <span className="text-xs text-gray-500">
+              <strong className="text-gray-600">Fecha:</strong> {fecha} &nbsp; <strong className="text-gray-600">Hora:</strong> {hora}
+            </span>
+          ))}
+        </div>
+
+        <div className="p-6 space-y-5 overflow-y-auto">{children}</div>
+
+        <div className="flex justify-end gap-2 px-6 py-4 bg-gray-50 border-t shrink-0">
+          {footer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="border rounded overflow-hidden">
+      <div className="bg-gray-100 px-4 py-2 font-semibold text-sm text-gray-700 border-b">
+        {titulo}
+      </div>
+      <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-3">{children}</div>
+    </div>
+  );
+}
+
+function Campo({ label, children, full = false }: { label: string; children: React.ReactNode; full?: boolean }) {
+  return (
+    <div className={full ? 'col-span-2' : ''}>
+      <label className="text-xs text-gray-600 block mb-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputClass = 'border rounded p-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+function BotonCancelar({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded text-sm inline-flex items-center gap-1">
+      ✕ Cancelar
+    </button>
+  );
+}
+
+function BotonEnviar({ onClick, enviando, label = 'Enviar Solicitud' }: { onClick: () => void; enviando: boolean; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={enviando}
+      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50 inline-flex items-center gap-1"
+    >
+      💾 {enviando ? 'Enviando...' : label}
+    </button>
+  );
+}
+
 // ---------- 1. Solicitar Teléfono ----------
 
-function FormSolicitarTelefono({ onClose, onCreado }: Props) {
+function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
   const [form, setForm] = useState({
     nombre: '', apellido_paterno: '', apellido_materno: '', rfc: '', curp: '',
     clave_puesto: '', puesto: '', correo_institucional: '', direccion: '',
-    ubicacion: '', nivel: '', extension: '', nodo: '', internet: 'Si', equipo_computo: 'Si',
-    modelo: '', observaciones: '',
+    complejo: '', ubicacion: '', nivel: '',
+    equipo_computo: 'Si', internet: 'Si', nodo: '',
+    arreglo_jefe_secretaria: 'No',
+    extension: '',
+    nombre_jefe: '', extension_jefe: '',
+    nombre_secretaria: '', extension_secretaria: '',
+    observaciones: '',
   });
-  const [mac, setMac] = useState('');
-  const [numeroSerie, setNumeroSerie] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
+  const esArregloJefeSecretaria = form.arreglo_jefe_secretaria === 'Si';
+
+  const ubicacionesDisponibles = useMemo(() => getUbicaciones(form.complejo), [form.complejo]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (e.target.name === 'complejo') {
+      // Al cambiar de complejo, la ubicación anterior ya no aplica.
+      setForm({ ...form, complejo: e.target.value, ubicacion: '' });
+      return;
+    }
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
-    if (!form.nombre || !form.extension) {
-      setError('Nombre y Extensión son obligatorios.');
+    // Cuando hay arreglo Jefe-Secretaria, la extensión principal del registro es la del Jefe
+    const extensionPrincipal = esArregloJefeSecretaria ? form.extension_jefe : form.extension;
+
+    if (!form.nombre || !extensionPrincipal) {
+      setError(esArregloJefeSecretaria
+        ? 'Nombre y Extensión Jefe son obligatorios.'
+        : 'Nombre y Extensión son obligatorios.');
       return;
     }
-    if (mac && !isValidMac(mac)) {
-      setError('La MAC no tiene un formato válido (XX:XX:XX:XX:XX:XX).');
+    if (esArregloJefeSecretaria && (!form.nombre_jefe || !form.nombre_secretaria || !form.extension_secretaria)) {
+      setError('Completa Nombre Jefe, Nombre Secretaria y Extensión Secretaria.');
       return;
     }
+
     setEnviando(true);
     setError('');
     try {
       const { registrarUsuarioTelefonia } = await import('../../services/solicitudTelefoniaService');
       const nuevo = await registrarUsuarioTelefonia({
-        ...form,
+        nombre: form.nombre,
+        apellido_paterno: form.apellido_paterno,
+        apellido_materno: form.apellido_materno,
+        rfc: form.rfc,
+        curp: form.curp,
+        clave_puesto: form.clave_puesto,
+        puesto: form.puesto,
+        correo_institucional: form.correo_institucional,
+        direccion: form.direccion,
+        ubicacion: form.ubicacion,
+        nivel: form.nivel,
+        nodo: form.nodo,
         internet: form.internet === 'Si',
         equipo_computo: form.equipo_computo === 'Si',
-        mac: mac || undefined,
-        numero_serie: numeroSerie || undefined,
+        extension: extensionPrincipal,
       });
+
       await crearSolicitudTelefonia({
         usuario_id: nuevo.id,
         tipo_tramite: 'SOLICITAR_TELEFONO',
         observaciones: form.observaciones || undefined,
+        detalle: {
+          complejo: form.complejo || undefined,
+          arreglo_jefe_secretaria: esArregloJefeSecretaria,
+          ...(esArregloJefeSecretaria && {
+            nombre_jefe: form.nombre_jefe,
+            extension_jefe: form.extension_jefe,
+            nombre_secretaria: form.nombre_secretaria,
+            extension_secretaria: form.extension_secretaria,
+          }),
+        },
       });
+
       onCreado();
       onClose();
     } catch (err: any) {
@@ -81,100 +272,136 @@ function FormSolicitarTelefono({ onClose, onCreado }: Props) {
   };
 
   return (
-    <Shell titulo="Solicitar Teléfono" onClose={onClose}>
-      <div className="grid grid-cols-2 gap-3">
-        <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} className="border p-2" />
-        <input name="apellido_paterno" placeholder="Apellido Paterno" value={form.apellido_paterno} onChange={handleChange} className="border p-2" />
-        <input name="apellido_materno" placeholder="Apellido Materno" value={form.apellido_materno} onChange={handleChange} className="border p-2" />
-        <input name="rfc" placeholder="RFC" value={form.rfc} onChange={handleChange} className="border p-2" />
-        <input name="curp" placeholder="CURP" value={form.curp} onChange={handleChange} className="border p-2" />
-        <input name="clave_puesto" placeholder="Clave de Puesto" value={form.clave_puesto} onChange={handleChange} className="border p-2" />
-        <input name="puesto" placeholder="Puesto" value={form.puesto} onChange={handleChange} className="border p-2 col-span-2" />
-        <input name="correo_institucional" placeholder="Correo Electrónico" value={form.correo_institucional} onChange={handleChange} className="border p-2" />
-        <input name="direccion" placeholder="Dirección" value={form.direccion} onChange={handleChange} className="border p-2" />
-        <input name="ubicacion" placeholder="Ubicación" value={form.ubicacion} onChange={handleChange} className="border p-2" />
-        <input name="nivel" placeholder="Nivel" value={form.nivel} onChange={handleChange} className="border p-2" />
-        <input name="extension" placeholder="Extensión" value={form.extension} onChange={handleChange} className="border p-2" />
-        <input name="nodo" placeholder="Nodo" value={form.nodo} onChange={handleChange} className="border p-2" />
-
-        <div>
-          <label className="text-xs text-gray-600">Equipo de Cómputo:</label>
-          <select name="equipo_computo" value={form.equipo_computo} onChange={handleChange} className="border p-2 w-full">
+    <Shell
+      titulo="Solicitud de Teléfono"
+      onClose={onClose}
+      onBack={onBack}
+      mostrarFechaHora
+      footer={<><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></>}
+    >
+      <Seccion titulo="Datos Personales">
+        <Campo label="Nombre:"><input name="nombre" value={form.nombre} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Correo Electrónico:"><input name="correo_institucional" value={form.correo_institucional} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Apellido Paterno:"><input name="apellido_paterno" value={form.apellido_paterno} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Dirección:"><input name="direccion" value={form.direccion} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Apellido Materno:"><input name="apellido_materno" value={form.apellido_materno} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Complejo:">
+          <select name="complejo" value={form.complejo} onChange={handleChange} className={inputClass}>
+            <option value="">Elegir un Complejo...</option>
+            {COMPLEJOS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </Campo>
+        <Campo label="RFC:"><input name="rfc" value={form.rfc} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Ubicación:">
+          <select
+            name="ubicacion"
+            value={form.ubicacion}
+            onChange={handleChange}
+            disabled={!form.complejo}
+            className={inputClass}
+          >
+            <option value="">{form.complejo ? 'Selecciona opción...' : 'Elige un complejo primero'}</option>
+            {ubicacionesDisponibles.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+          </select>
+        </Campo>
+        <Campo label="CURP:"><input name="curp" value={form.curp} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Nivel:">
+          <select name="nivel" value={form.nivel} onChange={handleChange} className={inputClass}>
+            <option value="">Selecciona opción...</option>
+            {NIVELES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+          </select>
+        </Campo>
+        <Campo label="Clave de Puesto:"><input name="clave_puesto" value={form.clave_puesto} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Equipo de Cómputo:">
+          <select name="equipo_computo" value={form.equipo_computo} onChange={handleChange} className={inputClass}>
             <option value="Si">Sí</option>
             <option value="No">No</option>
           </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-600">Internet:</label>
-          <select name="internet" value={form.internet} onChange={handleChange} className="border p-2 w-full">
+        </Campo>
+        <Campo label="Puesto:"><input name="puesto" value={form.puesto} onChange={handleChange} className={inputClass} /></Campo>
+        <Campo label="Internet:">
+          <select name="internet" value={form.internet} onChange={handleChange} className={inputClass}>
             <option value="Si">Sí</option>
             <option value="No">No</option>
           </select>
-        </div>
-      </div>
+        </Campo>
+      </Seccion>
 
-      <div className="border rounded p-3">
-        <p className="font-semibold text-sm mb-2">Datos del equipo telefónico</p>
-        <div className="grid grid-cols-3 gap-3">
-          <input name="modelo" placeholder="Modelo" value={form.modelo} onChange={handleChange} className="border p-2" />
-          <input
-            placeholder="MAC (opcional)"
-            value={mac}
-            onChange={(e) => setMac(formatMac(e.target.value))}
-            maxLength={17}
-            className="border p-2 font-mono"
-          />
-          <input
-            placeholder="No. de Serie (opcional)"
-            value={numeroSerie}
-            onChange={(e) => setNumeroSerie(e.target.value)}
-            className="border p-2"
-          />
-        </div>
-      </div>
+      <Seccion titulo="Datos de Red y Jefe - Secretaria">
+        <Campo label="Arreglo Jefe - Secretaria:">
+          <select name="arreglo_jefe_secretaria" value={form.arreglo_jefe_secretaria} onChange={handleChange} className={inputClass}>
+            <option value="Si">Sí</option>
+            <option value="No">No</option>
+          </select>
+        </Campo>
+        <Campo label="Nodo:"><input name="nodo" value={form.nodo} onChange={handleChange} className={inputClass} /></Campo>
 
-      <textarea name="observaciones" placeholder="Observaciones" value={form.observaciones} onChange={handleChange} rows={3} className="border p-2 w-full" />
+        {esArregloJefeSecretaria ? (
+          <>
+            <Campo label="Nombre Jefe:"><input name="nombre_jefe" value={form.nombre_jefe} onChange={handleChange} className={inputClass} /></Campo>
+            <Campo label="Extensión Jefe:"><input name="extension_jefe" value={form.extension_jefe} onChange={handleChange} className={inputClass} /></Campo>
+            <Campo label="Nombre Secretaria:"><input name="nombre_secretaria" value={form.nombre_secretaria} onChange={handleChange} className={inputClass} /></Campo>
+            <Campo label="Extensión Secretaria:"><input name="extension_secretaria" value={form.extension_secretaria} onChange={handleChange} className={inputClass} /></Campo>
+          </>
+        ) : (
+          <Campo label="Extensión:"><input name="extension" value={form.extension} onChange={handleChange} className={inputClass} /></Campo>
+        )}
+
+        <Campo label="Observaciones:" full>
+          <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={3} className={inputClass} />
+        </Campo>
+      </Seccion>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- 2. Cambio clave PIN o CN ----------
-function FormCambioPinCn({ onClose, onCreado }: Props) {
+
+// Fila de solo lectura con estilo tipo "formato viejo" (etiqueta arriba, valor abajo)
+function CampoLectura({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <span className="text-xs text-gray-500 block">{label}:</span>
+      <span className="text-sm text-gray-800 font-medium">{value ?? '-'}</span>
+    </div>
+  );
+}
+
+function FormCambioPinCn({ onClose, onCreado, onBack }: Props) {
   const [usuario, setUsuario] = useState<any>(null);
   const [correo, setCorreo] = useState('');
-  const [tiposClave, setTiposClave] = useState<{ id: number; nombre: string }[]>([]);
-  const [tipoClaveId, setTipoClaveId] = useState('');
   const [motivo, setMotivo] = useState('Extravío');
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => {
-    import('../../services/solicitudTelefoniaService').then(({ getTiposClave }) => {
-      getTiposClave().then(setTiposClave);
-    });
-  }, []);
+  const handleEncontrado = (u: any) => {
+    setUsuario(u);
+    // Precarga el correo institucional del usuario; sigue siendo editable.
+    setCorreo(u.correo_institucional ?? '');
+  };
+
+  const handleBuscarOtro = () => {
+    setUsuario(null);
+    setCorreo('');
+    setMotivo('Extravío');
+    setObservaciones('');
+    setError('');
+  };
 
   const handleSubmit = async () => {
     if (!usuario) { setError('Busca primero al usuario por extensión.'); return; }
-    if (!tipoClaveId) { setError('Selecciona si es PIN o CN.'); return; }
+    if (!correo) { setError('El correo electrónico es obligatorio.'); return; }
     setEnviando(true);
     setError('');
     try {
-      const tipoNombre = tiposClave.find((t) => t.id === Number(tipoClaveId))?.nombre;
       await crearSolicitudTelefonia({
         usuario_id: usuario.id,
         tipo_tramite: 'CAMBIO_PIN_CN',
         observaciones: observaciones || undefined,
-        detalle: { tipo_clave: tipoNombre, motivo_cambio: motivo, correo_notificacion: correo || undefined },
+        detalle: { tipo_clave: usuario.tipo_clave, motivo_cambio: motivo, correo_notificacion: correo || undefined },
       });
       onCreado();
       onClose();
@@ -185,53 +412,104 @@ function FormCambioPinCn({ onClose, onCreado }: Props) {
     }
   };
 
+  const nombreCompleto = usuario
+    ? [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno].filter(Boolean).join(' ')
+    : '';
+
   return (
-    <Shell titulo="Cambio de clave, PIN o CN" onClose={onClose}>
-      <BuscarPorExtension onEncontrado={setUsuario} />
-      {usuario && (
+    <Shell
+      titulo="Cambio de clave, PIN o CN"
+      onClose={onClose}
+      onBack={onBack}
+      accionDerecha={usuario && (
+        <button
+          type="button"
+          onClick={handleBuscarOtro}
+          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+        >
+          Buscar otro usuario <span>»</span>
+        </button>
+      )}
+      footer={usuario ? <><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></> : <BotonCancelar onClick={onClose} />}
+    >
+      {!usuario ? (
+        <Seccion titulo="Buscar Usuario">
+          <div className="col-span-2"><BuscarPorExtension onEncontrado={handleEncontrado} /></div>
+        </Seccion>
+      ) : (
         <>
-          <ResumenUsuarioTelefonia usuario={usuario} />
-          <select value={tipoClaveId} onChange={(e) => setTipoClaveId(e.target.value)} className="border p-2 w-full">
-            <option value="">-- Tipo de clave --</option>
-            {tiposClave.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-          </select>
-          <input placeholder="Correo Electrónico" value={correo} onChange={(e) => setCorreo(e.target.value)} className="border p-2 w-full" />
-          <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className="border p-2 w-full">
-            <option value="Extravío">Extravío</option>
-            <option value="Olvido">Olvido</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <textarea placeholder="Observaciones" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className="border p-2 w-full" />
+          <div className="border rounded overflow-hidden">
+            <div className="bg-blue-600 text-white px-4 py-2 font-semibold text-sm">
+              Cambio de clave, PIN o CN
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-white">
+              <CampoLectura label="Nombre Usuario" value={nombreCompleto || '-'} />
+              <CampoLectura label="No. de Extensión" value={usuario.extension} />
+              <CampoLectura label="Dependencia" value={usuario.direccion || usuario.puesto} />
+              <CampoLectura label="Equipo (Tipo)" value={usuario.modelo} />
+              <CampoLectura label="Edificio" value={usuario.edificio} />
+              <CampoLectura label="Nivel" value={usuario.nivel} />
+              <CampoLectura label="Clave (Tipo)" value={usuario.tipo_clave} />
+            </div>
+          </div>
+
+          <Seccion titulo="Datos del Cambio">
+            <Campo label="Correo Electrónico:">
+              <input value={correo} onChange={(e) => setCorreo(e.target.value)} className={inputClass} />
+            </Campo>
+            <Campo label="Motivo del Cambio:">
+              <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className={inputClass}>
+                <option value="Extravío">Extravío</option>
+                <option value="Olvido">Olvido</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </Campo>
+            <Campo label="Observaciones:" full>
+              <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className={inputClass} />
+            </Campo>
+          </Seccion>
         </>
       )}
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando || !usuario} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- 3. Cambio de Usuario ----------
-function FormCambioUsuario({ onClose, onCreado }: Props) {
+function FormCambioUsuario({ onClose, onCreado, onBack }: Props) {
   const [actual, setActual] = useState<any>(null);
+  const [paso, setPaso] = useState<1 | 2>(1);
   const [nuevo, setNuevo] = useState({
     nombre: '', apellido_paterno: '', apellido_materno: '', rfc: '', curp: '',
-    clave_puesto: '', puesto: '', correo_institucional: '',
+    clave_puesto: '', correo_institucional: '', direccion: '',
+    ubicacion: '', nivel: '',
+    equipo_computo: 'Si', internet: 'Si', nodo: '',
+    arreglo_jefe_secretaria: 'No',
+    nombre_jefe: '', extension_jefe: '',
+    nombre_secretaria: '', extension_secretaria: '',
   });
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const esArregloJefeSecretaria = nuevo.arreglo_jefe_secretaria === 'Si';
+
+  const handleEncontrado = (u: any) => {
+    setActual(u);
+    setPaso(1);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setNuevo({ ...nuevo, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
-    if (!actual || !nuevo.nombre) { setError('Busca al usuario actual y captura al menos el nombre del nuevo usuario.'); return; }
+    if (!actual || !nuevo.nombre) { setError('Captura al menos el nombre del nuevo usuario.'); return; }
+    if (esArregloJefeSecretaria && (!nuevo.nombre_jefe || !nuevo.extension_jefe || !nuevo.nombre_secretaria || !nuevo.extension_secretaria)) {
+      setError('Completa Nombre Jefe, Extensión Jefe, Nombre Secretaria y Extensión Secretaria.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
@@ -250,42 +528,120 @@ function FormCambioUsuario({ onClose, onCreado }: Props) {
     }
   };
 
-  return (
-    <Shell titulo="Cambio de Usuario" onClose={onClose}>
-      <p className="text-sm font-semibold">Usuario actual</p>
-      <BuscarPorExtension onEncontrado={setActual} />
-      {actual && <ResumenUsuarioTelefonia usuario={actual} />}
+  const footer = paso === 1
+    ? (
+      <>
+        <BotonCancelar onClick={onClose} />
+        {actual && (
+          <button
+            onClick={() => setPaso(2)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm inline-flex items-center gap-1"
+          >
+            Cambiar Usuario »
+          </button>
+        )}
+      </>
+    )
+    : <><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></>;
 
-      {actual && (
-        <>
-          <p className="text-sm font-semibold pt-2">Datos del nuevo usuario</p>
-          <div className="grid grid-cols-2 gap-3">
-            <input name="nombre" placeholder="Nombre" value={nuevo.nombre} onChange={handleChange} className="border p-2" />
-            <input name="apellido_paterno" placeholder="Apellido Paterno" value={nuevo.apellido_paterno} onChange={handleChange} className="border p-2" />
-            <input name="apellido_materno" placeholder="Apellido Materno" value={nuevo.apellido_materno} onChange={handleChange} className="border p-2" />
-            <input name="rfc" placeholder="RFC" value={nuevo.rfc} onChange={handleChange} className="border p-2" />
-            <input name="curp" placeholder="CURP" value={nuevo.curp} onChange={handleChange} className="border p-2" />
-            <input name="clave_puesto" placeholder="Clave de Puesto" value={nuevo.clave_puesto} onChange={handleChange} className="border p-2" />
-            <input name="puesto" placeholder="Puesto" value={nuevo.puesto} onChange={handleChange} className="border p-2 col-span-2" />
-            <input name="correo_institucional" placeholder="Correo Electrónico" value={nuevo.correo_institucional} onChange={handleChange} className="border p-2 col-span-2" />
-          </div>
-          <textarea placeholder="Observaciones" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className="border p-2 w-full" />
-        </>
+  return (
+    <Shell
+      titulo="Cambio de Usuario"
+      onClose={onClose}
+      onBack={onBack}
+      mostrarFechaHora={paso === 2}
+      footer={footer}
+    >
+      <Seccion titulo="Usuario Actual">
+        <div className="col-span-2"><BuscarPorExtension onEncontrado={handleEncontrado} /></div>
+      </Seccion>
+
+      {actual && <ResumenActualCambioUsuario usuario={actual} />}
+
+      {actual && paso === 2 && (
+        <Seccion titulo="Datos del Nuevo Usuario">
+          <Campo label="Nombre:"><input name="nombre" value={nuevo.nombre} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Correo Electrónico:"><input name="correo_institucional" value={nuevo.correo_institucional} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Apellido Paterno:"><input name="apellido_paterno" value={nuevo.apellido_paterno} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Dirección:"><input name="direccion" value={nuevo.direccion} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Apellido Materno:"><input name="apellido_materno" value={nuevo.apellido_materno} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Ubicación:">
+            <select name="ubicacion" value={nuevo.ubicacion} onChange={handleChange} className={inputClass}>
+              <option value="">-- Ubicación --</option>
+              {UBICACIONES.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Campo>
+
+          <Campo label="RFC:"><input name="rfc" value={nuevo.rfc} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Nivel:">
+            <select name="nivel" value={nuevo.nivel} onChange={handleChange} className={inputClass}>
+              <option value="">-- Nivel --</option>
+              {NIVELES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+            </select>
+          </Campo>
+
+          <Campo label="CURP:"><input name="curp" value={nuevo.curp} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Equipo de Cómputo:">
+            <select name="equipo_computo" value={nuevo.equipo_computo} onChange={handleChange} className={inputClass}>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </Campo>
+
+          <Campo label="Clave de Puesto:"><input name="clave_puesto" value={nuevo.clave_puesto} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Internet:">
+            <select name="internet" value={nuevo.internet} onChange={handleChange} className={inputClass}>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </Campo>
+
+          <Campo label="Arreglo Jefe - Secretaria:">
+            <select name="arreglo_jefe_secretaria" value={nuevo.arreglo_jefe_secretaria} onChange={handleChange} className={inputClass}>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </Campo>
+          <Campo label="Nodo:"><input name="nodo" value={nuevo.nodo} onChange={handleChange} className={inputClass} /></Campo>
+
+          {esArregloJefeSecretaria && (
+            <>
+              <Campo label="Nombre Jefe:"><input name="nombre_jefe" value={nuevo.nombre_jefe} onChange={handleChange} className={inputClass} /></Campo>
+              <Campo label="Extensión Jefe:"><input name="extension_jefe" value={nuevo.extension_jefe} onChange={handleChange} className={inputClass} /></Campo>
+              <Campo label="Nombre Secretaria:"><input name="nombre_secretaria" value={nuevo.nombre_secretaria} onChange={handleChange} className={inputClass} /></Campo>
+              <Campo label="Extensión Secretaria:"><input name="extension_secretaria" value={nuevo.extension_secretaria} onChange={handleChange} className={inputClass} /></Campo>
+            </>
+          )}
+
+          <Campo label="Observaciones:" full>
+            <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className={inputClass} />
+          </Campo>
+        </Seccion>
       )}
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando || !actual} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- 4. Modificar Datos ----------
-function FormModificarDatos({ onClose, onCreado }: Props) {
+const CAMPOS_REQUERIDOS_MODIFICAR: { key: string; label: string }[] = [
+  { key: 'nombre', label: 'Nombre' },
+  { key: 'apellido_paterno', label: 'Apellido Paterno' },
+  { key: 'apellido_materno', label: 'Apellido Materno' },
+  { key: 'rfc', label: 'RFC' },
+  { key: 'curp', label: 'CURP' },
+  { key: 'clave_puesto', label: 'Clave de Puesto' },
+  { key: 'puesto', label: 'Puesto' },
+  { key: 'correo_institucional', label: 'Correo Electrónico' },
+  { key: 'direccion', label: 'Dirección' },
+  { key: 'ubicacion', label: 'Ubicación' },
+  { key: 'nivel', label: 'Nivel' },
+];
+
+function FormModificarDatos({ onClose, onCreado, onBack }: Props) {
   const [usuario, setUsuario] = useState<any>(null);
   const [form, setForm] = useState<any>(null);
   const [error, setError] = useState('');
@@ -294,26 +650,60 @@ function FormModificarDatos({ onClose, onCreado }: Props) {
   const handleEncontrado = (u: any) => {
     setUsuario(u);
     setForm({
-      nombre: u.nombre ?? '', apellido_paterno: u.apellido_paterno ?? '', apellido_materno: u.apellido_materno ?? '',
-      correo_institucional: u.correo_institucional ?? '', direccion: u.direccion ?? '',
-      ubicacion: u.ubicacion ?? '', nivel: u.nivel ?? '',
-      internet: u.internet ? 'Si' : 'No', equipo_computo: u.equipo_computo ? 'Si' : 'No', nodo: u.nodo ?? '',
+      nombre: u.nombre ?? '',
+      apellido_paterno: u.apellido_paterno ?? '',
+      apellido_materno: u.apellido_materno ?? '',
+      rfc: u.rfc ?? '',
+      curp: u.curp ?? '',
+      clave_puesto: u.clave_puesto ?? '',
+      puesto: u.puesto ?? '',
+      correo_institucional: u.correo_institucional ?? '',
+      direccion: u.direccion ?? '',
+      ubicacion: u.ubicacion ?? '',
+      nivel: u.nivel ?? '',
+      equipo_computo: u.equipo_computo ? 'Si' : 'No',
+      internet: u.internet ? 'Si' : 'No',
+      nodo: u.nodo ?? '',
+      extension_jefe: u.extension_jefe ?? '',
+      extension_secretaria: u.extension_secretaria ?? '',
+      observaciones: '',
     });
+    setError('');
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleBuscarOtro = () => {
+    setUsuario(null);
+    setForm(null);
+    setError('');
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
     if (!usuario) { setError('Busca primero al usuario por extensión.'); return; }
+
+    const faltantes = CAMPOS_REQUERIDOS_MODIFICAR.filter(({ key }) => !String(form[key] ?? '').trim());
+    if (faltantes.length > 0) {
+      setError(`Completa los siguientes campos: ${faltantes.map((f) => f.label).join(', ')}.`);
+      return;
+    }
+
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
         usuario_id: usuario.id,
         tipo_tramite: 'MODIFICAR_DATOS',
-        detalle: { campos_modificados: form },
+        observaciones: form.observaciones || undefined,
+        detalle: {
+          campos_modificados: {
+            ...form,
+            equipo_computo: form.equipo_computo === 'Si',
+            internet: form.internet === 'Si',
+          },
+        },
       });
       onCreado();
       onClose();
@@ -325,103 +715,259 @@ function FormModificarDatos({ onClose, onCreado }: Props) {
   };
 
   return (
-    <Shell titulo="Modificar Datos" onClose={onClose}>
-      <BuscarPorExtension onEncontrado={handleEncontrado} />
-      {form && (
-        <div className="grid grid-cols-2 gap-3">
-          <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} className="border p-2" />
-          <input name="apellido_paterno" placeholder="Apellido Paterno" value={form.apellido_paterno} onChange={handleChange} className="border p-2" />
-          <input name="apellido_materno" placeholder="Apellido Materno" value={form.apellido_materno} onChange={handleChange} className="border p-2" />
-          <input name="correo_institucional" placeholder="Correo Electrónico" value={form.correo_institucional} onChange={handleChange} className="border p-2" />
-          <input name="direccion" placeholder="Dirección" value={form.direccion} onChange={handleChange} className="border p-2" />
-          <select name="ubicacion" value={form.ubicacion} onChange={handleChange} className="border p-2">
-            <option value="">-- Ubicación --</option>
-            <option value="edificio 2">Edificio 2</option>
-            <option value="edificio 3">Edificio 3</option>
-            <option value="edificio 4">Edificio 4</option>
-            <option value="edificio 6">Edificio 6</option>
-          </select>
-          <input name="nivel" placeholder="Nivel" value={form.nivel} onChange={handleChange} className="border p-2" />
-          <input name="nodo" placeholder="Nodo" value={form.nodo} onChange={handleChange} className="border p-2" />
-          <select name="equipo_computo" value={form.equipo_computo} onChange={handleChange} className="border p-2">
-            <option value="Si">Equipo de Cómputo: Sí</option>
-            <option value="No">Equipo de Cómputo: No</option>
-          </select>
-          <select name="internet" value={form.internet} onChange={handleChange} className="border p-2">
-            <option value="Si">Internet: Sí</option>
-            <option value="No">Internet: No</option>
-          </select>
-        </div>
-      )}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando || !usuario} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
+    <Shell
+      titulo="Modificar Datos"
+      onClose={onClose}
+      onBack={onBack}
+      mostrarFechaHora={!!usuario}
+      accionDerecha={usuario && (
+        <button
+          type="button"
+          onClick={handleBuscarOtro}
+          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+        >
+          Buscar otro usuario <span>»</span>
         </button>
-      </div>
+      )}
+      footer={usuario ? <><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></> : <BotonCancelar onClick={onClose} />}
+    >
+      {!usuario ? (
+        <Seccion titulo="Buscar Usuario">
+          <div className="col-span-2"><BuscarPorExtension onEncontrado={handleEncontrado} /></div>
+        </Seccion>
+      ) : (
+        <Seccion titulo="Datos a Modificar">
+          <Campo label="Nombre:"><input name="nombre" value={form.nombre} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Correo Electrónico:"><input name="correo_institucional" value={form.correo_institucional} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Apellido Paterno:"><input name="apellido_paterno" value={form.apellido_paterno} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Dirección:"><input name="direccion" value={form.direccion} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Apellido Materno:"><input name="apellido_materno" value={form.apellido_materno} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Ubicación:">
+            <select name="ubicacion" value={form.ubicacion} onChange={handleChange} className={inputClass}>
+              <option value="">-- Ubicación --</option>
+              {UBICACIONES.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+          </Campo>
+
+          <Campo label="RFC:"><input name="rfc" value={form.rfc} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Nivel:">
+            <select name="nivel" value={form.nivel} onChange={handleChange} className={inputClass}>
+              <option value="">-- Nivel --</option>
+              {NIVELES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+            </select>
+          </Campo>
+
+          <Campo label="CURP:"><input name="curp" value={form.curp} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Equipo de Cómputo:">
+            <select name="equipo_computo" value={form.equipo_computo} onChange={handleChange} className={inputClass}>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </Campo>
+
+          <Campo label="Clave de Puesto:"><input name="clave_puesto" value={form.clave_puesto} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Internet:">
+            <select name="internet" value={form.internet} onChange={handleChange} className={inputClass}>
+              <option value="Si">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </Campo>
+
+          <Campo label="Puesto:"><input name="puesto" value={form.puesto} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Nodo:"><input name="nodo" value={form.nodo} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Extensión Jefe:"><input name="extension_jefe" value={form.extension_jefe} onChange={handleChange} className={inputClass} /></Campo>
+          <Campo label="Extensión Secretaria:"><input name="extension_secretaria" value={form.extension_secretaria} onChange={handleChange} className={inputClass} /></Campo>
+
+          <Campo label="Observaciones:" full>
+            <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={2} className={inputClass} />
+          </Campo>
+        </Seccion>
+      )}
+
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </Shell>
   );
 }
 
 // ---------- 5. Arreglo Jefe - Secretaria ----------
-function FormJefeSecretaria({ onClose, onCreado }: Props) {
-  const [jefe, setJefe] = useState<any>(null);
-  const [secretaria, setSecretaria] = useState<any>(null);
+// Datos identificatorios editables (nombre, apellidos, extensión) de una persona
+function DatosPersonaEditable({
+  titulo, datos, onChange,
+}: {
+  titulo: string;
+  datos: { nombre: string; apellido_paterno: string; apellido_materno: string; extension: string };
+  onChange: (campo: string, valor: string) => void;
+}) {
+  return (
+    <div className="border rounded overflow-hidden">
+      <div className="bg-blue-600 text-white px-4 py-2 font-semibold text-sm">{titulo}</div>
+      <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-white">
+        <Campo label="Nombre:">
+          <input value={datos.nombre} onChange={(e) => onChange('nombre', e.target.value)} className={inputClass} />
+        </Campo>
+        <Campo label="Extensión:">
+          <input value={datos.extension} onChange={(e) => onChange('extension', e.target.value)} className={inputClass} />
+        </Campo>
+        <Campo label="Apellido Paterno:">
+          <input value={datos.apellido_paterno} onChange={(e) => onChange('apellido_paterno', e.target.value)} className={inputClass} />
+        </Campo>
+        <Campo label="Apellido Materno:">
+          <input value={datos.apellido_materno} onChange={(e) => onChange('apellido_materno', e.target.value)} className={inputClass} />
+        </Campo>
+      </div>
+    </div>
+  );
+}
+
+// Datos de solo lectura (dependencia, equipo, edificio, nivel) - fijos de la base
+function DatosLecturaTelefonia({ usuario }: { usuario: any }) {
+  return (
+    <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-gray-50 border rounded">
+      <CampoLectura label="Dependencia" value={usuario.direccion || usuario.puesto} />
+      <CampoLectura label="Equipo (Tipo)" value={usuario.modelo} />
+      <CampoLectura label="Edificio" value={usuario.edificio} />
+      <CampoLectura label="Nivel" value={usuario.nivel} />
+    </div>
+  );
+}
+
+function FormJefeSecretaria({ onClose, onCreado, onBack }: Props) {
+  const [jefeBase, setJefeBase] = useState<any>(null);
+  const [secretariaBase, setSecretariaBase] = useState<any>(null);
+
+  const [datosJefe, setDatosJefe] = useState({ nombre: '', apellido_paterno: '', apellido_materno: '', extension: '' });
+  const [datosSecretaria, setDatosSecretaria] = useState({ nombre: '', apellido_paterno: '', apellido_materno: '', extension: '' });
+
   const [mismosPrivilegios, setMismosPrivilegios] = useState(false);
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
+  const handleEncontradoJefe = (u: any) => {
+    setJefeBase(u);
+    setDatosJefe({
+      nombre: u.nombre ?? '',
+      apellido_paterno: u.apellido_paterno ?? '',
+      apellido_materno: u.apellido_materno ?? '',
+      extension: u.extension ?? '',
+    });
+  };
+
+  const handleEncontradaSecretaria = (u: any) => {
+    setSecretariaBase(u);
+    setDatosSecretaria({
+      nombre: u.nombre ?? '',
+      apellido_paterno: u.apellido_paterno ?? '',
+      apellido_materno: u.apellido_materno ?? '',
+      extension: u.extension ?? '',
+    });
+  };
+
+  const handleChangeJefe = (campo: string, valor: string) => setDatosJefe({ ...datosJefe, [campo]: valor });
+  const handleChangeSecretaria = (campo: string, valor: string) => setDatosSecretaria({ ...datosSecretaria, [campo]: valor });
+
+  const validar = (datos: typeof datosJefe, etiqueta: string): string[] => {
+    const faltantes: string[] = [];
+    if (!datos.nombre.trim()) faltantes.push(`Nombre (${etiqueta})`);
+    if (!datos.apellido_paterno.trim()) faltantes.push(`Apellido Paterno (${etiqueta})`);
+    if (!datos.apellido_materno.trim()) faltantes.push(`Apellido Materno (${etiqueta})`);
+    if (!datos.extension.trim()) faltantes.push(`Extensión (${etiqueta})`);
+    return faltantes;
+  };
+
   const handleSubmit = async () => {
-    if (!jefe || !secretaria) { setError('Busca ambas extensiones (jefe y secretaria).'); return; }
+    if (!jefeBase || !secretariaBase) {
+      setError('Busca ambas extensiones (jefe y secretaria) antes de enviar.');
+      return;
+    }
+
+    const faltantes = [...validar(datosJefe, 'Jefe'), ...validar(datosSecretaria, 'Secretaria')];
+    if (faltantes.length > 0) {
+      setError(`Completa los siguientes datos: ${faltantes.join(', ')}.`);
+      return;
+    }
+
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
-        usuario_id: jefe.id,
+        usuario_id: jefeBase.id,
         tipo_tramite: 'JEFE_SECRETARIA',
         observaciones: observaciones || undefined,
-        detalle: { jefe_usuario_id: jefe.id, secretaria_usuario_id: secretaria.id, mismos_privilegios: mismosPrivilegios },
+        detalle: {
+          jefe_usuario_id: jefeBase.id,
+          secretaria_usuario_id: secretariaBase.id,
+
+          nombre_jefe: datosJefe.nombre,
+          apellido_paterno_jefe: datosJefe.apellido_paterno,
+          apellido_materno_jefe: datosJefe.apellido_materno,
+          extension_jefe: datosJefe.extension,
+
+          nombre_secretaria: datosSecretaria.nombre,
+          apellido_paterno_secretaria: datosSecretaria.apellido_paterno,
+          apellido_materno_secretaria: datosSecretaria.apellido_materno,
+          extension_secretaria: datosSecretaria.extension,
+
+          mismos_privilegios: mismosPrivilegios,
+        },
       });
       onCreado();
       onClose();
-    } catch {
-      setError('No se pudo enviar la solicitud.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'No se pudo enviar la solicitud.');
     } finally {
       setEnviando(false);
     }
   };
 
   return (
-    <Shell titulo="Solicitud arreglo Jefe - Secretaria" onClose={onClose}>
-      <p className="text-sm font-semibold">Datos del Jefe</p>
-      <BuscarPorExtension label="Extensión Jefe" onEncontrado={setJefe} />
-      {jefe && <ResumenUsuarioTelefonia usuario={jefe} />}
+    <Shell
+      titulo="Solicitud arreglo Jefe - Secretaria"
+      onClose={onClose}
+      onBack={onBack}
+      mostrarFechaHora
+      footer={<><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></>}
+    >
+      <Seccion titulo="Buscar Jefe">
+        <div className="col-span-2"><BuscarPorExtension label="Extensión Jefe" onEncontrado={handleEncontradoJefe} /></div>
+      </Seccion>
+      {jefeBase && (
+        <>
+          <DatosPersonaEditable titulo="Datos del Jefe" datos={datosJefe} onChange={handleChangeJefe} />
+          <DatosLecturaTelefonia usuario={jefeBase} />
+        </>
+      )}
 
-      <p className="text-sm font-semibold pt-2">Datos de la Secretaria</p>
-      <BuscarPorExtension label="Extensión Secretaria" onEncontrado={setSecretaria} />
-      {secretaria && <ResumenUsuarioTelefonia usuario={secretaria} />}
+      <Seccion titulo="Buscar Secretaria">
+        <div className="col-span-2"><BuscarPorExtension label="Extensión Secretaria" onEncontrado={handleEncontradaSecretaria} /></div>
+      </Seccion>
+      {secretariaBase && (
+        <>
+          <DatosPersonaEditable titulo="Datos de la Secretaria" datos={datosSecretaria} onChange={handleChangeSecretaria} />
+          <DatosLecturaTelefonia usuario={secretariaBase} />
+        </>
+      )}
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={mismosPrivilegios} onChange={(e) => setMismosPrivilegios(e.target.checked)} />
-        Mismos Privilegios
-      </label>
-      <textarea placeholder="Observación" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className="border p-2 w-full" />
+      <Seccion titulo="Detalles">
+        <label className="col-span-2 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={mismosPrivilegios} onChange={(e) => setMismosPrivilegios(e.target.checked)} />
+          Mismos Privilegios
+        </label>
+        <Campo label="Observación:" full>
+          <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className={inputClass} />
+        </Campo>
+      </Seccion>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- 6. Cambio de DID ----------
-function FormCambioDid({ onClose, onCreado }: Props) {
+function FormCambioDid({ onClose, onCreado, onBack }: Props) {
   const [usuario, setUsuario] = useState<any>(null);
   const [nuevaExtension, setNuevaExtension] = useState('');
   const [numeroDid, setNumeroDid] = useState('');
@@ -453,36 +999,73 @@ function FormCambioDid({ onClose, onCreado }: Props) {
   };
 
   return (
-    <Shell titulo="Cambio de DID" onClose={onClose}>
-      <BuscarPorExtension label="Extensión Actual" onEncontrado={setUsuario} />
-      {usuario && <ResumenUsuarioTelefonia usuario={usuario} />}
-      <input placeholder="Nueva Extensión" value={nuevaExtension} onChange={(e) => setNuevaExtension(e.target.value)} className="border p-2 w-full" />
-      <input placeholder="Número DID" value={numeroDid} onChange={(e) => setNumeroDid(e.target.value)} className="border p-2 w-full" />
-      <textarea placeholder="Justificación" value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} className="border p-2 w-full" />
+    <Shell
+      titulo="Cambio de DID"
+      onClose={onClose}
+      onBack={onBack}
+      footer={<><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></>}
+    >
+      <Seccion titulo="Extensión Actual">
+        <div className="col-span-2"><BuscarPorExtension label="Extensión Actual" onEncontrado={setUsuario} /></div>
+        {usuario && <div className="col-span-2"><ResumenUsuarioTelefonia usuario={usuario} /></div>}
+      </Seccion>
+
+      <Seccion titulo="Datos del Cambio">
+        <Campo label="Nueva Extensión:"><input value={nuevaExtension} onChange={(e) => setNuevaExtension(e.target.value)} className={inputClass} /></Campo>
+        <Campo label="Número DID:"><input value={numeroDid} onChange={(e) => setNumeroDid(e.target.value)} className={inputClass} /></Campo>
+        <Campo label="Justificación:" full>
+          <textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} className={inputClass} />
+        </Campo>
+      </Seccion>
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando || !usuario} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- 7. Cambio de Categoría ----------
-function FormCambioCategoria({ onClose, onCreado }: Props) {
+function FormCambioCategoria({ onClose, onCreado, onBack }: Props) {
   const [usuario, setUsuario] = useState<any>(null);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [categoriaId, setCategoriaId] = useState('');
+  const [puesto, setPuesto] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [clavePuesto, setClavePuesto] = useState('');
+  const [direccion, setDireccion] = useState('');
   const [justificacion, setJustificacion] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => { getCategoriasTelefonia().then(setCategorias); }, []);
 
+  const handleEncontrado = (u: any) => {
+    setUsuario(u);
+    setPuesto(u.puesto ?? '');
+    setCorreo(u.correo_institucional ?? '');
+    setClavePuesto(u.clave_puesto ?? '');
+    setDireccion(u.direccion ?? '');
+    setCategoriaId(u.categoria_id ? String(u.categoria_id) : '');
+    setJustificacion('');
+    setError('');
+  };
+
+  const handleBuscarOtro = () => {
+    setUsuario(null);
+    setPuesto('');
+    setCorreo('');
+    setClavePuesto('');
+    setDireccion('');
+    setCategoriaId('');
+    setJustificacion('');
+    setError('');
+  };
+
   const handleSubmit = async () => {
-    if (!usuario || !categoriaId || !justificacion) { setError('Completa todos los campos.'); return; }
+    if (!usuario) { setError('Busca primero al usuario por extensión.'); return; }
+    if (!puesto || !correo || !clavePuesto || !direccion || !categoriaId || !justificacion) {
+      setError('Completa todos los campos.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
@@ -490,7 +1073,14 @@ function FormCambioCategoria({ onClose, onCreado }: Props) {
         usuario_id: usuario.id,
         tipo_tramite: 'CAMBIO_CATEGORIA',
         observaciones: justificacion,
-        detalle: { categoria_id: Number(categoriaId), justificacion },
+        detalle: {
+          categoria_id: Number(categoriaId),
+          puesto,
+          correo_institucional: correo,
+          clave_puesto: clavePuesto,
+          direccion,
+          justificacion,
+        },
       });
       onCreado();
       onClose();
@@ -501,46 +1091,98 @@ function FormCambioCategoria({ onClose, onCreado }: Props) {
     }
   };
 
+  const nombreCompleto = usuario
+    ? [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno].filter(Boolean).join(' ')
+    : '';
+
   return (
-    <Shell titulo="Cambio de Categoría (privilegios)" onClose={onClose}>
-      <BuscarPorExtension onEncontrado={setUsuario} />
-      {usuario && (
+    <Shell
+      titulo="Cambio de Categoría (privilegios)"
+      onClose={onClose}
+      onBack={onBack}
+      mostrarFechaHora={!!usuario}
+      accionDerecha={usuario && (
+        <button
+          type="button"
+          onClick={handleBuscarOtro}
+          className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1"
+        >
+          Buscar otro usuario <span>»</span>
+        </button>
+      )}
+      footer={usuario ? <><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></> : <BotonCancelar onClick={onClose} />}
+    >
+      {!usuario ? (
+        <Seccion titulo="Buscar Usuario">
+          <div className="col-span-2"><BuscarPorExtension onEncontrado={handleEncontrado} /></div>
+        </Seccion>
+      ) : (
         <>
-          <ResumenUsuarioTelefonia usuario={usuario} />
-          <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className="border p-2 w-full">
-            <option value="">-- Categoría --</option>
-            {categorias.map((c) => <option key={c.id} value={c.id}>{c.categoria}</option>)}
-          </select>
-          <textarea placeholder="Justificación" value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} className="border p-2 w-full" />
+          <div className="border rounded overflow-hidden">
+            <div className="bg-blue-600 text-white px-4 py-2 font-semibold text-sm">
+              Cambio de Categoría (privilegios)
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-3 bg-white">
+              <CampoLectura label="Nombre Usuario" value={nombreCompleto || '-'} />
+              <CampoLectura label="No. de Extensión" value={usuario.extension} />
+              <CampoLectura label="Dependencia" value={usuario.direccion || usuario.puesto} />
+              <CampoLectura label="Equipo (Tipo)" value={usuario.modelo} />
+              <CampoLectura label="Edificio" value={usuario.edificio} />
+              <CampoLectura label="Nivel" value={usuario.nivel} />
+            </div>
+          </div>
+
+          <Seccion titulo="Datos del Cambio">
+            <Campo label="Clave de Puesto:"><input value={clavePuesto} onChange={(e) => setClavePuesto(e.target.value)} className={inputClass} /></Campo>
+            <Campo label="Puesto:"><input value={puesto} onChange={(e) => setPuesto(e.target.value)} className={inputClass} /></Campo>
+
+            <Campo label="Dirección:"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} className={inputClass} /></Campo>
+            <Campo label="Correo Electrónico:"><input value={correo} onChange={(e) => setCorreo(e.target.value)} className={inputClass} /></Campo>
+
+            <Campo label="Categoría:">
+              <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className={inputClass}>
+                <option value="">Seleccione</option>
+                {categorias.map((c) => <option key={c.id} value={c.id}>{c.categoria}</option>)}
+              </select>
+            </Campo>
+
+            <Campo label="Justificación:" full>
+              <textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} className={inputClass} />
+            </Campo>
+          </Seccion>
         </>
       )}
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando || !usuario} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
-// ---------- 8. Genérico (Fax, Cambio de Fax, Otros) ----------
-function FormGenerico({ onClose, onCreado, tipo, titulo }: Props & { tipo: string; titulo: string }) {
-  const [usuario, setUsuario] = useState<any>(null);
+// ---------- 8. Otra Solicitud ----------
+function FormOtros({ onClose, onCreado, onBack }: Props) {
+  const [extensiones, setExtensiones] = useState('');
+  const [nodos, setNodos] = useState('');
+  const [descripcion, setDescripcion] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   const handleSubmit = async () => {
-    if (!observaciones) { setError('Describe el motivo de la solicitud.'); return; }
+    if (!descripcion) {
+      setError('La descripción del problema es obligatoria.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
-        usuario_id: usuario?.id,
-        tipo_tramite: tipo,
-        observaciones,
+        tipo_tramite: 'OTROS',
+        observaciones: observaciones || undefined,
+        detalle: {
+          extensiones: extensiones || undefined,
+          nodos: nodos || undefined,
+          descripcion_problema: descripcion,
+        },
       });
       onCreado();
       onClose();
@@ -552,48 +1194,59 @@ function FormGenerico({ onClose, onCreado, tipo, titulo }: Props & { tipo: strin
   };
 
   return (
-    <Shell titulo={titulo} onClose={onClose}>
-      <p className="text-xs text-gray-500">Extensión relacionada (opcional):</p>
-      <BuscarPorExtension onEncontrado={setUsuario} />
-      {usuario && <ResumenUsuarioTelefonia usuario={usuario} />}
-      <textarea placeholder="Describe la solicitud" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={4} className="border p-2 w-full" />
+    <Shell
+      titulo="Otra Solicitud"
+      onClose={onClose}
+      onBack={onBack}
+      footer={<><BotonCancelar onClick={onClose} /><BotonEnviar onClick={handleSubmit} enviando={enviando} /></>}
+    >
+      <Seccion titulo="Detalles de la Solicitud">
+        <Campo label="Extensión (es):" full>
+          <textarea value={extensiones} onChange={(e) => setExtensiones(e.target.value)} rows={2} className={inputClass} />
+        </Campo>
+        <Campo label="Nodo (s):" full>
+          <textarea value={nodos} onChange={(e) => setNodos(e.target.value)} rows={2} className={inputClass} />
+        </Campo>
+        <Campo label="Descripción del problema:" full>
+          <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3} className={inputClass} />
+        </Campo>
+        <Campo label="Observaciones:" full>
+          <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={3} className={inputClass} />
+        </Campo>
+      </Seccion>
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
-        <button onClick={handleSubmit} disabled={enviando} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {enviando ? 'Enviando...' : 'Enviar Solicitud'}
-        </button>
-      </div>
     </Shell>
   );
 }
 
 // ---------- Wizard principal (menú) ----------
-export default function SolicitudTelefoniaWizard({ onClose, onCreado }: Props) {
+export default function SolicitudTelefoniaWizard({ onClose, onCreado }: { onClose: () => void; onCreado: () => void }) {
   const [tipoSeleccionado, setTipoSeleccionado] = useState<string | null>(null);
+  const volverAlMenu = () => setTipoSeleccionado(null);
 
-  if (tipoSeleccionado === 'SOLICITAR_TELEFONO') return <FormSolicitarTelefono onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'CAMBIO_PIN_CN') return <FormCambioPinCn onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'CAMBIO_USUARIO') return <FormCambioUsuario onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'MODIFICAR_DATOS') return <FormModificarDatos onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'JEFE_SECRETARIA') return <FormJefeSecretaria onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'CAMBIO_DID') return <FormCambioDid onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'CAMBIO_CATEGORIA') return <FormCambioCategoria onClose={onClose} onCreado={onCreado} />;
-  if (tipoSeleccionado === 'OTROS') return <FormGenerico onClose={onClose} onCreado={onCreado} tipo="OTROS" titulo="Otros" />;
+  if (tipoSeleccionado === 'SOLICITAR_TELEFONO') return <FormSolicitarTelefono onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'CAMBIO_PIN_CN') return <FormCambioPinCn onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'CAMBIO_USUARIO') return <FormCambioUsuario onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'MODIFICAR_DATOS') return <FormModificarDatos onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'JEFE_SECRETARIA') return <FormJefeSecretaria onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'CAMBIO_DID') return <FormCambioDid onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'CAMBIO_CATEGORIA') return <FormCambioCategoria onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
+  if (tipoSeleccionado === 'OTROS') return <FormOtros onClose={onClose} onCreado={onCreado} onBack={volverAlMenu} />;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg w-96 overflow-hidden">
-        <div className="bg-blue-700 text-white px-5 py-3 font-semibold flex justify-between items-center">
+      <div className="bg-white rounded-lg shadow-xl w-96 overflow-hidden">
+        <div className="bg-blue-600 text-white px-6 py-4 font-semibold text-lg flex justify-between items-center">
           Seleccione el tipo de solicitud de telefonía
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-white/80 hover:text-white text-xl leading-none">✕</button>
         </div>
-        <ul className="p-4 space-y-2">
+        <ul className="p-5 space-y-1">
           {TRAMITES.map((t) => (
             <li key={t.value}>
               <button
                 onClick={() => setTipoSeleccionado(t.value)}
-                className="text-blue-700 hover:underline text-sm"
+                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded px-2 py-1.5 w-full text-left text-sm transition-colors"
               >
                 » {t.label}
               </button>

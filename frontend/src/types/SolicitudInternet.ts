@@ -11,7 +11,7 @@ export interface SolicitudInternetRow {
 }
 
 export const ESTATUS_INTERNET_LABEL: Record<string, string> = {
-  generado_cgd: 'CREADO EN CGD',
+  generado_uie: 'CREADO EN CGD',
   atendiendo_dt: 'ATENDIENDO DGTI',
   activo: 'SERVICIO ACTIVO',
   baja: 'BAJA',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SolicitudTelefoniaController extends Controller
 {
@@ -101,9 +102,9 @@ class SolicitudTelefoniaController extends Controller
         $id = DB::table('solicitudes_telefonia')->insertGetId([
             'usuario_id' => $data['usuario_id'] ?? null,
             'tipo_tramite' => $data['tipo_tramite'],
-            'estatus' => 'GENERADA',
+            'estatus' => 'creado_cgd',
+            'fecha_creado_cgd' => now(),
             'observaciones' => $data['observaciones'] ?? null,
-            'detalle' => isset($data['detalle']) ? json_encode($data['detalle'], JSON_UNESCAPED_UNICODE) : null,
             'usuario_mov' => $usuario->usuario,
             'created_at' => now(),
         ]);
@@ -124,25 +125,119 @@ class SolicitudTelefoniaController extends Controller
         return response()->json(['id' => $id, 'message' => 'Solicitud de telefonía creada'], 201);
     }
 
-    public function update(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'estatus' => 'sometimes|in:GENERADA,EN_PROCESO,AUTORIZADA,RECHAZADA,FINALIZADA',
-            'observaciones' => 'nullable|string',
-        ]);
+    public function show(int $id)
+{
+    $s = DB::table('solicitudes_telefonia as st')
+        ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
+        ->leftJoin('cat_categoria_telefonia as cat', 'cat.id', '=', 'ut.categoria_id')
+        ->select('st.*', 'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
+            'ut.extension', 'ut.puesto', 'ut.correo_institucional', 'ut.edificio',
+            'ut.nivel', 'ut.did', 'ut.modelo', 'ut.mac', 'ut.numero_serie', 'cat.categoria')
+        ->where('st.id', $id)
+        ->first();
 
-        DB::table('solicitudes_telefonia')->where('id', $id)->update([
-            ...$data,
-            'updated_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'Solicitud actualizada']);
+    if (!$s) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
     }
+
+    return response()->json(['solicitud' => $s]);
+}
+
+public function update(Request $request, int $id)
+{
+    $actual = DB::table('solicitudes_telefonia')->where('id', $id)->first();
+    if (!$actual) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    if ($actual->estatus !== 'creado_cgd') {
+        return response()->json([
+            'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse.',
+        ], 422);
+    }
+
+    $data = $request->validate([
+        'observaciones' => 'nullable|string',
+        'detalle' => 'nullable|array',
+    ]);
+
+    DB::table('solicitudes_telefonia')->where('id', $id)->update([
+        'observaciones' => $data['observaciones'] ?? $actual->observaciones,
+        'updated_at' => now(),
+    ]);
+
+    return response()->json(['message' => 'Solicitud actualizada']);
+}
+
+public function cambiarEstatus(Request $request, int $id)
+{
+    $usuario = $request->user();
+
+    $solicitud = DB::table('solicitudes_telefonia')->where('id', $id)->first();
+    if (!$solicitud) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    $data = $request->validate([
+        'estatus' => 'required|in:creado_cgd,atendiendo_dgti,activo,baja',
+        'folio_glpi' => 'nullable|string|max:50',
+        'observacion_glpi' => 'nullable|string',
+        'motivo_baja' => 'nullable|string',
+    ]);
+
+    $nuevo = $data['estatus'];
+    $update = ['estatus' => $nuevo, 'usuario_mov' => $usuario->usuario, 'updated_at' => now()];
+
+    if ($nuevo === 'atendiendo_dgti') {
+        $request->validate(['folio_glpi' => 'required|string|max:50'], [
+            'folio_glpi.required' => 'El folio GLPI es obligatorio para pasar a este estatus.',
+        ]);
+        $update['folio_glpi'] = $data['folio_glpi'];
+        $update['observacion_glpi'] = $data['observacion_glpi'] ?? null;
+        $update['fecha_atendiendo_dgti'] = now();
+    }
+
+    if ($nuevo === 'activo') {
+        if ($solicitud->estatus === 'activo') {
+            return response()->json(['message' => 'Esta solicitud ya se encuentra activa.'], 422);
+        }
+        if ($solicitud->usuario_id) {
+            $yaActivo = DB::table('solicitudes_telefonia')
+                ->where('usuario_id', $solicitud->usuario_id)
+                ->where('estatus', 'activo')
+                ->where('id', '<>', $id)
+                ->exists();
+            if ($yaActivo) {
+                return response()->json([
+                    'message' => 'Este usuario ya cuenta con un trámite de telefonía activo. Da de baja el anterior antes de activar uno nuevo.',
+                ], 422);
+            }
+        }
+        $update['fecha_activo'] = now();
+    }
+
+    if ($nuevo === 'baja') {
+        $request->validate(['motivo_baja' => 'required|string|min:5'], [
+            'motivo_baja.required' => 'El motivo de baja es obligatorio.',
+        ]);
+        $update['motivo_baja'] = $data['motivo_baja'];
+        $update['fecha_baja'] = now();
+    }
+
+    if ($nuevo === 'creado_cgd' && !$solicitud->fecha_creado_cgd) {
+        $update['fecha_creado_cgd'] = now();
+    }
+
+    DB::table('solicitudes_telefonia')->where('id', $id)->update($update);
+
+    return response()->json(['message' => 'Estatus actualizado correctamente']);
+}
 
     public function destroy(int $id)
     {
         DB::table('solicitudes_telefonia')->where('id', $id)->update([
-            'estatus' => 'RECHAZADA',
+            'estatus' => 'baja',
+            'fecha_baja' => now(),
             'updated_at' => now(),
         ]);
 
@@ -162,4 +257,25 @@ class SolicitudTelefoniaController extends Controller
             DB::table('cat_tipo_clave')->orderBy('nombre')->get()
         );
     }
+    
+public function imprimir(int $id)
+{
+    $s = DB::table('solicitudes_telefonia as st')
+        ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
+        ->select(
+            'st.*',
+            'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
+            'ut.puesto', 'ut.direccion', 'ut.correo_institucional',
+            'ut.extension', 'ut.mac', 'ut.numero_serie'
+        )
+        ->where('st.id', $id)
+        ->first();
+
+    if (!$s) {
+        abort(404, 'Solicitud no encontrada');
+    }
+
+    $pdf = Pdf::loadView('pdf.solicitud_telefonia', ['s' => $s])->setPaper('letter');
+    return $pdf->stream("solicitud_telefonia_{$s->id}.pdf");
+}
 }

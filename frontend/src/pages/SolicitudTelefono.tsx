@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getSolicitudesTelefonia, eliminarSolicitudTelefonia } from '../services/solicitudTelefoniaService';
+import {
+  getSolicitudesTelefonia,
+  eliminarSolicitudTelefonia,
+  cambiarEstatusSolicitudTelefonia,
+  getSolicitudTelefoniaDetalle,
+} from '../services/solicitudTelefoniaService';
 import SolicitudTelefoniaWizard from '../components/telefonia/SolicitudTelefoniaWizard';
 import SortIcon from '../components/common/SortIcon';
 import EditarSolicitudTelefoniaModal from '../components/telefonia/EditarSolicitudTelefoniaModal';
+import SenalEstatus from '../components/common/SenalEstatus';
+import CambiarEstatusModal from '../components/common/CambiarEstatusModal';
+import { useAuth } from '../context/AuthContext';
 import {
   ESTATUS_TELEFONIA_LABEL,
   TRAMITES_TELEFONIA,
   type SolicitudTelefoniaRow,
 } from '../types/SolicitudTelefonia';
+import { imprimirSolicitudTelefoniaPdf } from '../services/solicitudTelefoniaService';
 
 const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -19,6 +28,7 @@ const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
 ];
 
 export default function SolicitudTelefono() {
+  const { user } = useAuth();
   const [solicitudes, setSolicitudes] = useState<SolicitudTelefoniaRow[]>([]);
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
@@ -27,6 +37,7 @@ export default function SolicitudTelefono() {
   const [pagina, setPagina] = useState(1);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState<SolicitudTelefoniaRow | null>(null);
+  const [verEstatus, setVerEstatus] = useState<SolicitudTelefoniaRow | null>(null);
   const [sortKey, setSortKey] = useState<keyof SolicitudTelefoniaRow | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -44,31 +55,13 @@ export default function SolicitudTelefono() {
     cargar();
   };
 
-  const handleImprimir = (s: SolicitudTelefoniaRow) => {
-    const ventana = window.open('', '_blank', 'width=600,height=700');
-    if (!ventana) return;
-
-    ventana.document.write(`
-      <html>
-        <head>
-          <title>Solicitud de Telefonía #${s.id}</title>
-        </head>
-        <body style="font-family:sans-serif;padding:20px;">
-          <h2>Solicitud de Telefonía #${s.id}</h2>
-          <p><strong>Trámite:</strong> ${s.tramite.replace(/_/g, ' ')}</p>
-          <p><strong>Usuario:</strong> ${s.nombre}</p>
-          <p><strong>Extensión:</strong> ${s.extension ?? '-'}</p>
-          <p><strong>Puesto:</strong> ${s.puesto ?? '-'}</p>
-          <p><strong>Correo:</strong> ${s.correo_institucional ?? '-'}</p>
-          <p><strong>Estatus:</strong> ${ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}</p>
-        </body>
-      </html>
-    `);
-
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
-  };
+  const handleGenerarPdf = async (id: number) => {
+  try {
+    await imprimirSolicitudTelefoniaPdf(id);
+  } catch {
+    alert('No se pudo generar el PDF de la solicitud.');
+  }
+};
 
   const handleFiltroColumna = (key: string, value: string) => {
     setFiltros({ ...filtros, [key]: value });
@@ -194,17 +187,35 @@ export default function SolicitudTelefono() {
             <tbody>
               {paginadas.map((s) => (
                 <tr key={s.id} className="border-t">
-                  <td className="p-2">{s.id}</td>
+                  <td className="p-2">
+                    {user?.rol?.nombre === 'Administrador' ? (
+                      <button
+                        onClick={() => setVerEstatus(s)}
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        {s.id}
+                      </button>
+                    ) : (
+                      s.id
+                    )}
+                  </td>
                   <td className="p-2">{s.tramite.replace(/_/g, ' ')}</td>
                   <td className="p-2">{s.nombre}</td>
                   <td className="p-2">{s.extension ?? '-'}</td>
                   <td className="p-2">{s.puesto ?? '-'}</td>
                   <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                  <td className="p-2">{ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}</td>
-                  <td className="p-2 flex gap-2">
-                    <button onClick={() => handleImprimir(s)} title="Imprimir">🖨</button>
-                    <button onClick={() => setEditando(s)} title="Editar">✏️</button>
-                    <button onClick={() => handleEliminar(s.id)} title="Dar de baja">🗑</button>
+                  <td className="p-2 flex items-center gap-2">
+                    <SenalEstatus tipo="telefono" estatus={s.estatus} />
+                    {ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}
+                  </td>
+                  <td className="p-2 flex gap-2 whitespace-nowrap">
+                    <button onClick={() => handleGenerarPdf(s.id)} title="Generar PDF">📄</button>
+                      {s.estatus === 'creado_cgd' ? (
+                      <button onClick={() => setEditando(s)} title="Editar">✏️</button>
+                    ) : (
+                      <span className="opacity-30 cursor-not-allowed" title="No editable">✏️</span>
+                    )}
+                    <button onClick={() => handleEliminar(s.id)} title="Dar de baja">🗑️</button>
                   </td>
                 </tr>
               ))}
@@ -247,6 +258,52 @@ export default function SolicitudTelefono() {
           solicitud={editando}
           onClose={() => setEditando(null)}
           onActualizado={cargar}
+        />
+      )}
+
+      {verEstatus && (
+        <CambiarEstatusModal
+          folio={verEstatus.id}
+          estatusActual={verEstatus.estatus}
+          opciones={[
+            { value: 'creado_cgd', label: 'CREADO EN CGD' },
+            { value: 'atendiendo_dgti', label: 'ATENDIENDO DGTI' },
+            { value: 'activo', label: 'SERVICIO ACTIVO' },
+            { value: 'baja', label: 'BAJA' },
+          ]}
+          estatusQueRequiereFolio="atendiendo_dgti"
+          estatusActivo="activo"
+          estatusBaja="baja"
+          onGuardar={(payload) => cambiarEstatusSolicitudTelefonia(verEstatus.id, payload as any)}
+          onClose={() => setVerEstatus(null)}
+          onActualizado={cargar}
+          cargarInfoGeneral={async () => {
+            const { solicitud } = await getSolicitudTelefoniaDetalle(verEstatus.id);
+            return [
+              { label: 'Folio (ID)', value: solicitud.id },
+              { label: 'Trámite', value: solicitud.tipo_tramite?.replace(/_/g, ' ') },
+              { label: 'Nombre', value: `${solicitud.nombre ?? ''} ${solicitud.apellido_paterno ?? ''} ${solicitud.apellido_materno ?? ''}`.trim() },
+              { label: 'Puesto', value: solicitud.puesto },
+              { label: 'Correo institucional', value: solicitud.correo_institucional },
+              { label: 'Extensión', value: solicitud.extension },
+              { label: 'DID', value: solicitud.did },
+              { label: 'Edificio / Nivel', value: `Edificio ${solicitud.edificio ?? '-'} Nivel ${solicitud.nivel ?? '-'}` },
+              { label: 'Categoría', value: solicitud.categoria },
+              { label: 'Modelo', value: solicitud.modelo },
+              { label: 'MAC', value: solicitud.mac },
+              { label: 'No. Serie', value: solicitud.numero_serie },
+              { label: 'Observaciones', value: solicitud.observaciones },
+              {
+                label: 'Estatus',
+                value: [
+                  solicitud.fecha_creado_cgd && `CREADO EN CGD: ${solicitud.fecha_creado_cgd}`,
+                  solicitud.fecha_atendiendo_dgti && `ATENDIENDO DGTI: ${solicitud.fecha_atendiendo_dgti}${solicitud.folio_glpi ? `\nFOLIO GLPI: ${solicitud.folio_glpi}` : ''}`,
+                  solicitud.fecha_activo && `SERVICIO ACTIVO: ${solicitud.fecha_activo}`,
+                  solicitud.fecha_baja && `BAJA: ${solicitud.fecha_baja}${solicitud.motivo_baja ? `\nMOTIVO: ${solicitud.motivo_baja}` : ''}`,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ];
+          }}
         />
       )}
     </div>

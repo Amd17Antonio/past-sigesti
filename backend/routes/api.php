@@ -128,6 +128,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/solicitud-telefono', [SolicitudTelefoniaController::class, 'store']);
     Route::put('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'update']);
     Route::delete('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'destroy']);
+    Route::get('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'show']);
+Route::patch('/solicitud-telefono/{id}/estatus', [SolicitudTelefoniaController::class, 'cambiarEstatus']);
+Route::get('/solicitud-telefono/{id}/pdf', [SolicitudTelefoniaController::class, 'imprimir']);
 
     Route::get('/catalogo-telefonos', [CatalogoTelefoniaController::class, 'index']);
     Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
@@ -143,6 +146,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/solicitud-internet/{id}', [SolicitudInternetController::class, 'destroy']);
     Route::get('/solicitud-internet/{id}/pdf', [SolicitudInternetController::class, 'pdf']);
     Route::get('/solicitud-internet/{id}/pdf-url', [SolicitudInternetController::class, 'pdfUrl']);
+    Route::get('/solicitud-internet/{id}', [SolicitudInternetController::class, 'show']);
+Route::patch('/solicitud-internet/{id}/estatus', [SolicitudInternetController::class, 'cambiarEstatus']);
 
     Route::get('/solicitud-correo', [SolicitudCorreoController::class, 'index']);
     Route::get('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'show']);
@@ -151,6 +156,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'destroy']);
     Route::get('/solicitud-correo/{id}/pdf', [SolicitudCorreoController::class, 'imprimir']);
     Route::get('/solicitud-correo/{id}/pdf-url', [SolicitudCorreoController::class, 'pdfUrl']);
+   // Route::get('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'showDetalle']);
+Route::patch('/solicitud-correo/{id}/estatus', [SolicitudCorreoController::class, 'cambiarEstatus']);
 
     Route::get('/solicitud-vpn', [SolicitudVpnController::class, 'index']);
     Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
@@ -159,6 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'destroy']);
     Route::get('/solicitud-vpn/{id}/pdf', [SolicitudVpnController::class, 'imprimir']);
     Route::get('/solicitud-vpn/{id}/pdf-url', [SolicitudVpnController::class, 'pdfUrl']);
+    //Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
+Route::patch('/solicitud-vpn/{id}/estatus', [SolicitudVpnController::class, 'cambiarEstatus']);
 
     Route::get('/equipos-baja', [EquipoBajaController::class, 'index']);
     Route::get('/equipos-baja/exportar', [EquipoBajaController::class, 'exportar']);

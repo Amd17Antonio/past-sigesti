@@ -7,10 +7,7 @@ interface Props {
   onActualizado: () => void;
 }
 
-const ESTATUS_OPCIONES = ['GENERADA', 'EN_PROCESO', 'AUTORIZADA', 'RECHAZADA', 'FINALIZADA'];
-
 export default function EditarSolicitudTelefoniaModal({ solicitud, onClose, onActualizado }: Props) {
-  const [estatus, setEstatus] = useState(solicitud.estatus);
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -19,11 +16,11 @@ export default function EditarSolicitudTelefoniaModal({ solicitud, onClose, onAc
     setEnviando(true);
     setError('');
     try {
-      await actualizarSolicitudTelefonia(solicitud.id, { estatus, observaciones: observaciones || undefined });
+      await actualizarSolicitudTelefonia(solicitud.id, { observaciones: observaciones || undefined });
       onActualizado();
       onClose();
-    } catch {
-      setError('No se pudo actualizar la solicitud.');
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'No se pudo actualizar la solicitud.');
     } finally {
       setEnviando(false);
     }
@@ -36,12 +33,6 @@ export default function EditarSolicitudTelefoniaModal({ solicitud, onClose, onAc
           Editar solicitud #{solicitud.id} — {solicitud.tramite.replace(/_/g, ' ')}
         </div>
         <div className="p-4 space-y-3">
-          <div>
-            <label className="text-sm font-medium">Estatus:</label>
-            <select value={estatus} onChange={(e) => setEstatus(e.target.value)} className="border p-2 w-full mt-1">
-              {ESTATUS_OPCIONES.map((e) => <option key={e} value={e}>{e}</option>)}
-            </select>
-          </div>
           <div>
             <label className="text-sm font-medium">Agregar observación:</label>
             <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={3} className="border p-2 w-full mt-1" />

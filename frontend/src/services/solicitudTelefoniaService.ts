@@ -46,3 +46,25 @@ export const actualizarSolicitudTelefonia = async (id: number, payload: { estatu
   const { data } = await axiosClient.put(`/solicitud-telefono/${id}`, payload);
   return data;
 };
+
+export const getSolicitudTelefoniaDetalle = async (id: number) => {
+  const { data } = await axiosClient.get(`/solicitud-telefono/${id}`);
+  return data as { solicitud: any };
+};
+
+export type EstatusTelefonia = 'creado_cgd' | 'atendiendo_dgti' | 'activo' | 'baja';
+
+export const cambiarEstatusSolicitudTelefonia = async (
+  id: number,
+  payload: { estatus: EstatusTelefonia; folio_glpi?: string; observacion_glpi?: string; motivo_baja?: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-telefono/${id}/estatus`, payload);
+  return data;
+};
+
+export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
+  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+};

@@ -34,3 +34,20 @@ export const imprimirSolicitudVpn = async (id: number) => {
   const { data } = await axiosClient.get(`/solicitud-vpn/${id}/pdf-url`);
   window.open(data.url, '_blank');
 };
+
+export type EstatusVpn = 'creado_cgd' | 'atendiendo_dgti' | 'activo' | 'baja';
+
+export const cambiarEstatusSolicitudVpn = async (
+  id: number,
+  payload: { estatus: EstatusVpn; folio_glpi?: string; observacion_glpi?: string; motivo_baja?: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-vpn/${id}/estatus`, payload);
+  return data;
+};
+
+export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
+  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+};

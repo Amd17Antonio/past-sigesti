@@ -51,3 +51,36 @@ export const descargarPdfSolicitudInternet = async (id: number) => {
   const { data } = await axiosClient.get(`/solicitud-internet/${id}/pdf-url`);
   window.open(data.url, '_blank');
 };
+
+export const getSolicitudInternetDetalle = async (id: number) => {
+  const { data } = await axiosClient.get(`/solicitud-internet/${id}`);
+  return data as { solicitud: any };
+};
+
+export type EstatusInternet = 'generado_uie' | 'atendiendo_dt' | 'activo' | 'baja';
+
+export const cambiarEstatusSolicitudInternet = async (
+  id: number,
+  payload: { estatus: EstatusInternet; folio_glpi?: string; observacion_glpi?: string; motivo_baja?: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-internet/${id}/estatus`, payload);
+  return data;
+};
+
+export function colorPorEstatus(estatus: string): string {
+  const mapa: Record<string, string> = {
+    // Internet
+    generado_uie: '#9CA3AF', // gris
+    atendiendo_dt: '#CDDC39', // verde limón
+    activo: '#16A34A', // verde
+    baja: '#DC2626', // rojo
+    eliminado: '#DC2626',
+    // Teléfono / VPN / Correo (mismo patrón semántico)
+    GENERADA: '#9CA3AF', generada: '#9CA3AF',
+    EN_PROCESO: '#CDDC39', en_proceso: '#CDDC39',
+    AUTORIZADA: '#16A34A', autorizada: '#16A34A',
+    FINALIZADA: '#16A34A', finalizada: '#16A34A',
+    RECHAZADA: '#DC2626', rechazada: '#DC2626',
+  };
+  return mapa[estatus] ?? '#9CA3AF';
+}

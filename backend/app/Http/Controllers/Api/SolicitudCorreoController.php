@@ -19,7 +19,8 @@ class SolicitudCorreoController extends Controller
                 'sc.id_area', 'a.area', 'sc.area_interna', 'sc.correo_secundario', 'sc.telefono_contacto',
                 'sc.correo_institucional', 'sc.usuario_generado', 'sc.motivo_baja',
                 'sc.estatus', 'sc.oficio_cgd', 'sc.observaciones',
-                'sc.fecha_generada', 'sc.fecha_autorizada', 'sc.fecha_finalizada',
+                'sc.folio_glpi', 'sc.observacion_glpi',
+                'sc.fecha_creado_cgd', 'sc.fecha_atendiendo_dgti', 'sc.fecha_activo', 'sc.fecha_baja',
                 'sc.created_at'
             );
     }
@@ -89,22 +90,10 @@ class SolicitudCorreoController extends Controller
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
             'correo_institucional' => ['required_if:tipo_solicitud,baja', 'nullable', 'email', 'max:150'],
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
-        ], [
-            'id_area.required' => 'La dependencia/área es obligatoria.',
-            'puesto.required_if' => 'El puesto es obligatorio.',
-            'area_interna.required_if' => 'El área interna es obligatoria.',
-            'correo_secundario.required_if' => 'El correo secundario es obligatorio.',
-            'correo_secundario.email' => 'El correo secundario no tiene un formato válido.',
-            'telefono_contacto.required_if' => 'El teléfono de contacto es obligatorio.',
-            'telefono_contacto.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
-            'correo_institucional.required_if' => 'El correo institucional a dar de baja es obligatorio.',
-            'correo_institucional.email' => 'El correo institucional no tiene un formato válido.',
-            'motivo_baja.required_if' => 'El motivo de baja es obligatorio.',
-            'motivo_baja.min' => 'El motivo de baja debe ser más detallado (mínimo 10 caracteres).',
         ]);
 
-        $data['estatus'] = 'generada';
-        $data['fecha_generada'] = now();
+        $data['estatus'] = 'creado_cgd';
+        $data['fecha_creado_cgd'] = now();
         $data['id_usuario_crea'] = $request->user()->id ?? null;
         $data['usuario_mov'] = $request->user()->usuario ?? null;
         $data['created_at'] = now();
@@ -117,9 +106,15 @@ class SolicitudCorreoController extends Controller
 
     public function update(Request $request, $id)
     {
-        $existe = DB::table('solicitud_correo')->where('id', $id)->exists();
-        if (!$existe) {
+        $actual = DB::table('solicitud_correo')->where('id', $id)->first();
+        if (!$actual) {
             return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        if ($actual->estatus !== 'creado_cgd') {
+            return response()->json([
+                'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse.',
+            ], 422);
         }
 
         $data = $request->validate([
@@ -131,31 +126,8 @@ class SolicitudCorreoController extends Controller
             'correo_secundario' => ['required_if:tipo_solicitud,alta', 'nullable', 'email', 'max:150'],
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
             'correo_institucional' => ['required_if:tipo_solicitud,baja', 'nullable', 'email', 'max:150'],
-            'usuario_generado' => 'nullable|string|max:150',
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
-            'estatus' => 'sometimes|in:generada,en_proceso,autorizada,rechazada,finalizada',
-            'oficio_cgd' => 'nullable|string|max:75',
-            'observaciones' => 'nullable|string',
-        ], [
-            'id_area.required' => 'La dependencia/área es obligatoria.',
-            'puesto.required_if' => 'El puesto es obligatorio.',
-            'area_interna.required_if' => 'El área interna es obligatoria.',
-            'correo_secundario.required_if' => 'El correo secundario es obligatorio.',
-            'correo_secundario.email' => 'El correo secundario no tiene un formato válido.',
-            'telefono_contacto.required_if' => 'El teléfono de contacto es obligatorio.',
-            'telefono_contacto.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
-            'correo_institucional.required_if' => 'El correo institucional a dar de baja es obligatorio.',
-            'correo_institucional.email' => 'El correo institucional no tiene un formato válido.',
-            'motivo_baja.required_if' => 'El motivo de baja es obligatorio.',
-            'motivo_baja.min' => 'El motivo de baja debe ser más detallado (mínimo 10 caracteres).',
         ]);
-
-        if (($data['estatus'] ?? null) === 'autorizada') {
-            $data['fecha_autorizada'] = now();
-        }
-        if (($data['estatus'] ?? null) === 'finalizada') {
-            $data['fecha_finalizada'] = now();
-        }
 
         $data['usuario_mov'] = $request->user()->usuario ?? null;
         $data['updated_at'] = now();
@@ -163,6 +135,62 @@ class SolicitudCorreoController extends Controller
         DB::table('solicitud_correo')->where('id', $id)->update($data);
 
         return response()->json(['message' => 'Actualizado correctamente']);
+    }
+
+    public function cambiarEstatus(Request $request, $id)
+    {
+        $usuario = $request->user();
+
+        $solicitud = DB::table('solicitud_correo')->where('id', $id)->first();
+        if (!$solicitud) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $data = $request->validate([
+            'estatus' => 'required|in:creado_cgd,atendiendo_dgti,activo,baja',
+            'folio_glpi' => 'nullable|string|max:50',
+            'observacion_glpi' => 'nullable|string',
+            'usuario_generado' => 'nullable|string|max:150',
+            'motivo_baja' => 'nullable|string',
+        ]);
+
+        $nuevo = $data['estatus'];
+        $update = ['estatus' => $nuevo, 'usuario_mov' => $usuario->usuario, 'updated_at' => now()];
+
+        if ($nuevo === 'atendiendo_dgti') {
+            $request->validate(['folio_glpi' => 'required|string|max:50'], [
+                'folio_glpi.required' => 'El folio GLPI es obligatorio para pasar a este estatus.',
+            ]);
+            $update['folio_glpi'] = $data['folio_glpi'];
+            $update['observacion_glpi'] = $data['observacion_glpi'] ?? null;
+            $update['fecha_atendiendo_dgti'] = now();
+        }
+
+        if ($nuevo === 'activo') {
+            if ($solicitud->estatus === 'activo') {
+                return response()->json(['message' => 'Esta cuenta ya se encuentra activa.'], 422);
+            }
+            if (!empty($data['usuario_generado'])) {
+                $update['usuario_generado'] = $data['usuario_generado'];
+            }
+            $update['fecha_activo'] = now();
+        }
+
+        if ($nuevo === 'baja') {
+            $request->validate(['motivo_baja' => 'required|string|min:5'], [
+                'motivo_baja.required' => 'El motivo de baja es obligatorio.',
+            ]);
+            $update['motivo_baja'] = $data['motivo_baja'];
+            $update['fecha_baja'] = now();
+        }
+
+        if ($nuevo === 'creado_cgd' && !$solicitud->fecha_creado_cgd) {
+            $update['fecha_creado_cgd'] = now();
+        }
+
+        DB::table('solicitud_correo')->where('id', $id)->update($update);
+
+        return response()->json(['message' => 'Estatus actualizado correctamente']);
     }
 
     // Elimina la solicitud definitivamente de la base de datos (hard delete)

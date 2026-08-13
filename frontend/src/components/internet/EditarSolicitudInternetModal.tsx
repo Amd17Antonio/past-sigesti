@@ -56,8 +56,8 @@ export default function EditarSolicitudInternetModal({ solicitud, onClose, onAct
       });
       onActualizado();
       onClose();
-    } catch {
-      setError('No se pudo actualizar la solicitud.');
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'No se pudo actualizar la solicitud.');
     } finally {
       setEnviando(false);
     }

@@ -3,12 +3,17 @@ import {
   getSolicitudesInternet,
   eliminarSolicitudInternet,
   descargarPdfSolicitudInternet,
+  cambiarEstatusSolicitudInternet,
+  getSolicitudInternetDetalle,
 } from '../services/solicitudInternetService';
 import { ESTATUS_INTERNET_LABEL, type SolicitudInternetRow } from '../types/SolicitudInternet';
 
 import NuevaSolicitudInternetModal from '../components/internet/NuevaSolicitudInternetModal';
 import EditarSolicitudInternetModal from '../components/internet/EditarSolicitudInternetModal';
 import SortIcon from '../components/common/SortIcon';
+import SenalEstatus from '../components/common/SenalEstatus';
+import CambiarEstatusModal from '../components/common/CambiarEstatusModal';
+import { useAuth } from '../context/AuthContext';
 
 const COLUMNAS: { key: keyof SolicitudInternetRow; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -22,6 +27,7 @@ const COLUMNAS: { key: keyof SolicitudInternetRow; label: string }[] = [
 ];
 
 export default function SolicitudInternet() {
+  const { user } = useAuth();
   const [solicitudes, setSolicitudes] = useState<SolicitudInternetRow[]>([]);
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
@@ -29,6 +35,7 @@ export default function SolicitudInternet() {
   const [pagina, setPagina] = useState(1);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editando, setEditando] = useState<SolicitudInternetRow | null>(null);
+  const [verEstatus, setVerEstatus] = useState<SolicitudInternetRow | null>(null);
 
   const [sortKey, setSortKey] = useState<keyof SolicitudInternetRow | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -166,7 +173,18 @@ export default function SolicitudInternet() {
             <tbody>
               {paginadas.map((s) => (
                 <tr key={s.id} className="border-t">
-                  <td className="p-2">{s.id}</td>
+                  <td className="p-2">
+                    {user?.rol?.nombre === 'Administrador' ? (
+                      <button
+                        onClick={() => setVerEstatus(s)}
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        {s.id}
+                      </button>
+                    ) : (
+                      s.id
+                    )}
+                  </td>
                   <td className="p-2">{s.tipo_solicitud.toUpperCase()}</td>
                   <td className="p-2">{s.usuario_internet}</td>
                   <td className="p-2">{s.area}</td>
@@ -174,11 +192,18 @@ export default function SolicitudInternet() {
                   <td className="p-2">{s.tipo_conexion}</td>
                   <td className="p-2">{s.tel_ext}</td>
                   <td className="p-2">{s.correo}</td>
-                  <td className="p-2">{ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}</td>
-                  <td className="p-2 flex gap-3">
-                    <button onClick={() => descargarPdfSolicitudInternet(s.id)} title="Imprimir / Descargar PDF">🖨</button>
-                    <button onClick={() => setEditando(s)} title="Editar">✏️</button>
-                    <button onClick={() => handleEliminar(s.id)} title="Eliminar">🗑</button>
+                  <td className="p-2 flex items-center gap-2">
+                    <SenalEstatus tipo="internet" estatus={s.estatus} />
+                    {ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}
+                  </td>
+                  <td className="p-2 flex gap-3 whitespace-nowrap">
+                    <button onClick={() => descargarPdfSolicitudInternet(s.id)} title="Imprimir / Descargar PDF">📄</button>
+                    {s.estatus === 'generado_uie' ? (
+                      <button onClick={() => setEditando(s)} title="Editar">✏️</button>
+                    ) : (
+                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">✏️</span>
+                    )}
+                    <button onClick={() => handleEliminar(s.id)} title="Eliminar">🗑️</button>
                   </td>
                 </tr>
               ))}
@@ -222,6 +247,52 @@ export default function SolicitudInternet() {
           solicitud={editando}
           onClose={() => setEditando(null)}
           onActualizado={cargar}
+        />
+      )}
+
+      {verEstatus && (
+        <CambiarEstatusModal
+          folio={verEstatus.id}
+          estatusActual={verEstatus.estatus}
+          opciones={[
+            { value: 'generado_uie', label: 'GENERADO POR UIE' },
+            { value: 'atendiendo_dt', label: 'ATENDIENDO POR DIRECCIÓN GENERAL DE TECNOLOGÍAS E INNOVACIÓN DIGITAL' },
+            { value: 'activo', label: 'SERVICIO ACTIVO' },
+            { value: 'baja', label: 'BAJA DEL SERVICIO' },
+          ]}
+          estatusQueRequiereFolio="atendiendo_dt"
+          estatusActivo="activo"
+          estatusBaja="baja"
+          onGuardar={(payload) => cambiarEstatusSolicitudInternet(verEstatus.id, payload as any)}
+          onClose={() => setVerEstatus(null)}
+          onActualizado={cargar}
+          cargarInfoGeneral={async () => {
+            const { solicitud } = await getSolicitudInternetDetalle(verEstatus.id);
+            return [
+              { label: 'Folio (ID)', value: solicitud.id },
+              { label: 'Tipo Solicitud', value: solicitud.tipo_solicitud?.toUpperCase() },
+              { label: 'Usuario', value: solicitud.usuario_internet },
+              { label: 'Correo', value: solicitud.correo },
+              { label: 'Cargo', value: solicitud.cargo },
+              { label: 'Área de Adscripción', value: solicitud.area },
+              { label: 'Extensión', value: solicitud.tel_ext },
+              { label: 'Tipo Conexión', value: solicitud.tipo_conexion?.toUpperCase() },
+              { label: 'Puerto', value: `ED:${solicitud.edificio} N:${solicitud.nivel} PTO:${solicitud.puerto ?? '-'}` },
+              {
+                label: 'Equipo',
+                value: `TIPO: ${solicitud.tipo_equipo ?? '-'}\nMARCA: ${solicitud.marca ?? '-'}\nNo. INVENTARIO: ${solicitud.no_inventario ?? '-'}\nMAC ETHERNET: ${solicitud.mac_ethernet ?? '-'}\nMAC WIFI: ${solicitud.mac_wifi ?? '-'}`,
+              },
+              {
+                label: 'Estatus',
+                value: [
+                  solicitud.fecha_generado_uie && `GENERADO POR UIE: ${solicitud.fecha_generado_uie}`,
+                  solicitud.fecha_atendiendo_dt && `ATENDIENDO POR DGTID: ${solicitud.fecha_atendiendo_dt}${solicitud.folio_glpi ? `\nFOLIO GLPI: ${solicitud.folio_glpi}` : ''}`,
+                  solicitud.fecha_activo && `SERVICIO ACTIVO: ${solicitud.fecha_activo}`,
+                  solicitud.fecha_baja && `BAJA: ${solicitud.fecha_baja}${solicitud.motivo_baja ? `\nMOTIVO: ${solicitud.motivo_baja}` : ''}`,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ];
+          }}
         />
       )}
     </div>

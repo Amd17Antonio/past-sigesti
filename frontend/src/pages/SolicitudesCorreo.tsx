@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
   getSolicitudesCorreo, eliminarSolicitudCorreo, imprimirSolicitudCorreo,
+  getSolicitudCorreoDetalle, cambiarEstatusSolicitudCorreo,
 } from '../services/solicitudCorreoService';
 import type { SolicitudCorreo } from '../types/SolicitudCorreo';
 import NuevaSolicitudCorreoModal from '../components/correo/NuevaSolicitudCorreoModal';
 import EditarSolicitudCorreoModal from '../components/correo/EditarSolicitudCorreoModal';
 import SortIcon from '../components/common/SortIcon';
+import SenalEstatus from '../components/common/SenalEstatus';
+import CambiarEstatusModal from '../components/common/CambiarEstatusModal';
+import { useAuth } from '../context/AuthContext';
 
 const COLUMNAS: { key: string; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -17,13 +21,14 @@ const COLUMNAS: { key: string; label: string }[] = [
 ];
 
 const ESTATUS_LABEL: Record<string, string> = {
-  generado_cgd: 'CREADO EN CGD',
-  atendiendo_dt: 'ATENDIENDO DGTI',
+  creado_cgd: 'CREADO EN CGD',
+  atendiendo_dgti: 'ATENDIENDO DGTI',
   activo: 'SERVICIO ACTIVO',
   baja: 'BAJA',
 };
 
 export default function SolicitudesCorreo() {
+  const { user } = useAuth();
   const [data, setData] = useState<SolicitudCorreo[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -34,6 +39,7 @@ export default function SolicitudesCorreo() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editarId, setEditarId] = useState<number | null>(null);
+  const [verEstatus, setVerEstatus] = useState<SolicitudCorreo | null>(null);
   const [generandoId, setGenerandoId] = useState<number | null>(null);
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
 
@@ -70,19 +76,9 @@ export default function SolicitudesCorreo() {
       })
     : data;
 
-  //const handleImprimir = async (id: number) => {
-  //  setGenerandoId(id);
-  //  try {
-  //    await imprimirSolicitudCorreo(id);
-  //  } finally {
-  //    setGenerandoId(null);
-  //  }
-  //};
-
   const handleImprimir = async (s: SolicitudCorreo) => {
     setGenerandoId(s.id);
     try {
-      //await imprimirSolicitudCorreo(s.id, s.tipo_solicitud);
       await imprimirSolicitudCorreo(s.id);
     } finally {
       setGenerandoId(null);
@@ -160,14 +156,28 @@ export default function SolicitudesCorreo() {
           <tbody>
             {ordenados.map((s) => (
               <tr key={s.id} className="border-t align-top">
-                <td className="p-2">{s.id}</td>
+                <td className="p-2">
+                  {user?.rol?.nombre === 'Administrador' ? (
+                    <button
+                      onClick={() => setVerEstatus(s)}
+                      className="text-blue-600 font-medium hover:underline"
+                    >
+                      {s.id}
+                    </button>
+                  ) : (
+                    s.id
+                  )}
+                </td>
                 <td className="p-2 uppercase">{s.tipo_solicitud}</td>
                 <td className="p-2">{s.nombre}</td>
                 <td className="p-2">{s.area ?? '-'}</td>
                 <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                <td className="p-2">{ESTATUS_LABEL[s.estatus] ?? s.estatus}</td>
+                <td className="p-2 flex items-center gap-2">
+                  <SenalEstatus tipo="correo" estatus={s.estatus} />
+                  {ESTATUS_LABEL[s.estatus] ?? s.estatus}
+                </td>
                 <td className="p-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 whitespace-nowrap">
                     <button
                       onClick={() => handleImprimir(s)}
                       disabled={generandoId === s.id}
@@ -176,13 +186,19 @@ export default function SolicitudesCorreo() {
                     >
                       {generandoId === s.id ? '⏳' : '📄'}
                     </button>
-                    <button
-                      onClick={() => setEditarId(s.id)}
-                      className="text-amber-600 hover:text-amber-800"
-                      title="Editar"
-                    >
-                      ✏️
-                    </button>
+                    {s.estatus === 'creado_cgd' ? (
+                      <button
+                        onClick={() => setEditarId(s.id)}
+                        className="text-amber-600 hover:text-amber-800"
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                    ) : (
+                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">
+                        ✏️
+                      </span>
+                    )}
                     <button
                       onClick={() => handleEliminar(s.id)}
                       disabled={eliminandoId === s.id}
@@ -219,6 +235,51 @@ export default function SolicitudesCorreo() {
           idSolicitud={editarId}
           onClose={() => setEditarId(null)}
           onSaved={cargar}
+        />
+      )}
+
+      {verEstatus && (
+        <CambiarEstatusModal
+          folio={verEstatus.id}
+          estatusActual={verEstatus.estatus}
+          opciones={[
+            { value: 'creado_cgd', label: 'CREADO EN CGD' },
+            { value: 'atendiendo_dgti', label: 'ATENDIENDO DGTI' },
+            { value: 'activo', label: 'SERVICIO ACTIVO' },
+            { value: 'baja', label: 'BAJA' },
+          ]}
+          estatusQueRequiereFolio="atendiendo_dgti"
+          estatusActivo="activo"
+          estatusBaja="baja"
+          onGuardar={(payload) => cambiarEstatusSolicitudCorreo(verEstatus.id, payload as any)}
+          onClose={() => setVerEstatus(null)}
+          onActualizado={cargar}
+          cargarInfoGeneral={async () => {
+            const { solicitud } = await getSolicitudCorreoDetalle(verEstatus.id);
+            return [
+              { label: 'Folio (ID)', value: solicitud.id },
+              { label: 'Tipo de solicitud', value: solicitud.tipo_solicitud?.toUpperCase() },
+              { label: 'Nombre', value: solicitud.nombre },
+              { label: 'Puesto', value: solicitud.puesto },
+              { label: 'Área', value: solicitud.area },
+              { label: 'Área interna', value: solicitud.area_interna },
+              { label: 'Correo secundario', value: solicitud.correo_secundario },
+              { label: 'Teléfono de contacto', value: solicitud.telefono_contacto },
+              { label: 'Correo institucional', value: solicitud.correo_institucional },
+              { label: 'Usuario generado', value: solicitud.usuario_generado },
+              { label: 'Oficio CGD', value: solicitud.oficio_cgd },
+              { label: 'Observaciones', value: solicitud.observaciones },
+              {
+                label: 'Estatus',
+                value: [
+                  solicitud.fecha_creado_cgd && `CREADO EN CGD: ${solicitud.fecha_creado_cgd}`,
+                  solicitud.fecha_atendiendo_dgti && `ATENDIENDO DGTI: ${solicitud.fecha_atendiendo_dgti}${solicitud.folio_glpi ? `\nFOLIO GLPI: ${solicitud.folio_glpi}` : ''}`,
+                  solicitud.fecha_activo && `SERVICIO ACTIVO: ${solicitud.fecha_activo}`,
+                  solicitud.fecha_baja && `BAJA: ${solicitud.fecha_baja}${solicitud.motivo_baja ? `\nMOTIVO: ${solicitud.motivo_baja}` : ''}`,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ];
+          }}
         />
       )}
     </div>

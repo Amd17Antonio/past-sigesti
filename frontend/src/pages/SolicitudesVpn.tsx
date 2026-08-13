@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
   getSolicitudesVpn, eliminarSolicitudVpn, imprimirSolicitudVpn,
+  getSolicitudVpnDetalle, cambiarEstatusSolicitudVpn,
 } from '../services/solicitudVpnService';
 import type { SolicitudVpn } from '../types/SolicitudVpn';
 import NuevaSolicitudVpnModal from '../components/vpn/NuevaSolicitudVpnModal';
 import EditarSolicitudVpnModal from '../components/vpn/EditarSolicitudVpnModal';
 import SortIcon from '../components/common/SortIcon';
+import SenalEstatus from '../components/common/SenalEstatus';
+import CambiarEstatusModal from '../components/common/CambiarEstatusModal';
+import { useAuth } from '../context/AuthContext';
 
 const COLUMNAS: { key: string; label: string }[] = [
   { key: 'id', label: 'ID' },
@@ -17,8 +21,8 @@ const COLUMNAS: { key: string; label: string }[] = [
 ];
 
 const ESTATUS_LABEL: Record<string, string> = {
-  generado_cgd: 'CREADO EN CGD',
-  atendiendo_dt: 'ATENDIENDO DGTI',
+  creado_cgd: 'CREADO EN CGD',
+  atendiendo_dgti: 'ATENDIENDO DGTI',
   activo: 'SERVICIO ACTIVO',
   baja: 'BAJA',
 };
@@ -29,6 +33,7 @@ const TIPO_ACCESO_LABEL: Record<string, string> = {
 };
 
 export default function SolicitudesVpn() {
+  const { user } = useAuth();
   const [data, setData] = useState<SolicitudVpn[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -40,6 +45,7 @@ export default function SolicitudesVpn() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [editarId, setEditarId] = useState<number | null>(null);
+  const [verEstatus, setVerEstatus] = useState<SolicitudVpn | null>(null);
   const [generandoId, setGenerandoId] = useState<number | null>(null);
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
 
@@ -164,14 +170,28 @@ export default function SolicitudesVpn() {
           <tbody>
             {ordenados.map((s) => (
               <tr key={s.id} className="border-t align-top">
-                <td className="p-2">{s.id}</td>
+                <td className="p-2">
+                  {user?.rol?.nombre === 'Administrador' ? (
+                    <button
+                      onClick={() => setVerEstatus(s)}
+                      className="text-blue-600 font-medium hover:underline"
+                    >
+                      {s.id}
+                    </button>
+                  ) : (
+                    s.id
+                  )}
+                </td>
                 <td className="p-2">{s.nombre_usuario}</td>
                 <td className="p-2">{s.area ?? '-'}</td>
                 <td className="p-2">{TIPO_ACCESO_LABEL[s.tipo_acceso] ?? s.tipo_acceso}</td>
                 <td className="p-2">{s.fecha_inicio ?? '-'} — {s.fecha_fin ?? '-'}</td>
-                <td className="p-2">{ESTATUS_LABEL[s.estatus] ?? s.estatus}</td>
+                <td className="p-2 flex items-center gap-2">
+                  <SenalEstatus tipo="vpn" estatus={s.estatus} />
+                  {ESTATUS_LABEL[s.estatus] ?? s.estatus}
+                </td>
                 <td className="p-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 whitespace-nowrap">
                     <button
                       onClick={() => handleImprimir(s.id)}
                       disabled={generandoId === s.id}
@@ -180,13 +200,19 @@ export default function SolicitudesVpn() {
                     >
                       {generandoId === s.id ? '⏳' : '📄'}
                     </button>
-                    <button
-                      onClick={() => setEditarId(s.id)}
-                      className="text-amber-600 hover:text-amber-800"
-                      title="Editar"
-                    >
-                      ✏️
-                    </button>
+                    {s.estatus === 'creado_cgd' ? (
+                      <button
+                        onClick={() => setEditarId(s.id)}
+                        className="text-amber-600 hover:text-amber-800"
+                        title="Editar"
+                      >
+                        ✏️
+                      </button>
+                    ) : (
+                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">
+                        ✏️
+                      </span>
+                    )}
                     <button
                       onClick={() => handleEliminar(s.id)}
                       disabled={eliminandoId === s.id}
@@ -223,6 +249,53 @@ export default function SolicitudesVpn() {
           idSolicitud={editarId}
           onClose={() => setEditarId(null)}
           onSaved={cargar}
+        />
+      )}
+
+      {verEstatus && (
+        <CambiarEstatusModal
+          folio={verEstatus.id}
+          estatusActual={verEstatus.estatus}
+          opciones={[
+            { value: 'creado_cgd', label: 'CREADO EN CGD' },
+            { value: 'atendiendo_dgti', label: 'ATENDIENDO DGTI' },
+            { value: 'activo', label: 'SERVICIO ACTIVO' },
+            { value: 'baja', label: 'BAJA' },
+          ]}
+          estatusQueRequiereFolio="atendiendo_dgti"
+          estatusActivo="activo"
+          estatusBaja="baja"
+          onGuardar={(payload) => cambiarEstatusSolicitudVpn(verEstatus.id, payload as any)}
+          onClose={() => setVerEstatus(null)}
+          onActualizado={cargar}
+          cargarInfoGeneral={async () => {
+            const { solicitud } = await getSolicitudVpnDetalle(verEstatus.id);
+            return [
+              { label: 'Folio (ID)', value: solicitud.id },
+              { label: 'Usuario', value: solicitud.nombre_usuario },
+              { label: 'Puesto', value: solicitud.puesto },
+              { label: 'Área', value: solicitud.area },
+              { label: 'Dependencia', value: solicitud.dependencia },
+              { label: 'Correo institucional', value: solicitud.correo_institucional },
+              { label: 'Teléfono', value: solicitud.telefono },
+              { label: 'Extensión', value: solicitud.extension },
+              { label: 'Tipo de acceso', value: TIPO_ACCESO_LABEL[solicitud.tipo_acceso] ?? solicitud.tipo_acceso },
+              { label: 'Link del sistema', value: solicitud.link_sistema },
+              { label: 'IP y puerto', value: solicitud.ip_puerto },
+              { label: 'Justificación de uso', value: solicitud.justificacion_uso },
+              { label: 'Vigencia', value: `${solicitud.fecha_inicio ?? '-'} — ${solicitud.fecha_fin ?? '-'}` },
+              { label: 'No. Ticket', value: solicitud.num_ticket },
+              {
+                label: 'Estatus',
+                value: [
+                  solicitud.fecha_creado_cgd && `CREADO EN CGD: ${solicitud.fecha_creado_cgd}`,
+                  solicitud.fecha_atendiendo_dgti && `ATENDIENDO DGTI: ${solicitud.fecha_atendiendo_dgti}${solicitud.folio_glpi ? `\nFOLIO GLPI: ${solicitud.folio_glpi}` : ''}`,
+                  solicitud.fecha_activo && `SERVICIO ACTIVO: ${solicitud.fecha_activo}`,
+                  solicitud.fecha_baja && `BAJA: ${solicitud.fecha_baja}${solicitud.motivo_baja ? `\nMOTIVO: ${solicitud.motivo_baja}` : ''}`,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ];
+          }}
         />
       )}
     </div>

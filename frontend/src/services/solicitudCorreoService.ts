@@ -35,3 +35,13 @@ export const imprimirSolicitudCorreo = async (id: number) => {
   const { data } = await axiosClient.get(`/solicitud-correo/${id}/pdf-url`);
   window.open(data.url, '_blank');
 };
+
+export type EstatusCorreo = 'creado_cgd' | 'atendiendo_dgti' | 'activo' | 'baja';
+
+export const cambiarEstatusSolicitudCorreo = async (
+  id: number,
+  payload: { estatus: EstatusCorreo; folio_glpi?: string; observacion_glpi?: string; usuario_generado?: string; motivo_baja?: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-correo/${id}/estatus`, payload);
+  return data;
+};
