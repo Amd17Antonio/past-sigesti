@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesTelefonia,
   imprimirResguardoTelefonia,
-  actualizarAsignacionTelefonia,
 } from '../services/solicitudTelefoniaService';
 import type { SolicitudTelefoniaRow } from '../types/SolicitudTelefonia';
-import EditarAsignacionModal from '../components/common/EditarAsignacionModal';
+import EditarResguardoTelefoniaModal from '../components/telefonia/EditarResguardoTelefoniaModal';
 import SortIcon from '../components/common/SortIcon';
 
 const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
@@ -195,34 +194,27 @@ export default function ResguardoTelefonia() {
         </div>
       </div>
 
-      {editando && (
-        <EditarAsignacionModal
-          folio={editando.id}
-          titulo="Editar extensión / DID / clave"
-          campos={[
-            { name: 'extension_asignada', label: 'Extensión asignada', requerido: true },
-            { name: 'did_asignado', label: 'DID asignado' },
-            {
-              name: 'tipo_clave',
-              label: 'Tipo de clave',
-              tipo: 'select',
-              opciones: [
-                { value: 'PIN', label: 'PIN' },
-                { value: 'CN', label: 'CN' },
-              ],
-            },
-            { name: 'clave_asignada', label: 'Clave (PIN o CN)' },
-          ]}
-          valoresIniciales={{
-            extension_asignada: editando.extension_asignada,
-            did_asignado: editando.did_asignado,
-            tipo_clave: editando.tipo_clave,
-            clave_asignada: editando.clave_asignada,
-          }}
-          onGuardar={(payload) => actualizarAsignacionTelefonia(editando.id, payload as any)}
+      {editando && (editando.extension_asignada || editando.extension) && (
+        <EditarResguardoTelefoniaModal
+          extension={editando.extension_asignada || editando.extension || ''}
           onClose={() => setEditando(null)}
           onActualizado={cargar}
         />
+      )}
+      {editando && !editando.extension_asignada && !editando.extension && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm text-center">
+            <p className="text-gray-700 text-sm mb-4">
+              Este registro no tiene ninguna extensión asociada, no se puede consultar su ficha.
+            </p>
+            <button
+              onClick={() => setEditando(null)}
+              className="px-4 py-2 rounded bg-purple-800 hover:bg-purple-900 text-white text-sm"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
