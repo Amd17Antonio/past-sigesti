@@ -43,9 +43,6 @@ class SolicitudVpnController extends Controller
         if ($request->filled('estatus')) {
             $query->where('sv.estatus', $request->get('estatus'));
         }
-        if ($request->filled('tipo_acceso') && $request->get('tipo_acceso') !== 'todos') {
-            $query->where('sv.tipo_acceso', $request->get('tipo_acceso'));
-        }
         if ($request->filled('nombre_usuario')) {
             $query->where('sv.nombre_usuario', 'like', '%' . $request->get('nombre_usuario') . '%');
         }
@@ -85,20 +82,20 @@ class SolicitudVpnController extends Controller
             'correo_institucional' => 'required|email|max:150',
             'telefono' => ['required', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required|string|max:10',
-            'tipo_acceso' => 'required|in:link,ip_puerto',
-            'link_sistema' => 'required_if:tipo_acceso,link|nullable|url|max:255',
-            'ip_puerto' => ['required_if:tipo_acceso,ip_puerto', 'nullable', 'regex:/^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?(,\d{1,5})*$/'],
+            'link_sistema' => 'required|url|max:255',
+            'ip_puerto' => ['required', 'regex:/^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?(,\d{1,5})*$/'],
             'justificacion_uso' => 'required|string|min:10',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
         ], [
             'telefono.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
-            'link_sistema.required_if' => 'El link del sistema es obligatorio.',
-            'ip_puerto.required_if' => 'La IP y puerto del servidor son obligatorios.',
+            'link_sistema.required' => 'El link del sistema es obligatorio.',
+            'ip_puerto.required' => 'La IP y puerto del servidor son obligatorios.',
             'justificacion_uso.min' => 'La justificación debe ser más detallada (mínimo 10 caracteres).',
             'fecha_fin.after_or_equal' => 'La fecha final no puede ser anterior a la fecha inicial.',
         ]);
 
+        $data['tipo_acceso'] = 'ambos';
         $data['estatus'] = 'creado_cgd';
         $data['fecha_creado_cgd'] = now();
         $data['id_usuario_crea'] = $request->user()->id ?? null;
@@ -132,15 +129,21 @@ class SolicitudVpnController extends Controller
             'correo_institucional' => 'required|email|max:150',
             'telefono' => ['required', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required|string|max:10',
-            'tipo_acceso' => 'required|in:link,ip_puerto',
-            'link_sistema' => 'required_if:tipo_acceso,link|nullable|url|max:255',
-            'ip_puerto' => ['required_if:tipo_acceso,ip_puerto', 'nullable', 'regex:/^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?(,\d{1,5})*$/'],
+            'link_sistema' => 'required|url|max:255',
+            'ip_puerto' => ['required', 'regex:/^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?(,\d{1,5})*$/'],
             'justificacion_uso' => 'required|string|min:10',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'num_ticket' => 'nullable|string|max:50',
+        ], [
+            'telefono.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
+            'link_sistema.required' => 'El link del sistema es obligatorio.',
+            'ip_puerto.required' => 'La IP y puerto del servidor son obligatorios.',
+            'justificacion_uso.min' => 'La justificación debe ser más detallada (mínimo 10 caracteres).',
+            'fecha_fin.after_or_equal' => 'La fecha final no puede ser anterior a la fecha inicial.',
         ]);
 
+        $data['tipo_acceso'] = 'ambos';
         $data['usuario_mov'] = $request->user()->usuario ?? null;
         $data['updated_at'] = now();
 
@@ -209,6 +212,41 @@ class SolicitudVpnController extends Controller
         DB::table('solicitud_vpn')->where('id', $id)->update($update);
 
         return response()->json(['message' => 'Estatus actualizado correctamente']);
+    }
+
+    // Edita solo el link y la IP/puerto asignados mientras el servicio ya está activo (ambos requeridos).
+    public function actualizarAsignacion(Request $request, $id)
+    {
+        $usuario = $request->user();
+
+        $solicitud = DB::table('solicitud_vpn')->where('id', $id)->first();
+        if (!$solicitud) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        if ($solicitud->estatus !== 'activo') {
+            return response()->json([
+                'message' => 'Solo se puede editar el acceso mientras el servicio está activo.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'link_sistema' => 'required|url|max:255',
+            'ip_puerto' => ['required', 'regex:/^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?(,\d{1,5})*$/'],
+        ], [
+            'link_sistema.required' => 'El link del sistema es obligatorio.',
+            'ip_puerto.required' => 'La IP y puerto del servidor son obligatorios.',
+        ]);
+
+        DB::table('solicitud_vpn')->where('id', $id)->update([
+            'tipo_acceso' => 'ambos',
+            'link_sistema' => $data['link_sistema'],
+            'ip_puerto' => $data['ip_puerto'],
+            'usuario_mov' => $usuario->usuario,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Asignación actualizada correctamente']);
     }
 
     // Elimina la solicitud definitivamente de la base de datos (hard delete)

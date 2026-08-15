@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAsignadas } from '../services/solicitudService';
 import AsignarModal from '../components/tickets/AsignarModal';
 import DetalleSolicitudModal from '../components/solicitudes/DetalleSolicitudModal';
@@ -6,10 +7,10 @@ import SortIcon from '../components/common/SortIcon';
 
 interface SolicitudAsignada {
   id: number;
-  solicitante: string;
+  solicitante: string | null;
   extension: number | null;
-  area: string;
-  descripcion: string;
+  area: string | null;
+  descripcion: string | null;
   nombre: string | null;
   no_inventario: string | null;
   status_uie: number;
@@ -64,6 +65,7 @@ export default function AsignadasAdmin() {
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const navigate = useNavigate();
 
   const cargar = () => {
     getAsignadas().then(setSolicitudes);
@@ -86,10 +88,10 @@ export default function AsignadasAdmin() {
     const resultado = solicitudes.filter((s) => {
       const coincideFiltros =
         String(s.id).includes(filtros.folio) &&
-        s.solicitante.toLowerCase().includes(filtros.solicitante.toLowerCase()) &&
+        (s.solicitante ?? '').toLowerCase().includes(filtros.solicitante.toLowerCase()) &&
         String(s.extension ?? '').includes(filtros.extension) &&
-        s.descripcion.toLowerCase().includes(filtros.asunto.toLowerCase()) &&
-        s.area.toLowerCase().includes(filtros.area.toLowerCase()) &&
+        (s.descripcion ?? '').toLowerCase().includes(filtros.asunto.toLowerCase()) &&
+        (s.area ?? '').toLowerCase().includes(filtros.area.toLowerCase()) &&
         (s.nombre ?? '').toLowerCase().includes(filtros.asignado.toLowerCase()) &&
         (s.no_inventario ?? '').toLowerCase().includes(filtros.inventario.toLowerCase());
 
@@ -139,7 +141,17 @@ export default function AsignadasAdmin() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center gap-3 mb-4">
+        <h1 className="text-xl font-bold">Asignadas</h1>
+        <button
+          onClick={() => navigate('/solicitudes-uie')}
+          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+        >
+          ← Regresar
+        </button>
+      </div>
+
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span>Mostrar</span>
           <select
@@ -207,10 +219,10 @@ export default function AsignadasAdmin() {
                   👁 {s.id}
                 </button>
               </td>
-              <td className="p-2">{s.solicitante}</td>
+              <td className="p-2">{s.solicitante ?? '-'}</td>
               <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.descripcion}</td>
-              <td className="p-2">{s.area}</td>
+              <td className="p-2">{s.descripcion ?? '-'}</td>
+              <td className="p-2">{s.area ?? 'Sin área asignada'}</td>
               <td className="p-2">{s.nombre ?? '-'}</td>
               <td className="p-2">{s.no_inventario ?? '-'}</td>
               <td className="p-2">

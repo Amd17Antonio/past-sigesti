@@ -42,7 +42,12 @@ export const getTiposClave = async () => {
   return data;
 };
 
-export const actualizarSolicitudTelefonia = async (id: number, payload: { estatus?: string; observaciones?: string }) => {
+// `detalle`: cuando se manda, reemplaza por completo lo guardado en la solicitud
+// (el frontend debe mandar el objeto ya mergeado con lo que no cambió).
+export const actualizarSolicitudTelefonia = async (
+  id: number,
+  payload: { estatus?: string; observaciones?: string; detalle?: Record<string, any> }
+) => {
   const { data } = await axiosClient.put(`/solicitud-telefono/${id}`, payload);
   return data;
 };
@@ -56,14 +61,45 @@ export type EstatusTelefonia = 'creado_cgd' | 'atendiendo_dgti' | 'activo' | 'ba
 
 export const cambiarEstatusSolicitudTelefonia = async (
   id: number,
-  payload: { estatus: EstatusTelefonia; folio_glpi?: string; observacion_glpi?: string; motivo_baja?: string }
+  payload: {
+    estatus: EstatusTelefonia;
+    folio_glpi?: string;
+    observacion_glpi?: string;
+    motivo_baja?: string;
+    extension_asignada?: string;
+    did_asignado?: string;
+    tipo_clave?: 'PIN' | 'CN';
+    clave_asignada?: string;
+  }
 ) => {
   const { data } = await axiosClient.patch(`/solicitud-telefono/${id}/estatus`, payload);
   return data;
 };
 
+// Edita solo los datos de asignación (extensión/DID/clave) mientras el servicio ya está activo,
+// sin necesidad de volver a pasar por cambiarEstatus.
+export const actualizarAsignacionTelefonia = async (
+  id: number,
+  payload: {
+    extension_asignada: string;
+    did_asignado?: string;
+    tipo_clave?: 'PIN' | 'CN';
+    clave_asignada?: string;
+  }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-telefono/${id}/asignacion`, payload);
+  return data;
+};
+
 export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
   const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+};
+
+export const imprimirResguardoTelefonia = async (id: number) => {
+  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf-resguardo`, { responseType: 'blob' });
   const blob = new Blob([response.data], { type: 'application/pdf' });
   const url = window.URL.createObjectURL(blob);
   window.open(url, '_blank');

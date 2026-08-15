@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAsignadas } from '../services/solicitudService';
 import SeguimientoModal from '../components/tickets/SeguimientoModal';
 import CerrarModal from '../components/tickets/CerrarModal';
+import DetalleSolicitudModal from '../components/solicitudes/DetalleSolicitudModal';
 
 interface Solicitud {
   id: number;
@@ -19,6 +20,7 @@ export default function AsignadasTecnico() {
   const [busqueda, setBusqueda] = useState('');
   const [seguimientoId, setSeguimientoId] = useState<number | null>(null);
   const [cerrarId, setCerrarId] = useState<number | null>(null);
+  const [detalleId, setDetalleId] = useState<number | null>(null);
 
   const cargar = () => {
     getAsignadas().then(setSolicitudes);
@@ -34,7 +36,7 @@ export default function AsignadasTecnico() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <h1 className="text-xl font-bold">Solicitudes Asignadas</h1>
         <input
           placeholder="Buscar..."
@@ -61,7 +63,16 @@ export default function AsignadasTecnico() {
         <tbody>
           {filtradas.map((s) => (
             <tr key={s.id} className="border-t align-top">
-              <td className="p-2">👁 {s.id}</td>
+              <td className="p-2">
+                <button
+                  onClick={() => setDetalleId(s.id)}
+                  className="mr-1 hover:opacity-70"
+                  title="Ver detalle"
+                >
+                  👁
+                </button>
+                {s.id}
+              </td>
               <td className="p-2">{s.solicitante}</td>
               <td className="p-2">{s.extension ?? '-'}</td>
               <td className="p-2">{s.area}</td>
@@ -105,6 +116,13 @@ export default function AsignadasTecnico() {
           solicitudId={cerrarId}
           onClose={() => setCerrarId(null)}
           onCerrado={cargar}
+        />
+      )}
+
+      {detalleId !== null && (
+        <DetalleSolicitudModal
+          idSolicitud={detalleId}
+          onClose={() => setDetalleId(null)}
         />
       )}
     </div>

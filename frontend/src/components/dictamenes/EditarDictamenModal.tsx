@@ -1,22 +1,45 @@
 import { useEffect, useState } from 'react';
-import { getDictamen, actualizarDictamen } from '../../services/dictamenService';
-import { buscarEquipo, getEquipo, type EquipoRow } from '../../services/equipoService';
+import { getUltimoDictamenPorSolicitud, actualizarDictamen, getEquiposDeSolicitud } from '../../services/dictamenService';
+import { buscarEquipo, type EquipoRow } from '../../services/equipoService';
 import { registrarMantenimiento } from '../../services/mantenimientoService';
 import { getSolicitudUieDetalle } from '../../services/solicitudUieService';
+import axiosClient from '../../api/axiosClient';
 
 interface Props {
-  id: number;
+  idSolicitud: number;
   onClose: () => void;
   onActualizado: () => void;
 }
 
 const OPCIONES_TIPO_FALLA = ['Física', 'Lógica'];
 
-export default function EditarDictamenModal({ id, onClose, onActualizado }: Props) {
+const OPCIONES_TIPO_DOCTO = [
+  { value: 'MEMORÁNDUM', label: 'MEMORÁNDUM' },
+  { value: 'TARJETA INFORMATIVA', label: 'TARJETA INFORMATIVA' },
+  { value: 'CORREO ELECTRÓNICO', label: 'CORREO ELECTRÓNICO' },
+  { value: 'SOLICITUD VERBAL', label: 'SOLICITUD VERBAL' },
+  { value: 'SOLICITUD VÍA TELEFÓNICA', label: 'SOLICITUD VÍA TELEFÓNICA' },
+  { value: 'CIRCULAR', label: 'CIRCULAR' },
+];
+
+export default function EditarDictamenModal({ idSolicitud, onClose, onActualizado }: Props) {
+  // id real del registro en la tabla `dictamen` (la última captura de esta solicitud)
+  const [dictamenId, setDictamenId] = useState<number | null>(null);
   const [form, setForm] = useState<any>(null);
-  const [equipoInfo, setEquipoInfo] = useState<EquipoRow | null>(null);
-  const [solicitudInfo, setSolicitudInfo] = useState<any>(null);
+
+  // Equipos vinculados a la SOLICITUD (no dependen de dictamen.id_equipo)
+  const [equipos, setEquipos] = useState<any[]>([]);
+
+  // Datos de la solicitud — editables
+  const [solicitudForm, setSolicitudForm] = useState({
+    solicitante: '',
+    puesto: '',
+    tipo_documento: '',
+    num_documento: '',
+  });
+
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(true);
   const [enviando, setEnviando] = useState(false);
 
   // --- Sección: buscar equipo por No. Inventario + registrar mantenimiento ---
@@ -35,39 +58,63 @@ export default function EditarDictamenModal({ id, onClose, onActualizado }: Prop
   const [mantGuardado, setMantGuardado] = useState(false);
 
   useEffect(() => {
-    getDictamen(id).then((d: any) => {
-      setForm({
-        servicio: d.servicio ?? '',
-        dictamen: d.dictamen ?? '',
-        expediente: d.expediente ?? '',
-        copias: d.copias ?? '',
-        fallas: d.fallas ?? '',
-        tipo_falla: d.tipo_falla ?? '',
-        sugiere_baja: !!d.sugiere_baja,
-        fecha_dictamen: d.fecha_dictamen ? String(d.fecha_dictamen).slice(0, 10) : '',
-      });
+    setCargando(true);
+    setError('');
 
-      if (d.id_equipo) {
-        getEquipo(d.id_equipo).then(setEquipoInfo).catch(() => setEquipoInfo(null));
-      }
+    getUltimoDictamenPorSolicitud(idSolicitud)
+      .then((d: any) => {
+        setDictamenId(d.id);
+        setForm({
+          servicio: d.servicio ?? '',
+          dictamen: d.dictamen ?? '',
+          expediente: d.expediente ?? '',
+          copias: d.copias ?? '',
+          fallas: d.fallas ?? '',
+          tipo_falla: d.tipo_falla ?? '',
+          sugiere_baja: !!d.sugiere_baja,
+          fecha_dictamen: d.fecha_dictamen ? String(d.fecha_dictamen).slice(0, 10) : '',
+        });
 
-      if (d.id_solicitud) {
-        getSolicitudUieDetalle(d.id_solicitud)
-          .then((detalle: any) => setSolicitudInfo(detalle.solicitud))
-          .catch(() => setSolicitudInfo(null));
-      }
-    });
-  }, [id]);
+        if (d.id_solicitud) {
+          getSolicitudUieDetalle(d.id_solicitud)
+            .then((detalle: any) => {
+              const s = detalle.solicitud;
+              setSolicitudForm({
+                solicitante: s?.solicitante ?? '',
+                puesto: s?.puesto ?? '',
+                tipo_documento: s?.tipo_documento ?? '',
+                num_documento: s?.num_documento ?? '',
+              });
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {
+        setError('No se encontró ningún dictamen registrado para esta solicitud.');
+      })
+      .finally(() => setCargando(false));
+
+    // Equipos de la solicitud (independiente del dictamen)
+    getEquiposDeSolicitud(idSolicitud).then(setEquipos).catch(() => setEquipos([]));
+  }, [idSolicitud]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleChangeSolicitud = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setSolicitudForm({ ...solicitudForm, [e.target.name]: e.target.value });
+  };
+
   const handleGuardar = async () => {
+    if (!dictamenId) return;
     setEnviando(true);
     setError('');
     try {
-      await actualizarDictamen(id, form);
+      await Promise.all([
+        actualizarDictamen(dictamenId, form),
+        axiosClient.put(`/solicitudes/${idSolicitud}`, solicitudForm),
+      ]);
       onActualizado();
       onClose();
     } catch {
@@ -121,40 +168,80 @@ export default function EditarDictamenModal({ id, onClose, onActualizado }: Prop
     }
   };
 
-  if (!form) return null;
+  if (cargando) {
+    return (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+        <div className="bg-white rounded shadow-lg p-6 text-sm text-gray-600">Cargando dictamen...</div>
+      </div>
+    );
+  }
+
+  if (!form) {
+    return (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+        <div className="bg-white rounded shadow-lg p-6 max-w-md">
+          <p className="text-red-500 text-sm mb-4">{error || 'No se pudo cargar el dictamen.'}</p>
+          <button onClick={onClose} className="px-4 py-2 border rounded text-sm">Cerrar</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
       <div className="bg-white rounded shadow-lg w-[80rem] max-w-[80vw] max-h-[90vh] flex flex-col overflow-hidden">
         <div className="bg-blue-600 text-white px-5 py-3 font-semibold">
-          {solicitudInfo ? `Modificar Folio : ${solicitudInfo.id}` : `Editar Dictamen #${id}`}
+          Modificar Folio : {idSolicitud}
         </div>
 
         <div className="p-5 space-y-3 overflow-y-auto flex-1">
-          {/* ---- Datos de la solicitud (solo lectura) ---- */}
-          {solicitudInfo && (
-            <div className="grid grid-cols-4 gap-3">
-              <div>
-                <label className="text-sm font-medium">Solicitante:</label>
-                <input value={solicitudInfo.solicitante ?? '-'} disabled className="border p-2 w-full mt-1 bg-gray-100 text-gray-600" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Puesto:</label>
-                <input value={solicitudInfo.puesto ?? '-'} disabled className="border p-2 w-full mt-1 bg-gray-100 text-gray-600" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Tipo Docto:</label>
-                <input value={solicitudInfo.tipo_documento ?? '-'} disabled className="border p-2 w-full mt-1 bg-gray-100 text-gray-600" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">No. Docto:</label>
-                <input value={solicitudInfo.num_documento ?? '-'} disabled className="border p-2 w-full mt-1 bg-gray-100 text-gray-600" />
-              </div>
+          {/* ---- Datos de la solicitud (editables) ---- */}
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-sm font-medium">Solicitante:</label>
+              <input
+                name="solicitante"
+                value={solicitudForm.solicitante}
+                onChange={handleChangeSolicitud}
+                className="border p-2 w-full mt-1"
+              />
             </div>
-          )}
+            <div>
+              <label className="text-sm font-medium">Puesto:</label>
+              <input
+                name="puesto"
+                value={solicitudForm.puesto}
+                onChange={handleChangeSolicitud}
+                className="border p-2 w-full mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tipo Docto:</label>
+              <select
+                name="tipo_documento"
+                value={solicitudForm.tipo_documento}
+                onChange={handleChangeSolicitud}
+                className="border p-2 w-full mt-1"
+              >
+                <option value="">--Seleccionar--</option>
+                {OPCIONES_TIPO_DOCTO.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">No. Docto:</label>
+              <input
+                name="num_documento"
+                value={solicitudForm.num_documento}
+                onChange={handleChangeSolicitud}
+                className="border p-2 w-full mt-1"
+              />
+            </div>
+          </div>
 
-          {/* ---- Tabla de equipo (solo lectura) ---- */}
-          {equipoInfo && (
+          {/* ---- Tabla de equipo(s) (solo lectura) ---- */}
+          {equipos.length > 0 && (
             <div className="border rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
@@ -165,11 +252,13 @@ export default function EditarDictamenModal({ id, onClose, onActualizado }: Prop
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-t">
-                    <td className="p-2">{equipoInfo.tipo ?? '-'}</td>
-                    <td className="p-2">{equipoInfo.no_serie ?? '-'}</td>
-                    <td className="p-2">{equipoInfo.no_inventario ?? '-'}</td>
-                  </tr>
+                  {equipos.map((e) => (
+                    <tr key={e.id_equipo ?? e.id} className="border-t">
+                      <td className="p-2 bg-gray-100 text-gray-600">{e.tipo ?? '-'}</td>
+                      <td className="p-2 bg-gray-100 text-gray-600">{e.no_serie ?? '-'}</td>
+                      <td className="p-2 bg-gray-100 text-gray-600">{e.no_inventario ?? '-'}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

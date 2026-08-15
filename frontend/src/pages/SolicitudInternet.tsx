@@ -26,6 +26,9 @@ const COLUMNAS: { key: keyof SolicitudInternetRow; label: string }[] = [
   { key: 'correo', label: 'Correo' },
 ];
 
+// Orden lineal del flujo: no se puede regresar a un paso anterior ni saltar etapas.
+const ORDEN_ESTATUS_INTERNET = ['generado_uie', 'atendiendo_dt', 'activo'];
+
 export default function SolicitudInternet() {
   const { user } = useAuth();
   const [solicitudes, setSolicitudes] = useState<SolicitudInternetRow[]>([]);
@@ -34,7 +37,7 @@ export default function SolicitudInternet() {
   const [porPagina, setPorPagina] = useState(10);
   const [pagina, setPagina] = useState(1);
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [editando, setEditando] = useState<SolicitudInternetRow | null>(null);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [verEstatus, setVerEstatus] = useState<SolicitudInternetRow | null>(null);
 
   const [sortKey, setSortKey] = useState<keyof SolicitudInternetRow | null>(null);
@@ -132,7 +135,7 @@ export default function SolicitudInternet() {
                   <th
                     key={c.key}
                     onClick={() => handleSort(c.key)}
-                    className="p-2 text-left cursor-pointer select-none"
+                    className={`p-2 text-left cursor-pointer select-none ${c.key === 'id' ? 'w-14' : ''}`}
                   >
                     <span className="inline-flex items-center gap-1">
                       {c.label}
@@ -141,12 +144,12 @@ export default function SolicitudInternet() {
                   </th>
                 ))}
                 <th className="p-2 text-left">Estatus</th>
-                <th className="p-2 text-left">Acciones</th>
+                <th className="p-2 text-left w-[120px]">Acciones</th>
               </tr>
 
               <tr className="bg-gray-50">
                 {COLUMNAS.map((c) => (
-                  <th key={c.key} className="p-1">
+                  <th key={c.key} className={`p-1 ${c.key === 'id' ? 'w-14' : ''}`}>
                     <input
                       value={filtros[c.key] ?? ''}
                       onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
@@ -173,7 +176,7 @@ export default function SolicitudInternet() {
             <tbody>
               {paginadas.map((s) => (
                 <tr key={s.id} className="border-t">
-                  <td className="p-2">
+                  <td className="p-2 w-14">
                     {user?.rol?.nombre === 'Administrador' ? (
                       <button
                         onClick={() => setVerEstatus(s)}
@@ -192,18 +195,40 @@ export default function SolicitudInternet() {
                   <td className="p-2">{s.tipo_conexion}</td>
                   <td className="p-2">{s.tel_ext}</td>
                   <td className="p-2">{s.correo}</td>
-                  <td className="p-2 flex items-center gap-2">
-                    <SenalEstatus tipo="internet" estatus={s.estatus} />
-                    {ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}
+                  <td className="p-2">
+                    <div className="flex items-center gap-2">
+                      <SenalEstatus tipo="internet" estatus={s.estatus} />
+                      {ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}
+                    </div>
                   </td>
-                  <td className="p-2 flex gap-3 whitespace-nowrap">
-                    <button onClick={() => descargarPdfSolicitudInternet(s.id)} title="Imprimir / Descargar PDF">📄</button>
-                    {s.estatus === 'generado_uie' ? (
-                      <button onClick={() => setEditando(s)} title="Editar">✏️</button>
-                    ) : (
-                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">✏️</span>
-                    )}
-                    <button onClick={() => handleEliminar(s.id)} title="Eliminar">🗑️</button>
+                  <td className="p-2 whitespace-nowrap w-[120px]">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => descargarPdfSolicitudInternet(s.id)}
+                        title="Imprimir / Descargar PDF"
+                        className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors"
+                      >
+                        📄
+                      </button>
+                      {s.estatus === 'generado_uie' ? (
+                        <button
+                          onClick={() => setEditandoId(s.id)}
+                          title="Editar"
+                          className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
+                        >
+                          ✏️
+                        </button>
+                      ) : (
+                        <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">✏️</span>
+                      )}
+                      <button
+                        onClick={() => handleEliminar(s.id)}
+                        title="Eliminar"
+                        className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -242,10 +267,10 @@ export default function SolicitudInternet() {
         <NuevaSolicitudInternetModal onClose={() => setMostrarModal(false)} onCreado={cargar} />
       )}
 
-      {editando && (
+      {editandoId && (
         <EditarSolicitudInternetModal
-          solicitud={editando}
-          onClose={() => setEditando(null)}
+          idSolicitud={editandoId}
+          onClose={() => setEditandoId(null)}
           onActualizado={cargar}
         />
       )}
@@ -260,6 +285,7 @@ export default function SolicitudInternet() {
             { value: 'activo', label: 'SERVICIO ACTIVO' },
             { value: 'baja', label: 'BAJA DEL SERVICIO' },
           ]}
+          orden={ORDEN_ESTATUS_INTERNET}
           estatusQueRequiereFolio="atendiendo_dt"
           estatusActivo="activo"
           estatusBaja="baja"

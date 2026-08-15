@@ -17,6 +17,7 @@ class SolicitudCorreoController extends Controller
             ->select(
                 'sc.id', 'sc.tipo_solicitud', 'sc.nombre', 'sc.puesto',
                 'sc.id_area', 'a.area', 'sc.area_interna', 'sc.correo_secundario', 'sc.telefono_contacto',
+                'sc.extension',
                 'sc.correo_institucional', 'sc.usuario_generado', 'sc.motivo_baja',
                 'sc.estatus', 'sc.oficio_cgd', 'sc.observaciones',
                 'sc.folio_glpi', 'sc.observacion_glpi',
@@ -88,8 +89,11 @@ class SolicitudCorreoController extends Controller
             'area_interna' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'correo_secundario' => ['required_if:tipo_solicitud,alta', 'nullable', 'email', 'max:150'],
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
-            'correo_institucional' => ['required_if:tipo_solicitud,baja', 'nullable', 'email', 'max:150'],
+            'extension' => 'required_if:tipo_solicitud,alta|nullable|string|max:10',
+            'correo_institucional' => 'required|email|max:150',
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
+        ], [
+            'correo_institucional.required' => 'El correo institucional (solicitado o a dar de baja) es obligatorio.',
         ]);
 
         $data['estatus'] = 'creado_cgd';
@@ -125,8 +129,11 @@ class SolicitudCorreoController extends Controller
             'area_interna' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'correo_secundario' => ['required_if:tipo_solicitud,alta', 'nullable', 'email', 'max:150'],
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
-            'correo_institucional' => ['required_if:tipo_solicitud,baja', 'nullable', 'email', 'max:150'],
+            'extension' => 'required_if:tipo_solicitud,alta|nullable|string|max:10',
+            'correo_institucional' => 'required|email|max:150',
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
+        ], [
+            'correo_institucional.required' => 'El correo institucional (solicitado o a dar de baja) es obligatorio.',
         ]);
 
         $data['usuario_mov'] = $request->user()->usuario ?? null;
@@ -170,6 +177,20 @@ class SolicitudCorreoController extends Controller
             if ($solicitud->estatus === 'activo') {
                 return response()->json(['message' => 'Esta cuenta ya se encuentra activa.'], 422);
             }
+
+            // El correo ya se captura desde la creación de la solicitud, así que aquí
+            // solo se valida que no esté duplicado en otra cuenta ya activa.
+            if (!empty($solicitud->correo_institucional)) {
+                $correoEnUso = DB::table('solicitud_correo')
+                    ->where('correo_institucional', $solicitud->correo_institucional)
+                    ->where('estatus', 'activo')
+                    ->where('id', '<>', $id)
+                    ->exists();
+                if ($correoEnUso) {
+                    return response()->json(['message' => 'Ese correo ya está asignado y activo en otra solicitud.'], 422);
+                }
+            }
+
             if (!empty($data['usuario_generado'])) {
                 $update['usuario_generado'] = $data['usuario_generado'];
             }
@@ -191,6 +212,48 @@ class SolicitudCorreoController extends Controller
         DB::table('solicitud_correo')->where('id', $id)->update($update);
 
         return response()->json(['message' => 'Estatus actualizado correctamente']);
+    }
+
+    // Edita solo el correo institucional asignado (y usuario_generado) mientras el servicio ya está activo.
+    public function actualizarAsignacion(Request $request, $id)
+    {
+        $usuario = $request->user();
+
+        $solicitud = DB::table('solicitud_correo')->where('id', $id)->first();
+        if (!$solicitud) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        if ($solicitud->estatus !== 'activo') {
+            return response()->json([
+                'message' => 'Solo se puede editar el correo asignado cuando el servicio está activo.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'correo_institucional' => 'required|email|max:150',
+            'usuario_generado' => 'nullable|string|max:150',
+        ], [
+            'correo_institucional.required' => 'El correo institucional asignado es obligatorio.',
+        ]);
+
+        $correoEnUso = DB::table('solicitud_correo')
+            ->where('correo_institucional', $data['correo_institucional'])
+            ->where('estatus', 'activo')
+            ->where('id', '<>', $id)
+            ->exists();
+        if ($correoEnUso) {
+            return response()->json(['message' => 'Ese correo ya está asignado y activo en otra solicitud.'], 422);
+        }
+
+        DB::table('solicitud_correo')->where('id', $id)->update([
+            'correo_institucional' => $data['correo_institucional'],
+            'usuario_generado' => $data['usuario_generado'] ?? $solicitud->usuario_generado,
+            'usuario_mov' => $usuario->usuario,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Asignación actualizada correctamente']);
     }
 
     // Elimina la solicitud definitivamente de la base de datos (hard delete)
@@ -241,5 +304,40 @@ class SolicitudCorreoController extends Controller
     public function imprimirFirmado($id)
     {
         return $this->imprimir($id);
+    }
+
+    // PDF de "Oficio de creación/baja de correo institucional" usado en la vista de Resguardo.
+    public function oficio($id)
+    {
+        $s = $this->baseQuery()->where('sc.id', $id)->first();
+
+        if (!$s) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $pdf = Pdf::loadView('pdf.oficio_correo', ['s' => $s]);
+
+        return $pdf->stream("oficio_correo_{$id}.pdf");
+    }
+
+    public function oficioUrl($id)
+    {
+        $existe = DB::table('solicitud_correo')->where('id', $id)->exists();
+        if (!$existe) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $url = URL::temporarySignedRoute(
+            'solicitud-correo.oficio.firmado',
+            now()->addMinutes(5),
+            ['id' => $id]
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    public function oficioFirmado($id)
+    {
+        return $this->oficio($id);
     }
 }

@@ -68,3 +68,18 @@ export const actualizarDictamen = async (id: number, payload: Record<string, any
   const { data } = await axiosClient.put(`/dictamenes/${id}`, payload);
   return data;
 };
+
+export const getDictamenPdfUrl = async (id: number) => {
+  const { data } = await axiosClient.get(`/dictamenes/${id}/pdf-url`);
+  return data as { url: string };
+};
+
+export const abrirDictamenPdf = async (id: number) => {
+  const { url } = await getDictamenPdfUrl(id);
+  window.open(url, '_blank');
+};
+
+export const getUltimoDictamenPorSolicitud = async (idSolicitud: number) => {
+  const { data } = await axiosClient.get(`/dictamenes/solicitud/${idSolicitud}/ultimo`);
+  return data; // registro de la tabla dictamen (incluye su `id` real, id_equipo, etc.)
+};

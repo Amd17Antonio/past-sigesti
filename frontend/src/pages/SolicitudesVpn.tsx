@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesVpn, eliminarSolicitudVpn, imprimirSolicitudVpn,
   getSolicitudVpnDetalle, cambiarEstatusSolicitudVpn,
@@ -32,8 +33,12 @@ const TIPO_ACCESO_LABEL: Record<string, string> = {
   ip_puerto: 'IP y puerto',
 };
 
+// Orden lineal del flujo: no se puede regresar a un paso anterior ni saltar etapas.
+const ORDEN_ESTATUS_VPN = ['creado_cgd', 'atendiendo_dgti', 'activo'];
+
 export default function SolicitudesVpn() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<SolicitudVpn[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -117,12 +122,22 @@ export default function SolicitudesVpn() {
 
       <div className="border border-t-0 rounded-b p-4">
         <div className="flex justify-between items-center mb-3">
-          <button
-            onClick={() => setMostrarModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-          >
-            + Nueva Solicitud
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMostrarModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+            >
+              + Nueva Solicitud
+            </button>
+            {user?.rol?.nombre === 'Administrador' && (
+              <button
+                onClick={() => navigate('/resguardo/vpn')}
+                className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+              >
+                Resguardo VPN
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm">
             <span>Mostrar</span>
             <select value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }} className="border rounded p-1">
@@ -136,14 +151,18 @@ export default function SolicitudesVpn() {
           <thead>
             <tr className="bg-gray-100">
               {COLUMNAS.map((c) => (
-                <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
+                <th
+                  key={c.key}
+                  className={`p-2 text-left cursor-pointer ${c.key === 'id' ? 'w-14' : ''}`}
+                  onClick={() => handleSort(c.key)}
+                >
                   <span className="inline-flex items-center">{c.label}<SortIcon active={sortBy === c.key} direction={sortDir} /></span>
                 </th>
               ))}
-              <th className="p-2 text-left">Acciones</th>
+              <th className="p-2 text-left w-[120px]">Acciones</th>
             </tr>
             <tr className="bg-gray-50">
-              <th className="p-1"></th>
+              <th className="p-1 w-14"></th>
               <th className="p-1"><input value={filtros.nombre_usuario ?? ''} onChange={(e) => setFiltros({ ...filtros, nombre_usuario: e.target.value })} className="border p-1 w-full text-xs" /></th>
               <th className="p-1"><input value={filtros.area ?? ''} onChange={(e) => setFiltros({ ...filtros, area: e.target.value })} className="border p-1 w-full text-xs" /></th>
               <th className="p-1">
@@ -170,7 +189,7 @@ export default function SolicitudesVpn() {
           <tbody>
             {ordenados.map((s) => (
               <tr key={s.id} className="border-t align-top">
-                <td className="p-2">
+                <td className="p-2 w-14">
                   {user?.rol?.nombre === 'Administrador' ? (
                     <button
                       onClick={() => setVerEstatus(s)}
@@ -186,38 +205,40 @@ export default function SolicitudesVpn() {
                 <td className="p-2">{s.area ?? '-'}</td>
                 <td className="p-2">{TIPO_ACCESO_LABEL[s.tipo_acceso] ?? s.tipo_acceso}</td>
                 <td className="p-2">{s.fecha_inicio ?? '-'} — {s.fecha_fin ?? '-'}</td>
-                <td className="p-2 flex items-center gap-2">
-                  <SenalEstatus tipo="vpn" estatus={s.estatus} />
-                  {ESTATUS_LABEL[s.estatus] ?? s.estatus}
-                </td>
                 <td className="p-2">
-                  <div className="flex gap-2 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <SenalEstatus tipo="vpn" estatus={s.estatus} />
+                    {ESTATUS_LABEL[s.estatus] ?? s.estatus}
+                  </div>
+                </td>
+                <td className="p-2 whitespace-nowrap w-[120px]">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleImprimir(s.id)}
                       disabled={generandoId === s.id}
-                      className="text-blue-700 hover:text-blue-900 disabled:opacity-40"
                       title="Generar PDF"
+                      className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors disabled:opacity-40"
                     >
                       {generandoId === s.id ? '⏳' : '📄'}
                     </button>
                     {s.estatus === 'creado_cgd' ? (
                       <button
                         onClick={() => setEditarId(s.id)}
-                        className="text-amber-600 hover:text-amber-800"
                         title="Editar"
+                        className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
                       >
                         ✏️
                       </button>
                     ) : (
-                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">
+                      <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">
                         ✏️
                       </span>
                     )}
                     <button
                       onClick={() => handleEliminar(s.id)}
                       disabled={eliminandoId === s.id}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-40"
                       title="Eliminar"
+                      className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors disabled:opacity-40"
                     >
                       🗑️
                     </button>
@@ -262,6 +283,7 @@ export default function SolicitudesVpn() {
             { value: 'activo', label: 'SERVICIO ACTIVO' },
             { value: 'baja', label: 'BAJA' },
           ]}
+          orden={ORDEN_ESTATUS_VPN}
           estatusQueRequiereFolio="atendiendo_dgti"
           estatusActivo="activo"
           estatusBaja="baja"

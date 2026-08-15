@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getSolicitudesUie,
@@ -20,6 +21,9 @@ import AsignarModal from '../components/tickets/AsignarModal';
 // baseURL de axios viene con "/api" al final (ej. http://localhost:8000/api);
 // los archivos se sirven desde la raíz del backend (ej. http://localhost:8000/storage/...)
 const BACKEND_ORIGIN = (import.meta.env.VITE_API_URL ?? '').replace(/\/api\/?$/, '');
+
+const navBtnClass =
+  'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap';
 
 export default function SolicitudesUie() {
   const { user } = useAuth();
@@ -157,14 +161,39 @@ export default function SolicitudesUie() {
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <h1 className="text-xl font-semibold">Solicitudes</h1>
-        <button
-          onClick={() => setModalCrear(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-        >
-          + Agregar solicitud
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {rolActual !== 'Capturista' && (
+            <NavLink to="/mis-asignadas" className={navBtnClass}>Mis Asignadas</NavLink>
+          )}
+          <NavLink
+  to="/asignadas"
+  className={`${navBtnClass} bg-blue-600`}
+>
+  Asignadas
+</NavLink>
+
+<NavLink
+  to="/pendientes"
+  className={`${navBtnClass} bg-blue-600`}
+>
+  Pendientes
+</NavLink>
+
+<NavLink
+  to="/historial"
+  className={`${navBtnClass} bg-blue-600`}
+>
+  Historial
+</NavLink>
+          <button
+            onClick={() => setModalCrear(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
+          >
+            + Agregar solicitud
+          </button>
+        </div>
       </div>
 
       <table className="w-full border-collapse text-sm">

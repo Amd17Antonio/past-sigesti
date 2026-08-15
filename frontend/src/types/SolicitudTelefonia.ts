@@ -8,6 +8,10 @@ export interface SolicitudTelefoniaRow {
   correo_institucional: string | null;
   edificio: string | null;
   nivel: string | null;
+  extension_asignada?: string | null;
+  did_asignado?: string | null;
+  tipo_clave?: 'PIN' | 'CN' | null;
+  clave_asignada?: string | null;
 }
 
 export const ESTATUS_TELEFONIA_LABEL: Record<string, string> = {
@@ -21,4 +25,3 @@ export const TRAMITES_TELEFONIA = [
   'SOLICITAR_TELEFONO', 'CAMBIO_PIN_CN', 'CAMBIO_USUARIO', 'MODIFICAR_DATOS',
   'JEFE_SECRETARIA', 'CAMBIO_DID', 'CAMBIO_CATEGORIA', 'OTROS',
 ] as const;
-

@@ -10,7 +10,7 @@ export interface SolicitudVpn {
   correo_institucional?: string | null;
   telefono?: string | null;
   extension?: string | null;
-  tipo_acceso: 'link' | 'ip_puerto';
+  tipo_acceso: 'link' | 'ip_puerto' | 'ambos';
   link_sistema?: string | null;
   ip_puerto?: string | null;
   justificacion_uso?: string | null;

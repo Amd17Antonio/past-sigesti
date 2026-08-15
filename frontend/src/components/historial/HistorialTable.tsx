@@ -58,10 +58,10 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
     return data.filter((s) => {
       const coincideFiltros =
         String(s.id).includes(filtros.folio) &&
-        s.solicitante.toLowerCase().includes(filtros.solicitante.toLowerCase()) &&
+        (s.solicitante ?? '').toLowerCase().includes(filtros.solicitante.toLowerCase()) &&
         String(s.extension ?? '').includes(filtros.extension) &&
-        s.area.toLowerCase().includes(filtros.area.toLowerCase()) &&
-        s.descripcion.toLowerCase().includes(filtros.desc.toLowerCase()) &&
+        (s.area ?? '').toLowerCase().includes(filtros.area.toLowerCase()) &&
+        (s.descripcion ?? '').toLowerCase().includes(filtros.desc.toLowerCase()) &&
         (s.fecha_solicitud ?? '').includes(filtros.fechaInicio) &&
         (s.fecha_cierre ?? '').includes(filtros.fechaCierre) &&
         (s.nombre ?? '').toLowerCase().includes(filtros.tecnico.toLowerCase()) &&
@@ -138,11 +138,11 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
           {paginadas.map((s) => (
             <tr key={s.id} className="border-t align-top">
               <td className="p-2">👁 {s.id}</td>
-              <td className="p-2">{s.solicitante}</td>
+              <td className="p-2">{s.solicitante ?? '-'}</td>
               <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.area}</td>
-              <td className="p-2">{s.descripcion}</td>
-              <td className="p-2">{s.fecha_solicitud}</td>
+              <td className="p-2">{s.area ?? '-'}</td>
+              <td className="p-2">{s.descripcion ?? '-'}</td>
+              <td className="p-2">{s.fecha_solicitud ?? '-'}</td>
               <td className="p-2">{s.fecha_cierre ?? '-'}</td>
               <td className="p-2">{s.nombre ?? '-'}</td>
               <td className="p-2">{s.observaciones ?? '-'}</td>

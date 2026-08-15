@@ -10,7 +10,7 @@ interface Props {
   onCreado: () => void;
 }
 
-const TIPOS_DOCUMENTO = ['Oficio', 'Memorándum', 'Correo Electrónico', 'Verbal', 'Otro'];
+const TIPOS_DOCUMENTO = ['MEMORÁNDUM', 'TARJETA INFORMATIVA', 'CORREO ELECTRÓNICO', 'SOLICITUD VERBAL', 'SOLICITUD VÍA TELEFÓNICA', 'CIRCULAR'];
 
 export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
   const [areas, setAreas] = useState<Opcion[]>([]);

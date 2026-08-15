@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesCorreo, eliminarSolicitudCorreo, imprimirSolicitudCorreo,
   getSolicitudCorreoDetalle, cambiarEstatusSolicitudCorreo,
@@ -27,8 +28,12 @@ const ESTATUS_LABEL: Record<string, string> = {
   baja: 'BAJA',
 };
 
+// Orden lineal del flujo: no se puede regresar a un paso anterior ni saltar etapas.
+const ORDEN_ESTATUS_CORREO = ['creado_cgd', 'atendiendo_dgti', 'activo'];
+
 export default function SolicitudesCorreo() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<SolicitudCorreo[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -107,12 +112,22 @@ export default function SolicitudesCorreo() {
 
       <div className="border border-t-0 rounded-b p-4">
         <div className="flex justify-between items-center mb-3">
-          <button
-            onClick={() => setMostrarModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-          >
-            + Nueva Solicitud
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMostrarModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+            >
+              + Nueva Solicitud
+            </button>
+            {user?.rol?.nombre === 'Administrador' && (
+              <button
+                onClick={() => navigate('/resguardo/correo')}
+                className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+              >
+                Resguardo Correo
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm">
             <span>Mostrar</span>
             <select value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }} className="border rounded p-1">
@@ -126,14 +141,18 @@ export default function SolicitudesCorreo() {
           <thead>
             <tr className="bg-gray-100">
               {COLUMNAS.map((c) => (
-                <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
+                <th
+                  key={c.key}
+                  className={`p-2 text-left cursor-pointer ${c.key === 'id' ? 'w-14' : ''}`}
+                  onClick={() => handleSort(c.key)}
+                >
                   <span className="inline-flex items-center">{c.label}<SortIcon active={sortBy === c.key} direction={sortDir} /></span>
                 </th>
               ))}
-              <th className="p-2 text-left">Acciones</th>
+              <th className="p-2 text-left w-[120px]">Acciones</th>
             </tr>
             <tr className="bg-gray-50">
-              <th className="p-1"></th>
+              <th className="p-1 w-14"></th>
               <th className="p-1">
                 <select value={filtros.tipo_solicitud ?? ''} onChange={(e) => setFiltros({ ...filtros, tipo_solicitud: e.target.value })} className="border p-1 w-full text-xs">
                   <option value="">Todos</option>
@@ -156,7 +175,7 @@ export default function SolicitudesCorreo() {
           <tbody>
             {ordenados.map((s) => (
               <tr key={s.id} className="border-t align-top">
-                <td className="p-2">
+                <td className="p-2 w-14">
                   {user?.rol?.nombre === 'Administrador' ? (
                     <button
                       onClick={() => setVerEstatus(s)}
@@ -172,38 +191,40 @@ export default function SolicitudesCorreo() {
                 <td className="p-2">{s.nombre}</td>
                 <td className="p-2">{s.area ?? '-'}</td>
                 <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                <td className="p-2 flex items-center gap-2">
-                  <SenalEstatus tipo="correo" estatus={s.estatus} />
-                  {ESTATUS_LABEL[s.estatus] ?? s.estatus}
-                </td>
                 <td className="p-2">
-                  <div className="flex gap-2 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <SenalEstatus tipo="correo" estatus={s.estatus} />
+                    {ESTATUS_LABEL[s.estatus] ?? s.estatus}
+                  </div>
+                </td>
+                <td className="p-2 whitespace-nowrap w-[120px]">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleImprimir(s)}
                       disabled={generandoId === s.id}
-                      className="text-blue-700 hover:text-blue-900 disabled:opacity-40"
                       title="Generar PDF"
+                      className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors disabled:opacity-40"
                     >
                       {generandoId === s.id ? '⏳' : '📄'}
                     </button>
                     {s.estatus === 'creado_cgd' ? (
                       <button
                         onClick={() => setEditarId(s.id)}
-                        className="text-amber-600 hover:text-amber-800"
                         title="Editar"
+                        className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
                       >
                         ✏️
                       </button>
                     ) : (
-                      <span className="opacity-30 cursor-not-allowed" title="No editable: ya está en atención de DGTID">
+                      <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">
                         ✏️
                       </span>
                     )}
                     <button
                       onClick={() => handleEliminar(s.id)}
                       disabled={eliminandoId === s.id}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-40"
                       title="Eliminar"
+                      className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors disabled:opacity-40"
                     >
                       🗑️
                     </button>
@@ -248,6 +269,7 @@ export default function SolicitudesCorreo() {
             { value: 'activo', label: 'SERVICIO ACTIVO' },
             { value: 'baja', label: 'BAJA' },
           ]}
+          orden={ORDEN_ESTATUS_CORREO}
           estatusQueRequiereFolio="atendiendo_dgti"
           estatusActivo="activo"
           estatusBaja="baja"
@@ -265,6 +287,7 @@ export default function SolicitudesCorreo() {
               { label: 'Área interna', value: solicitud.area_interna },
               { label: 'Correo secundario', value: solicitud.correo_secundario },
               { label: 'Teléfono de contacto', value: solicitud.telefono_contacto },
+              { label: 'Extensión', value: (solicitud as any).extension },
               { label: 'Correo institucional', value: solicitud.correo_institucional },
               { label: 'Usuario generado', value: solicitud.usuario_generado },
               { label: 'Oficio CGD', value: solicitud.oficio_cgd },

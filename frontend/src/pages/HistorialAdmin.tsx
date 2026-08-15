@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getHistorial } from '../services/solicitudService';
 import SortIcon from '../components/common/SortIcon';
 import DetalleSolicitudModal from '../components/solicitudes/DetalleSolicitudModal';
@@ -34,6 +35,7 @@ export default function HistorialAdmin() {
   const [sortKey, setSortKey] = useState<keyof SolicitudHistorial | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [detalleId, setDetalleId] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getHistorial().then(setSolicitudes);
@@ -73,8 +75,16 @@ export default function HistorialAdmin() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Historial de Solicitudes</h1>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold">Historial de Solicitudes</h1>
+          <button
+            onClick={() => navigate('/solicitudes-uie')}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+          >
+            ← Regresar
+          </button>
+        </div>
         <input
           placeholder="Buscar..."
           value={busqueda}

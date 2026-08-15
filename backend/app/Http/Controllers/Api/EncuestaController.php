@@ -17,7 +17,15 @@ class EncuestaController extends Controller
 
     public function yaEvaluada(int $idSolicitud)
     {
-        $existe = DB::table('encuesta')->where('id_solicitud', $idSolicitud)->exists();
+        // Alineado con el criterio usado en SolicitudController::historial():
+        // solo cuenta como evaluada si hay al menos una respuesta real
+        // (tipo_respuesta no nulo). Una fila que solo trae "observaciones"
+        // sin respuestas asociadas NO debe bloquear el formulario de evaluación.
+        $existe = DB::table('encuesta')
+            ->where('id_solicitud', $idSolicitud)
+            ->whereNotNull('tipo_respuesta')
+            ->exists();
+
         return response()->json(['evaluada' => $existe]);
     }
 

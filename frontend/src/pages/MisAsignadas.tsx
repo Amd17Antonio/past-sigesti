@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getMisAsignadas } from '../services/solicitudService';
 import SeguimientoModal from '../components/tickets/SeguimientoModal';
 import CerrarModal from '../components/tickets/CerrarModal';
 import SortIcon from '../components/common/SortIcon';
+import DetalleSolicitudModal from '../components/solicitudes/DetalleSolicitudModal';
 
 interface Solicitud {
   id: number;
@@ -33,8 +35,10 @@ export default function MisAsignadas() {
   const [busqueda, setBusqueda] = useState('');
   const [seguimientoId, setSeguimientoId] = useState<number | null>(null);
   const [cerrarId, setCerrarId] = useState<number | null>(null);
+  const [detalleId, setDetalleId] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const navigate = useNavigate();
 
   const cargar = () => {
     getMisAsignadas().then(setSolicitudes);
@@ -80,8 +84,16 @@ export default function MisAsignadas() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Mis Asignadas</h1>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold">Mis Asignadas</h1>
+          <button
+            onClick={() => navigate('/solicitudes-uie')}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+          >
+            ← Regresar
+          </button>
+        </div>
         <input
           placeholder="Buscar..."
           value={busqueda}
@@ -111,7 +123,16 @@ export default function MisAsignadas() {
         <tbody>
           {filtradas.map((s) => (
             <tr key={s.id} className="border-t align-top">
-              <td className="p-2">👁 {s.id}</td>
+              <td className="p-2">
+                <button
+                  onClick={() => setDetalleId(s.id)}
+                  className="mr-1 hover:opacity-70"
+                  title="Ver detalle"
+                >
+                  👁
+                </button>
+                {s.id}
+              </td>
               <td className="p-2">{s.solicitante}</td>
               <td className="p-2">{s.extension ?? '-'}</td>
               <td className="p-2">{s.area}</td>
@@ -155,6 +176,13 @@ export default function MisAsignadas() {
           solicitudId={cerrarId}
           onClose={() => setCerrarId(null)}
           onCerrado={cargar}
+        />
+      )}
+
+      {detalleId !== null && (
+        <DetalleSolicitudModal
+          idSolicitud={detalleId}
+          onClose={() => setDetalleId(null)}
         />
       )}
     </div>

@@ -6,6 +6,9 @@ import {
 } from '../../services/solicitudVpnService';
 import { colorPorEstatus } from '../../utils/estatusColor';
 import { OPCIONES_ESTATUS } from '../../utils/opcionesEstatus';
+import { opcionesEstatusDisponibles } from '../../utils/estatusFlujo';
+
+const ORDEN_ESTATUS_VPN = ['creado_cgd', 'atendiendo_dgti', 'activo'];
 
 export default function PanelEstatusVpnModal({
   idSolicitud, onClose, onActualizado,
@@ -63,6 +66,12 @@ export default function PanelEstatusVpnModal({
     );
   }
 
+  const opcionesDisponibles = opcionesEstatusDisponibles(
+    solicitud.estatus,
+    OPCIONES_ESTATUS,
+    ORDEN_ESTATUS_VPN,
+  );
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto relative">
@@ -84,8 +93,13 @@ export default function PanelEstatusVpnModal({
 
             <div className="flex items-center gap-3">
               <span className="bg-gray-100 px-3 py-2 text-sm text-gray-600 rounded-l">NUEVO ESTATUS</span>
-              <select value={nuevoEstatus} onChange={(e) => setNuevoEstatus(e.target.value as EstatusVpn)} className="border p-2 flex-1">
-                {OPCIONES_ESTATUS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <select
+                value={nuevoEstatus}
+                onChange={(e) => setNuevoEstatus(e.target.value as EstatusVpn)}
+                className="border p-2 flex-1"
+                disabled={solicitud.estatus === 'baja'}
+              >
+                {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
 

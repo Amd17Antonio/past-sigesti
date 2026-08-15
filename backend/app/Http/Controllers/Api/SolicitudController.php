@@ -116,6 +116,7 @@ class SolicitudController extends Controller
         $misIds = DB::table('solicitud')->where('usr_crea', $usuario->usuario)->pluck('id');
         $registros = DB::table('v_historial_solicitudes')
             ->whereIn('id', $misIds)
+            ->whereNotNull('fecha_cierre')
             ->orderBy('id', 'desc')
             ->get();
     } elseif ($rol === 'Soporte Técnico') {
@@ -125,12 +126,13 @@ class SolicitudController extends Controller
             ->orderBy('id', 'desc')
             ->get();
     } else {
+        // Administrador (y Capturista, si aplica): todas las cerradas, sin importar técnico
         $registros = DB::table('v_historial_solicitudes')
+            ->whereNotNull('fecha_cierre')
             ->orderBy('id', 'desc')
             ->get();
     }
 
-    // Marca qué solicitudes ya tienen encuesta registrada
     $idsEvaluadas = DB::table('encuesta')
         ->whereIn('id_solicitud', $registros->pluck('id'))
         ->whereNotNull('tipo_respuesta')
@@ -347,7 +349,7 @@ class SolicitudController extends Controller
         'usr_crea' => $usuario->usuario,
         'ip' => $request->ip(),
         'num_servicios' => 1,
-        'status_uie' => 0,
+        'status_uie' => 1,//0 ahora toda solicitud entra visible a "Solicitudes"
     ]);
 
     if ($rol === 'Usuario Solicitante') {

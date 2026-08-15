@@ -10,6 +10,7 @@ export interface SolicitudCorreo {
   area_interna?: string | null;
   correo_secundario?: string | null;
   telefono_contacto?: string | null;
+  extension?: string | null;
   correo_institucional?: string | null;
   usuario_generado?: string | null;
   motivo_baja?: string | null;

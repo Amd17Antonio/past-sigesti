@@ -5,13 +5,16 @@ import {
   type EstatusInternet,
 } from '../../services/solicitudInternetService';
 import { colorPorEstatus } from '../../utils/estatusColor';
+import { opcionesEstatusDisponibles } from '../../utils/estatusFlujo';
 
 const OPCIONES: { value: EstatusInternet; label: string }[] = [
-  { value: 'generado_uie', label: 'GENERADO POR UIE' },
-  { value: 'atendiendo_dt', label: 'ATENDIENDO POR DIRECCIÓN GENERAL DE TECNOLOGÍAS E INNOVACIÓN DIGITAL' },
+  { value: 'generado_uie', label: 'GENERADO POR CGD' },
+  { value: 'atendiendo_dt', label: 'ATENDIENDO DGTI' },
   { value: 'activo', label: 'SERVICIO ACTIVO' },
   { value: 'baja', label: 'BAJA DEL SERVICIO' },
 ];
+
+const ORDEN_ESTATUS_INTERNET = ['generado_uie', 'atendiendo_dt', 'activo'];
 
 export default function PanelEstatusInternetModal({
   idSolicitud, onClose, onActualizado,
@@ -71,6 +74,12 @@ export default function PanelEstatusInternetModal({
     );
   }
 
+  const opcionesDisponibles = opcionesEstatusDisponibles(
+    solicitud.estatus,
+    OPCIONES,
+    ORDEN_ESTATUS_INTERNET,
+  );
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto relative">
@@ -107,8 +116,9 @@ export default function PanelEstatusInternetModal({
                 value={nuevoEstatus}
                 onChange={(e) => setNuevoEstatus(e.target.value as EstatusInternet)}
                 className="border p-2 flex-1"
+                disabled={solicitud.estatus === 'baja'}
               >
-                {OPCIONES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
 

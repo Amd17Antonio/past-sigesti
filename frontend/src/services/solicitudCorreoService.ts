@@ -29,19 +29,40 @@ export const eliminarSolicitudCorreo = async (id: number) => {
   return data;
 };
 
-// Abre el PDF de la solicitud en una nueva pestaña (usa blob porque la ruta
-// requiere el token de autenticación, igual que la exportación a Excel de equipos-baja)
+// Abre el PDF de la solicitud (formato "Alta"/"Baja" de correo) en una nueva pestaña.
 export const imprimirSolicitudCorreo = async (id: number) => {
   const { data } = await axiosClient.get(`/solicitud-correo/${id}/pdf-url`);
   window.open(data.url, '_blank');
 };
 
+// Abre el PDF del oficio de creación/baja de correo institucional (usado en la vista de Resguardo).
+export const imprimirOficioCorreo = async (id: number) => {
+  const { data } = await axiosClient.get(`/solicitud-correo/${id}/oficio-url`);
+  window.open(data.url, '_blank');
+};
+
 export type EstatusCorreo = 'creado_cgd' | 'atendiendo_dgti' | 'activo' | 'baja';
 
+// El correo ya se captura en la creación de la solicitud, así que aquí ya no se pide de nuevo.
 export const cambiarEstatusSolicitudCorreo = async (
   id: number,
-  payload: { estatus: EstatusCorreo; folio_glpi?: string; observacion_glpi?: string; usuario_generado?: string; motivo_baja?: string }
+  payload: {
+    estatus: EstatusCorreo;
+    folio_glpi?: string;
+    observacion_glpi?: string;
+    usuario_generado?: string;
+    motivo_baja?: string;
+  }
 ) => {
   const { data } = await axiosClient.patch(`/solicitud-correo/${id}/estatus`, payload);
+  return data;
+};
+
+// Edita solo el correo institucional asignado (y usuario_generado) mientras el servicio ya está activo.
+export const actualizarAsignacionCorreo = async (
+  id: number,
+  payload: { correo_institucional: string; usuario_generado?: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-correo/${id}/asignacion`, payload);
   return data;
 };

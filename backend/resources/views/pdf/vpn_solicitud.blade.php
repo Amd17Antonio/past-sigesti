@@ -106,14 +106,12 @@
     <p class="seccion-titulo">Información del acceso remoto</p>
     <table class="formato">
         <tr>
-            <td class="label">
-                @if($s->tipo_acceso === 'link')
-                    Link del sistema:
-                @else
-                    IP y Puerto del servidor:
-                @endif
-            </td>
-            <td>{{ $s->tipo_acceso === 'link' ? ($s->link_sistema ?? '-') : ($s->ip_puerto ?? '-') }}</td>
+            <td class="label">Link del sistema:</td>
+            <td>{{ $s->link_sistema ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">IP y Puerto del servidor:</td>
+            <td>{{ $s->ip_puerto ?? '-' }}</td>
         </tr>
         <tr>
             <td class="label">Periodo de uso:</td>

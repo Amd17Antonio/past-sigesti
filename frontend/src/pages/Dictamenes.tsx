@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getDictamenes, type DictamenRow } from '../services/dictamenService';
 import { useAuth } from '../context/AuthContext';
 import SortIcon from '../components/common/SortIcon';
 import NuevoDictamenModal from '../components/dictamenes/NuevoDictamenModal';
 import EditarDictamenModal from '../components/dictamenes/EditarDictamenModal';
+import { getDictamenes, abrirDictamenPdf, type DictamenRow } from '../services/dictamenService';
 
 const COLUMNAS: { key: string; label: string }[] = [
   { key: 'folio_sistema', label: 'Folio Sistema' },
@@ -27,7 +27,13 @@ export default function Dictamenes() {
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [mostrarNuevo, setMostrarNuevo] = useState(false);
-  const [editandoId, setEditandoId] = useState<number | null>(null);
+
+  // Editar: ahora se identifica por folio_sistema (id_solicitud), no por el id del registro dictamen,
+  // porque una solicitud puede tener varias capturas y siempre debe editarse la más reciente.
+  const [editandoIdSolicitud, setEditandoIdSolicitud] = useState<number | null>(null);
+
+  // Descarga del PDF (badge azul del Folio Dictamen)
+  const [descargando, setDescargando] = useState<number | null>(null);
 
   const cargar = () => {
     getDictamenes({
@@ -55,6 +61,17 @@ export default function Dictamenes() {
   const handleSort = (key: string) => {
     if (sortBy === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortBy(key); setSortDir('asc'); }
+  };
+
+  const handleAbrirPdf = async (id: number) => {
+    setDescargando(id);
+    try {
+      await abrirDictamenPdf(id);
+    } catch {
+      alert('No se pudo generar el PDF del dictamen.');
+    } finally {
+      setDescargando(null);
+    }
   };
 
   const inicio = total === 0 ? 0 : (pagina - 1) * porPagina + 1;
@@ -109,7 +126,14 @@ export default function Dictamenes() {
             <tr key={d.id} className="border-t align-top">
               <td className="p-2">{d.folio_sistema}</td>
               <td className="p-2">
-                <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">⬇ {d.folio_dictamen}</span>
+                <button
+                  onClick={() => handleAbrirPdf(d.id)}
+                  disabled={descargando === d.id}
+                  className="bg-blue-600 text-white px-2 py-1 rounded text-xs disabled:opacity-50"
+                  title="Descargar / ver dictamen en PDF"
+                >
+                  {descargando === d.id ? '...' : `⬇ ${d.folio_dictamen}`}
+                </button>
               </td>
               <td className="p-2">{d.fecha_dictamen ?? '-'}</td>
               <td className="p-2">{d.expediente ?? '-'}</td>
@@ -117,7 +141,7 @@ export default function Dictamenes() {
               <td className="p-2">{d.no_inventario ?? '-'}</td>
               {esAdmin && (
                 <td className="p-2">
-                  <button onClick={() => setEditandoId(d.id)} className="bg-orange-400 text-white px-3 py-1 rounded text-xs">
+                  <button onClick={() => setEditandoIdSolicitud(d.folio_sistema)} className="bg-orange-400 text-white px-3 py-1 rounded text-xs">
                     ✏ Editar
                   </button>
                 </td>
@@ -141,8 +165,12 @@ export default function Dictamenes() {
       {mostrarNuevo && (
         <NuevoDictamenModal onClose={() => setMostrarNuevo(false)} onCreado={cargar} />
       )}
-      {editandoId !== null && (
-        <EditarDictamenModal id={editandoId} onClose={() => setEditandoId(null)} onActualizado={cargar} />
+      {editandoIdSolicitud !== null && (
+        <EditarDictamenModal
+          idSolicitud={editandoIdSolicitud}
+          onClose={() => setEditandoIdSolicitud(null)}
+          onActualizado={cargar}
+        />
       )}
     </div>
   );

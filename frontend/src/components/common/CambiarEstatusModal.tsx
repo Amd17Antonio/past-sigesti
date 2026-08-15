@@ -11,6 +11,15 @@ export interface DetalleCampo {
   value: React.ReactNode;
 }
 
+export interface CampoActivacion {
+  name: string;
+  label: string;
+  tipo?: 'text' | 'select';
+  opciones?: { value: string; label: string }[];
+  requerido?: boolean;
+  placeholder?: string;
+}
+
 interface Props {
   folio: number;
   estatusActual: string;
@@ -18,12 +27,16 @@ interface Props {
   estatusQueRequiereFolio: string;
   estatusActivo: string;
   estatusBaja: string;
-  onGuardar: (payload: {
-    estatus: string;
-    folio_glpi?: string;
-    observacion_glpi?: string;
-    motivo_baja?: string;
-  }) => Promise<void>;
+  /**
+   * Orden lineal de los estatus "de avance" (sin incluir baja), del primero al último,
+   * p.ej. ['creado_cgd', 'atendiendo_dgti', 'activo'].
+   * Se usa para no dejar seleccionar un paso anterior al actual ni saltar etapas.
+   * Si no se pasa, no se restringe nada (se muestran todas las `opciones`).
+   */
+  orden?: string[];
+  /** Campos extra que se piden solo cuando el nuevo estatus === estatusActivo (p.ej. extensión/DID/clave en telefonía, correo asignado en correo) */
+  camposActivacion?: CampoActivacion[];
+  onGuardar: (payload: Record<string, any>) => Promise<void>;
   onClose: () => void;
   onActualizado: () => void;
   cargarInfoGeneral?: () => Promise<DetalleCampo[]>;
@@ -36,6 +49,8 @@ export default function CambiarEstatusModal({
   estatusQueRequiereFolio,
   estatusActivo,
   estatusBaja,
+  orden,
+  camposActivacion,
   onGuardar,
   onClose,
   onActualizado,
@@ -46,6 +61,7 @@ export default function CambiarEstatusModal({
   const [folioGlpi, setFolioGlpi] = useState('');
   const [observacionGlpi, setObservacionGlpi] = useState('');
   const [motivoBaja, setMotivoBaja] = useState('');
+  const [valoresActivacion, setValoresActivacion] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -58,6 +74,23 @@ export default function CambiarEstatusModal({
   const esBaja = nuevoEstatus === estatusBaja;
   const requiereFolio = nuevoEstatus === estatusQueRequiereFolio;
 
+  // Ya está en un estatus terminal (baja): no se permite cambiar nada más.
+  const esTerminal = estatusActual === estatusBaja;
+
+  // Filtra las opciones visibles según el flujo lineal definido en `orden`:
+  // solo se permite quedarse en el estatus actual, avanzar al SIGUIENTE inmediato,
+  // o pasar a baja. No se puede regresar a un paso anterior ni saltar etapas.
+  const opcionesDisponibles = (() => {
+    if (!orden || orden.length === 0) return opciones;
+    if (esTerminal) return opciones.filter((o) => o.value === estatusBaja);
+    const idxActual = orden.indexOf(estatusActual);
+    if (idxActual === -1) return opciones; // estatus no contemplado en el orden, no restringe
+    const siguiente = orden[idxActual + 1]; // undefined si ya es el último paso
+    return opciones.filter(
+      (o) => o.value === estatusBaja || o.value === estatusActual || o.value === siguiente,
+    );
+  })();
+
   useEffect(() => {
     if (tab === 'info' && cargarInfoGeneral && infoCampos === null && !infoCargando) {
       setInfoCargando(true);
@@ -69,6 +102,10 @@ export default function CambiarEstatusModal({
     }
   }, [tab, cargarInfoGeneral, infoCampos, infoCargando]);
 
+  const handleCampoActivacion = (name: string, value: string) => {
+    setValoresActivacion((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleAplicar = async () => {
     setError('');
     if (requiereFolio && !folioGlpi.trim()) {
@@ -79,14 +116,32 @@ export default function CambiarEstatusModal({
       setError('Describe el motivo de baja con más detalle.');
       return;
     }
+    if (esActivar && camposActivacion) {
+      for (const campo of camposActivacion) {
+        if (campo.requerido && !(valoresActivacion[campo.name] ?? '').trim()) {
+          setError(`El campo "${campo.label}" es obligatorio para activar el servicio.`);
+          return;
+        }
+      }
+    }
+
     setEnviando(true);
     try {
-      await onGuardar({
+      const payload: Record<string, any> = {
         estatus: nuevoEstatus,
         folio_glpi: requiereFolio ? folioGlpi : undefined,
         observacion_glpi: requiereFolio ? (observacionGlpi || undefined) : undefined,
         motivo_baja: esBaja ? motivoBaja : undefined,
-      });
+      };
+
+      if (esActivar && camposActivacion) {
+        for (const campo of camposActivacion) {
+          const val = valoresActivacion[campo.name];
+          if (val !== undefined && val !== '') payload[campo.name] = val;
+        }
+      }
+
+      await onGuardar(payload);
       onActualizado();
       onClose();
     } catch (e: any) {
@@ -144,15 +199,22 @@ export default function CambiarEstatusModal({
                 <select
                   value={nuevoEstatus}
                   onChange={(e) => setNuevoEstatus(e.target.value)}
-                  className="border rounded p-2 w-full uppercase"
+                  className="border rounded p-2 w-full uppercase disabled:bg-gray-100 disabled:text-gray-400"
+                  disabled={esTerminal}
                 >
-                  {opciones.map((o) => (
+                  {opcionesDisponibles.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {esTerminal && (
+                <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded p-2">
+                  Esta solicitud ya fue dada de baja y no admite más cambios de estatus.
+                </p>
+              )}
 
               {requiereFolio && (
                 <>
@@ -176,6 +238,41 @@ export default function CambiarEstatusModal({
                 </>
               )}
 
+              {esActivar && camposActivacion && camposActivacion.length > 0 && (
+                <div className="border rounded p-3 bg-green-50 space-y-3">
+                  <p className="text-xs font-medium text-green-700 uppercase">Datos del servicio activo</p>
+                  {camposActivacion.map((campo) => (
+                    <div key={campo.name}>
+                      <label className="text-sm font-medium block mb-1">
+                        {campo.label}
+                        {campo.requerido && <span className="text-red-500"> *</span>}
+                      </label>
+                      {campo.tipo === 'select' ? (
+                        <select
+                          value={valoresActivacion[campo.name] ?? ''}
+                          onChange={(e) => handleCampoActivacion(campo.name, e.target.value)}
+                          className="border rounded p-2 w-full"
+                        >
+                          <option value="">Selecciona...</option>
+                          {campo.opciones?.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          value={valoresActivacion[campo.name] ?? ''}
+                          onChange={(e) => handleCampoActivacion(campo.name, e.target.value)}
+                          placeholder={campo.placeholder}
+                          className="border rounded p-2 w-full"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {esBaja && (
                 <div>
                   <label className="text-sm font-medium block mb-1">Motivo de baja:</label>
@@ -193,7 +290,7 @@ export default function CambiarEstatusModal({
               <div className="flex justify-end">
                 <button
                   onClick={handleAplicar}
-                  disabled={enviando}
+                  disabled={enviando || esTerminal}
                   style={{ backgroundColor: colorBoton }}
                   className="text-white px-5 py-2 rounded disabled:opacity-50"
                 >

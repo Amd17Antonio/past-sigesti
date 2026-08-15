@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesTelefonia,
   eliminarSolicitudTelefonia,
@@ -9,7 +10,7 @@ import SolicitudTelefoniaWizard from '../components/telefonia/SolicitudTelefonia
 import SortIcon from '../components/common/SortIcon';
 import EditarSolicitudTelefoniaModal from '../components/telefonia/EditarSolicitudTelefoniaModal';
 import SenalEstatus from '../components/common/SenalEstatus';
-import CambiarEstatusModal from '../components/common/CambiarEstatusModal';
+import CambiarEstatusModal, { type CampoActivacion } from '../components/common/CambiarEstatusModal';
 import { useAuth } from '../context/AuthContext';
 import {
   ESTATUS_TELEFONIA_LABEL,
@@ -27,8 +28,50 @@ const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
   { key: 'correo_institucional', label: 'Correo' },
 ];
 
+// Orden lineal del flujo: no se puede regresar a un paso anterior ni saltar etapas.
+const ORDEN_ESTATUS_TELEFONIA = ['creado_cgd', 'atendiendo_dgti', 'activo'];
+
+// Solo estos trámites piden datos extra al activar el servicio. Los demás
+// (CAMBIO_USUARIO, MODIFICAR_DATOS, CAMBIO_DID, CAMBIO_CATEGORIA, JEFE_SECRETARIA, OTROS)
+// aplican automáticamente al usuario real lo que ya se capturó en la solicitud.
+function camposActivacionParaTramite(tramite: string): CampoActivacion[] {
+  if (tramite === 'SOLICITAR_TELEFONO') {
+    return [
+      { name: 'extension_asignada', label: 'Extensión asignada', requerido: true },
+      { name: 'did_asignado', label: 'DID asignado' },
+      {
+        name: 'tipo_clave',
+        label: 'Tipo de clave',
+        tipo: 'select',
+        opciones: [
+          { value: 'PIN', label: 'PIN' },
+          { value: 'CN', label: 'CN' },
+        ],
+      },
+      { name: 'clave_asignada', label: 'Clave (PIN o CN)' },
+    ];
+  }
+  if (tramite === 'CAMBIO_PIN_CN') {
+    return [
+      {
+        name: 'tipo_clave',
+        label: 'Nuevo tipo de clave',
+        tipo: 'select',
+        requerido: true,
+        opciones: [
+          { value: 'PIN', label: 'PIN' },
+          { value: 'CN', label: 'CN' },
+        ],
+      },
+      { name: 'clave_asignada', label: 'Nuevo valor (PIN o CN)', requerido: true },
+    ];
+  }
+  return [];
+}
+
 export default function SolicitudTelefono() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [solicitudes, setSolicitudes] = useState<SolicitudTelefoniaRow[]>([]);
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [filtroEstatus, setFiltroEstatus] = useState('todos');
@@ -56,12 +99,12 @@ export default function SolicitudTelefono() {
   };
 
   const handleGenerarPdf = async (id: number) => {
-  try {
-    await imprimirSolicitudTelefoniaPdf(id);
-  } catch {
-    alert('No se pudo generar el PDF de la solicitud.');
-  }
-};
+    try {
+      await imprimirSolicitudTelefoniaPdf(id);
+    } catch {
+      alert('No se pudo generar el PDF de la solicitud.');
+    }
+  };
 
   const handleFiltroColumna = (key: string, value: string) => {
     setFiltros({ ...filtros, [key]: value });
@@ -114,9 +157,19 @@ export default function SolicitudTelefono() {
 
       <div className="border border-t-0 rounded-b p-4">
         <div className="flex justify-between items-center mb-3">
-          <button onClick={() => setMostrarModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-            + Nueva Solicitud
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setMostrarModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+              + Nueva Solicitud
+            </button>
+            {user?.rol?.nombre === 'Administrador' && (
+              <button
+                onClick={() => navigate('/resguardo/telefonia')}
+                className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+              >
+                Resguardo Telefonía
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 text-sm">
             <span>Mostrar</span>
@@ -136,7 +189,11 @@ export default function SolicitudTelefono() {
             <thead>
               <tr className="bg-gray-100">
                 {COLUMNAS.map((c) => (
-                  <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
+                  <th
+                    key={c.key}
+                    className={`p-2 text-left cursor-pointer ${c.key === 'id' ? 'w-14' : ''}`}
+                    onClick={() => handleSort(c.key)}
+                  >
                     <span className="inline-flex items-center">
                       {c.label}
                       <SortIcon active={sortKey === c.key} direction={sortDir} />
@@ -144,11 +201,11 @@ export default function SolicitudTelefono() {
                   </th>
                 ))}
                 <th className="p-2 text-left">Estatus</th>
-                <th className="p-2 text-left">Acciones</th>
+                <th className="p-2 text-left w-[120px]">Acciones</th>
               </tr>
               <tr className="bg-gray-50">
                 {COLUMNAS.map((c) => (
-                  <th key={c.key} className="p-1">
+                  <th key={c.key} className={`p-1 ${c.key === 'id' ? 'w-14' : ''}`}>
                     {c.key === 'tramite' ? (
                       <select
                         value={filtroTramite}
@@ -187,7 +244,7 @@ export default function SolicitudTelefono() {
             <tbody>
               {paginadas.map((s) => (
                 <tr key={s.id} className="border-t">
-                  <td className="p-2">
+                  <td className="p-2 w-14">
                     {user?.rol?.nombre === 'Administrador' ? (
                       <button
                         onClick={() => setVerEstatus(s)}
@@ -204,18 +261,40 @@ export default function SolicitudTelefono() {
                   <td className="p-2">{s.extension ?? '-'}</td>
                   <td className="p-2">{s.puesto ?? '-'}</td>
                   <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                  <td className="p-2 flex items-center gap-2">
-                    <SenalEstatus tipo="telefono" estatus={s.estatus} />
-                    {ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}
+                  <td className="p-2">
+                    <div className="flex items-center gap-2">
+                      <SenalEstatus tipo="telefono" estatus={s.estatus} />
+                      {ESTATUS_TELEFONIA_LABEL[s.estatus] ?? s.estatus}
+                    </div>
                   </td>
-                  <td className="p-2 flex gap-2 whitespace-nowrap">
-                    <button onClick={() => handleGenerarPdf(s.id)} title="Generar PDF">📄</button>
+                  <td className="p-2 whitespace-nowrap w-[120px]">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleGenerarPdf(s.id)}
+                        title="Generar PDF"
+                        className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors"
+                      >
+                        📄
+                      </button>
                       {s.estatus === 'creado_cgd' ? (
-                      <button onClick={() => setEditando(s)} title="Editar">✏️</button>
-                    ) : (
-                      <span className="opacity-30 cursor-not-allowed" title="No editable">✏️</span>
-                    )}
-                    <button onClick={() => handleEliminar(s.id)} title="Dar de baja">🗑️</button>
+                        <button
+                          onClick={() => setEditando(s)}
+                          title="Editar"
+                          className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
+                        >
+                          ✏️
+                        </button>
+                      ) : (
+                        <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable">✏️</span>
+                      )}
+                      <button
+                        onClick={() => handleEliminar(s.id)}
+                        title="Dar de baja"
+                        className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -271,9 +350,11 @@ export default function SolicitudTelefono() {
             { value: 'activo', label: 'SERVICIO ACTIVO' },
             { value: 'baja', label: 'BAJA' },
           ]}
+          orden={ORDEN_ESTATUS_TELEFONIA}
           estatusQueRequiereFolio="atendiendo_dgti"
           estatusActivo="activo"
           estatusBaja="baja"
+          camposActivacion={camposActivacionParaTramite(verEstatus.tramite)}
           onGuardar={(payload) => cambiarEstatusSolicitudTelefonia(verEstatus.id, payload as any)}
           onClose={() => setVerEstatus(null)}
           onActualizado={cargar}
@@ -292,7 +373,21 @@ export default function SolicitudTelefono() {
               { label: 'Modelo', value: solicitud.modelo },
               { label: 'MAC', value: solicitud.mac },
               { label: 'No. Serie', value: solicitud.numero_serie },
+              { label: 'Extensión asignada', value: solicitud.extension_asignada },
+              { label: 'DID asignado', value: solicitud.did_asignado },
+              {
+                label: 'Clave asignada',
+                value: solicitud.clave_asignada
+                  ? `${solicitud.tipo_clave}: ${solicitud.clave_asignada}`
+                  : null,
+              },
               { label: 'Observaciones', value: solicitud.observaciones },
+              {
+                label: 'Datos capturados en la solicitud',
+                value: solicitud.detalle && Object.keys(solicitud.detalle).length > 0
+                  ? JSON.stringify(solicitud.detalle, null, 2)
+                  : null,
+              },
               {
                 label: 'Estatus',
                 value: [

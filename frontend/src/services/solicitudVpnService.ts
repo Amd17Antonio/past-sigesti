@@ -45,9 +45,11 @@ export const cambiarEstatusSolicitudVpn = async (
   return data;
 };
 
-export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
-  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, { responseType: 'blob' });
-  const blob = new Blob([response.data], { type: 'application/pdf' });
-  const url = window.URL.createObjectURL(blob);
-  window.open(url, '_blank');
+// Edita el link y la IP/puerto asignados mientras el servicio ya está activo (ambos siempre requeridos).
+export const actualizarAsignacionVpn = async (
+  id: number,
+  payload: { link_sistema: string; ip_puerto: string }
+) => {
+  const { data } = await axiosClient.patch(`/solicitud-vpn/${id}/asignacion`, payload);
+  return data;
 };

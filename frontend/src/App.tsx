@@ -23,6 +23,9 @@ import Metas from './pages/consultas/Metas';
 import MisAsignadas from './pages/MisAsignadas';
 import SolicitudesCorreo from './pages/SolicitudesCorreo';
 import SolicitudesVpn from './pages/SolicitudesVpn';
+import ResguardoTelefonia from './pages/ResguardoTelefonia';
+import ResguardoCorreo from './pages/ResguardoCorreo';
+import ResguardoVpn from './pages/ResguardoVpn';
 
 
 function App() {
@@ -48,6 +51,9 @@ function App() {
           <Route path="/solicitud-internet" element={<SolicitudInternet />} />
           <Route path="/solicitudes" element={<Solicitudes />} />
           <Route path="/solicitud-telefono" element={<SolicitudTelefono />} />
+          <Route path="/resguardo/telefonia" element={<ResguardoTelefonia />} />
+          <Route path="/resguardo/correo" element={<ResguardoCorreo />} />
+          <Route path="/resguardo/vpn" element={<ResguardoVpn />} />
           <Route path="/catalogos/telefonos" element={<CatalogoTelefonos />} />
           <Route path="/catalogos/:slug" element={<CatalogoGenerico />} />
           <Route path="/catalogos/usuarios" element={<CatalogoUsuarios />} />

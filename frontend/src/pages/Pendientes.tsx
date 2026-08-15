@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getPendientes } from '../services/solicitudService';
 import { useAuth } from '../context/AuthContext';
 import AsignarModal from '../components/tickets/AsignarModal';
@@ -33,6 +34,7 @@ export default function Pendientes() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const { user } = useAuth();
   const rol = user?.rol?.nombre;
+  const navigate = useNavigate();
 
   const puedeAsignar = rol !== 'Usuario Solicitante';
   const puedeCrear = rol === 'Administrador';
@@ -71,8 +73,16 @@ export default function Pendientes() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Solicitudes Pendientes</h1>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold">Solicitudes Pendientes</h1>
+          <button
+            onClick={() => navigate('/solicitudes-uie')}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+          >
+            ← Regresar
+          </button>
+        </div>
         <div className="flex gap-2">
           <input
             placeholder="Buscar..."

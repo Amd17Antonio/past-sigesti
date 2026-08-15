@@ -39,6 +39,17 @@ Route::get('/solicitud-internet/{id}/pdf-firmado', [SolicitudInternetController:
     ->name('solicitud-internet.pdf.firmado')
     ->middleware('signed');
 
+    Route::get('/dictamenes/{id}/pdf-firmado', [DictamenController::class, 'imprimirFirmado'])
+    ->name('dictamen.pdf.firmado')
+    ->middleware('signed');
+
+
+Route::get('/solicitud-telefono/{id}/pdf-resguardo', [SolicitudTelefoniaController::class, 'imprimirResguardo']);
+Route::get('/solicitud-correo/{id}/oficio-url', [SolicitudCorreoController::class, 'oficioUrl']);
+Route::get('/solicitud-correo/{id}/oficio-firmado', [SolicitudCorreoController::class, 'oficioFirmado'])
+    ->name('solicitud-correo.oficio.firmado');
+
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -108,6 +119,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/solicitudes/asignables', [SolicitudController::class, 'asignables']);
     Route::post('/solicitudes/{id}/asignar', [SolicitudController::class, 'asignar']);
 
+    Route::get('/dictamenes/{id}/pdf', [DictamenController::class, 'pdf'])->whereNumber('id');
+Route::get('/dictamenes/{id}/pdf-url', [DictamenController::class, 'pdfUrl'])->whereNumber('id');
+Route::get('/dictamenes/solicitud/{idSolicitud}/ultimo', [DictamenController::class, 'ultimoPorSolicitud'])->whereNumber('idSolicitud');
+
     Route::get('/catalogos/{slug}', [CatalogoController::class, 'index']);
     Route::post('/catalogos/{slug}', [CatalogoController::class, 'store']);
     Route::put('/catalogos/{slug}/{id}', [CatalogoController::class, 'update']);
@@ -131,6 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/solicitud-telefono/{id}', [SolicitudTelefoniaController::class, 'show']);
 Route::patch('/solicitud-telefono/{id}/estatus', [SolicitudTelefoniaController::class, 'cambiarEstatus']);
 Route::get('/solicitud-telefono/{id}/pdf', [SolicitudTelefoniaController::class, 'imprimir']);
+Route::patch('/solicitud-telefono/{id}/asignacion', [SolicitudTelefoniaController::class, 'actualizarAsignacion']);
 
     Route::get('/catalogo-telefonos', [CatalogoTelefoniaController::class, 'index']);
     Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
@@ -158,6 +174,7 @@ Route::patch('/solicitud-internet/{id}/estatus', [SolicitudInternetController::c
     Route::get('/solicitud-correo/{id}/pdf-url', [SolicitudCorreoController::class, 'pdfUrl']);
    // Route::get('/solicitud-correo/{id}', [SolicitudCorreoController::class, 'showDetalle']);
 Route::patch('/solicitud-correo/{id}/estatus', [SolicitudCorreoController::class, 'cambiarEstatus']);
+Route::patch('/solicitud-correo/{id}/asignacion', [SolicitudCorreoController::class, 'actualizarAsignacion']);
 
     Route::get('/solicitud-vpn', [SolicitudVpnController::class, 'index']);
     Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
@@ -168,6 +185,7 @@ Route::patch('/solicitud-correo/{id}/estatus', [SolicitudCorreoController::class
     Route::get('/solicitud-vpn/{id}/pdf-url', [SolicitudVpnController::class, 'pdfUrl']);
     //Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
 Route::patch('/solicitud-vpn/{id}/estatus', [SolicitudVpnController::class, 'cambiarEstatus']);
+Route::patch('/solicitud-vpn/{id}/asignacion', [SolicitudVpnController::class, 'actualizarAsignacion']);
 
     Route::get('/equipos-baja', [EquipoBajaController::class, 'index']);
     Route::get('/equipos-baja/exportar', [EquipoBajaController::class, 'exportar']);

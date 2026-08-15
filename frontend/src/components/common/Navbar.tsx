@@ -2,15 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { CATALOGOS } from '../catalogos/CatalogosConfig';
 import NotificationBell from './NotificationBell';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `px-4 py-4 text-sm font-medium whitespace-nowrap ${isActive ? 'bg-purple-800' : 'hover:bg-purple-700'}`;
 
+interface DropdownItem {
+  to: string;
+  label: string;
+  grupo?: string;
+}
+
 interface DropdownProps {
   label: string;
-  items: { to: string; label: string }[];
+  items: DropdownItem[];
 }
 
 function Dropdown({ label, items }: DropdownProps) {
@@ -54,6 +59,19 @@ function Dropdown({ label, items }: DropdownProps) {
     };
   }, [open]);
 
+  // Agrupa manteniendo el orden de aparición de cada grupo.
+  // Items sin "grupo" quedan sueltos (sin encabezado) en el orden en que llegan.
+  const grupos: { nombre: string | null; items: DropdownItem[] }[] = [];
+  items.forEach((item) => {
+    const nombreGrupo = item.grupo ?? null;
+    let grupo = grupos.find((g) => g.nombre === nombreGrupo);
+    if (!grupo) {
+      grupo = { nombre: nombreGrupo, items: [] };
+      grupos.push(grupo);
+    }
+    grupo.items.push(item);
+  });
+
   return (
     <>
       <button
@@ -68,17 +86,26 @@ function Dropdown({ label, items }: DropdownProps) {
         <div
           ref={panelRef}
           style={{ position: 'fixed', top: coords.top, left: coords.left }}
-          className="bg-white text-gray-800 shadow-lg rounded-b min-w-[200px] z-[9999]"
+          className="bg-white text-gray-800 shadow-lg rounded-b min-w-[220px] max-h-[80vh] overflow-y-auto z-[9999]"
         >
-          {items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm hover:bg-purple-50"
-            >
-              {item.label}
-            </NavLink>
+          {grupos.map((grupo, i) => (
+            <div key={grupo.nombre ?? `sin-grupo-${i}`}>
+              {grupo.nombre && (
+                <div className="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-purple-700 bg-purple-50">
+                  {grupo.nombre}
+                </div>
+              )}
+              {grupo.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm hover:bg-purple-50"
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </div>,
         document.body
@@ -108,32 +135,49 @@ export default function Navbar() {
           {rol === 'Administrador' && (
             <>
               <NavLink to="/solicitudes-uie" className={linkClass}>Solicitudes</NavLink>
-              <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
-              <NavLink to="/asignadas" className={linkClass}>Asignadas</NavLink>
-              <NavLink to="/mis-asignadas" className={linkClass}>Mis Asignadas</NavLink>
-              <NavLink to="/historial" className={linkClass}>Historial</NavLink>
               <NavLink to="/dictamenes" className={linkClass}>Dictámenes</NavLink>
-              <NavLink to="/mantenimiento" className={linkClass}>Mantenimiento</NavLink>
               <Dropdown
-                label="Consultas"
+                label="📋 Consultas"
                 items={[
-                  { to: '/consultas/metas', label: 'Metas' },
                   { to: '/consultas/actividades', label: 'Actividades' },
+                  { to: '/mantenimiento', label: 'Mantenimiento' },
+                  { to: '/consultas/metas', label: 'Metas' },
+                ]}
+              />
+              
+              <Dropdown
+                label="🗃️ Catálogos"
+                items={[
+                  { to: '/catalogos/preguntas', label: 'Preguntas (Encuesta)', grupo: 'Encuestas' },
+
+                  { to: '/catalogos/enlace-informatico', label: 'Enlace Informático', grupo: 'Equipo de Cómputo' },
+                  { to: '/catalogos/marcas', label: 'Marcas', grupo: 'Equipo de Cómputo' },
+                  { to: '/catalogos/modelos', label: 'Modelos', grupo: 'Equipo de Cómputo' },
+                  { to: '/catalogos/so', label: 'Sistemas Operativos', grupo: 'Equipo de Cómputo' },
+                  { to: '/catalogos/tipo-equipo', label: 'Tipo de Equipo', grupo: 'Equipo de Cómputo' },
+                  { to: '/consultas/equipos', label: 'Equipo de Cómputo', grupo: 'Equipo de Cómputo' },
+
+                  { to: '/catalogos/autoriza-internet', label: 'Autoriza Internet', grupo: 'Internet' },
+
+                  { to: '/catalogos/areas', label: 'Áreas', grupo: 'Organización' },
+                  { to: '/catalogos/cargos', label: 'Cargos', grupo: 'Organización' },
+                  { to: '/catalogos/poa', label: 'POA', grupo: 'Organización' },
+
+                  { to: '/catalogos/categoria-telefonia', label: 'Categorías de Telefonía', grupo: 'Telefonía' },
+                  { to: '/catalogos/telefonos', label: 'Teléfonos', grupo: 'Telefonía' },
+
+                  { to: '/catalogos/usuarios', label: 'Usuarios', grupo: 'Usuarios' },
                 ]}
               />
               <Dropdown
-                label="Catálogos"
+                label="🌐 Servicios"
                 items={[
-                  { to: '/catalogos/usuarios', label: 'Usuarios' },
-                  ...CATALOGOS.map((c) => ({ to: `/catalogos/${c.slug}`, label: c.titulo })),
-                  { to: '/catalogos/telefonos', label: 'Teléfonos' },
-                  { to: '/consultas/equipos', label: 'Equipo de Cómputo' },
+                  { to: '/solicitud-correo', label: 'Correo' },
+                  { to: '/solicitud-internet', label: 'Internet' },
+                  { to: '/solicitud-telefono', label: 'Teléfono' },
+                  { to: '/solicitud-vpn', label: 'VPN' },
                 ]}
               />
-              <NavLink to="/solicitud-internet" className={linkClass}>Internet</NavLink>
-              <NavLink to="/solicitud-telefono" className={linkClass}>Teléfono</NavLink>
-              <NavLink to="/solicitud-correo" className={linkClass}>Correo</NavLink>
-              <NavLink to="/solicitud-vpn" className={linkClass}>VPN</NavLink>
               <NotificationBell />
             </>
           )}
@@ -141,10 +185,10 @@ export default function Navbar() {
           {rol === 'Capturista' && (
             <>
               <NavLink to="/solicitudes-uie" className={linkClass}>Solicitudes</NavLink>
-              <NavLink to="/solicitudes" className={linkClass}>Tickets</NavLink>
-              <NavLink to="/asignadas" className={linkClass}>Asignadas</NavLink>
+              {/* <NavLink to="/solicitudes" className={linkClass}>Tickets</NavLink> */}
+             {/*  <NavLink to="/asignadas" className={linkClass}>Asignadas</NavLink>
               <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
-              <NavLink to="/historial" className={linkClass}>Historial</NavLink>
+              <NavLink to="/historial" className={linkClass}>Historial</NavLink>  */}
               <NotificationBell />
             </>
           )}
@@ -154,15 +198,20 @@ export default function Navbar() {
               <NavLink to="/asignadas" className={linkClass}>Asignadas</NavLink>
               <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
               <NavLink to="/historial" className={linkClass}>Historial</NavLink>
-              <NavLink to="/solicitud-internet" className={linkClass}>Internet</NavLink>
-              <NavLink to="/solicitud-telefono" className={linkClass}>Teléfono</NavLink>
-              <NavLink to="/solicitud-correo" className={linkClass}>Correo</NavLink>
-              <NavLink to="/solicitud-vpn" className={linkClass}>VPN</NavLink>
+              <Dropdown
+                label="🌐 Servicios"
+                items={[
+                  { to: '/solicitud-correo', label: 'Correo' },
+                  { to: '/solicitud-internet', label: 'Internet' },
+                  { to: '/solicitud-telefono', label: 'Teléfono' },
+                  { to: '/solicitud-vpn', label: 'VPN' },
+                ]}
+              />
               <NotificationBell />
             </>
           )}
 
-           {rol === 'Recursos Materiales' && (
+          {rol === 'Recursos Materiales' && (
             <NavLink to="/equipos-baja" className={linkClass}>Equipos para Baja</NavLink>
           )}
 
@@ -172,7 +221,7 @@ export default function Navbar() {
               <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
               <NavLink to="/historial" className={linkClass}>Historial</NavLink>
               <NavLink to="/dictamenes" className={linkClass}>Consultar Dictamen</NavLink>
-               <a
+              <a
                 href="http://tiny.cc/Identidad-SHTFP"
                 target="_blank"
                 rel="noopener noreferrer"
