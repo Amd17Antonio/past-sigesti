@@ -20,7 +20,7 @@ class CatalogoTelefoniaController extends Controller
                 'ut.correo_institucional', 'ut.correo_externo', 'ut.correo_jefe',
                 'ut.extension', 'ut.did', 'ut.mac', 'ut.modelo', 'ut.numero_serie',
                 'ut.edificio', 'ut.nodo', 'ut.nivel', 'ut.status', 'ut.observaciones',
-                'ut.categoria_id', 'ut.area_id', 'ut.dependencia_id',
+                'ut.categoria_id', 'ut.justificacion_categoria', 'ut.area_id', 'ut.dependencia_id',
                 'ae.area as area_especifica', 'dep.area as dependencia', 'c.categoria'
             )
             ->orderBy('ut.id', 'desc')
@@ -31,16 +31,18 @@ class CatalogoTelefoniaController extends Controller
             ->groupBy('usuario_id')
             ->pluck('total', 'usuario_id');
 
-        // vinculado_como_secretaria_de = el/los jefe(s) superior(es) de este usuario
         $jefeDe = DB::table('jefe_secretaria as js')
             ->join('usuarios_telefonia as sec', 'sec.id', '=', 'js.secretaria_id')
+            ->where('js.estatus', 'activo')
             ->select('js.jefe_id', 'sec.nombre as secretaria_nombre')
             ->get()
             ->groupBy('jefe_id');
 
+        // Para cada usuario (como "secretaria"), su jefe_id + nombre del jefe vigente.
         $secretariaDe = DB::table('jefe_secretaria as js')
             ->join('usuarios_telefonia as jefe', 'jefe.id', '=', 'js.jefe_id')
-            ->select('js.secretaria_id', 'jefe.nombre as jefe_nombre')
+            ->where('js.estatus', 'activo')
+            ->select('js.secretaria_id', 'js.jefe_id', 'jefe.nombre as jefe_nombre')
             ->get()
             ->groupBy('secretaria_id');
 
@@ -49,10 +51,12 @@ class CatalogoTelefoniaController extends Controller
             $r->vinculado_como_jefe_de = isset($jefeDe[$r->id])
                 ? $jefeDe[$r->id]->pluck('secretaria_nombre')->implode(', ')
                 : null;
-            // Este es el "Jefe Superior" que se muestra en la ficha (solo lectura)
-            $r->vinculado_como_secretaria_de = isset($secretariaDe[$r->id])
-                ? $secretariaDe[$r->id]->pluck('jefe_nombre')->implode(', ')
-                : null;
+
+            $rel = $secretariaDe[$r->id] ?? null;
+            // Jefe Superior: se muestra y edita a través de esta relación
+            $r->jefe_id = $rel ? $rel->first()->jefe_id : null;
+            $r->vinculado_como_secretaria_de = $rel ? $rel->first()->jefe_nombre : null;
+
             return $r;
         });
 
@@ -66,6 +70,7 @@ class CatalogoTelefoniaController extends Controller
             'apellido_paterno', 'apellido_materno', 'puesto', 'correo_institucional',
             'modelo', 'numero_serie', 'mac', 'edificio', 'nivel',
             'categoria_id', 'status', 'nivel_puesto', 'correo_jefe', 'nodo', 'observaciones',
+            'justificacion_categoria', 'jefe_id',
         ]))->map(fn ($v) => $v === '' ? null : $v)->toArray());
 
         $data = $request->validate([
@@ -81,13 +86,12 @@ class CatalogoTelefoniaController extends Controller
             'edificio' => 'nullable|string|max:20',
             'nivel' => 'nullable|string|max:20',
             'categoria_id' => 'nullable|integer|exists:cat_categoria_telefonia,id',
-            // Enum real de la BD: Activo, Suspendido, Baja, Mantenimiento
             'status' => 'nullable|in:Activo,Suspendido,Baja,Mantenimiento',
-            // NUEVOS: campos editables de la ficha completa (todos ya existen en la tabla)
             'nivel_puesto' => 'nullable|string|max:30',
             'correo_jefe' => 'nullable|email|max:150',
             'nodo' => 'nullable|string|max:50',
             'observaciones' => 'nullable|string',
+            'justificacion_categoria' => 'nullable|string',
         ], [
             'mac.regex' => 'La MAC no tiene un formato válido (XX:XX:XX:XX:XX:XX).',
             'categoria_id.exists' => 'La categoría seleccionada no existe.',
@@ -98,6 +102,37 @@ class CatalogoTelefoniaController extends Controller
             ...$data,
             'updated_at' => now(),
         ]);
+
+        // Jefe Superior: vive en la tabla pivote jefe_secretaria, no como columna directa.
+        if ($request->has('jefe_id')) {
+            $jefeId = $request->validate([
+                'jefe_id' => 'nullable|integer|exists:usuarios_telefonia,id',
+            ])['jefe_id'];
+
+            $existente = DB::table('jefe_secretaria')->where('secretaria_id', $id)->first();
+
+            if (!$jefeId) {
+                // Se quitó el jefe: desactiva la relación (no se borra, por si hay historial referenciado)
+                if ($existente) {
+                    DB::table('jefe_secretaria')->where('secretaria_id', $id)
+                        ->update(['estatus' => 'inactivo', 'updated_at' => now()]);
+                }
+            } elseif ($existente) {
+                DB::table('jefe_secretaria')->where('secretaria_id', $id)->update([
+                    'jefe_id' => $jefeId,
+                    'estatus' => 'activo',
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('jefe_secretaria')->insert([
+                    'jefe_id' => $jefeId,
+                    'secretaria_id' => $id,
+                    'estatus' => 'activo',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
 
         return response()->json(['message' => 'Línea telefónica actualizada']);
     }

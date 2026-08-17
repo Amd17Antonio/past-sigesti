@@ -407,17 +407,22 @@ class SolicitudTelefoniaController extends Controller
                 break;
 
             case 'CAMBIO_CATEGORIA':
-                if ($detalle) {
-                    foreach (['puesto', 'correo_institucional', 'clave_puesto', 'direccion'] as $campo) {
-                        if (!empty($detalle[$campo])) {
-                            $update[$campo] = $detalle[$campo];
-                        }
-                    }
-                    if (!empty($detalle['categoria_id'])) {
-                        $update['categoria_id'] = $detalle['categoria_id'];
-                    }
-                }
-                break;
+    if ($detalle) {
+        foreach (['puesto', 'correo_institucional', 'clave_puesto', 'direccion'] as $campo) {
+            if (!empty($detalle[$campo])) {
+                $update[$campo] = $detalle[$campo];
+            }
+        }
+        if (!empty($detalle['categoria_id'])) {
+            $update['categoria_id'] = $detalle['categoria_id'];
+        }
+        // La justificación capturada en el wizard (clave "justificacion") ahora
+        // se refleja en el campo justificacion_categoria del usuario real.
+        if (!empty($detalle['justificacion'])) {
+            $update['justificacion_categoria'] = $detalle['justificacion'];
+        }
+    }
+    break;
 
             // JEFE_SECRETARIA, CAMBIO_FAX, FAX, OTROS: no requieren actualización
             // automática del usuario de telefonía al activarse.
