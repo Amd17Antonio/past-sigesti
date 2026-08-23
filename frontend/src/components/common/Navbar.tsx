@@ -59,8 +59,6 @@ function Dropdown({ label, items }: DropdownProps) {
     };
   }, [open]);
 
-  // Agrupa manteniendo el orden de aparición de cada grupo.
-  // Items sin "grupo" quedan sueltos (sin encabezado) en el orden en que llegan.
   const grupos: { nombre: string | null; items: DropdownItem[] }[] = [];
   items.forEach((item) => {
     const nombreGrupo = item.grupo ?? null;
@@ -144,29 +142,13 @@ export default function Navbar() {
                   { to: '/consultas/metas', label: 'Metas' },
                 ]}
               />
-              
               <Dropdown
                 label="🗃️ Catálogos"
                 items={[
-                  { to: '/catalogos/preguntas', label: 'Preguntas (Encuesta)', grupo: 'Encuestas' },
-
-                  { to: '/catalogos/enlace-informatico', label: 'Enlace Informático', grupo: 'Equipo de Cómputo' },
-                  { to: '/catalogos/marcas', label: 'Marcas', grupo: 'Equipo de Cómputo' },
-                  { to: '/catalogos/modelos', label: 'Modelos', grupo: 'Equipo de Cómputo' },
-                  { to: '/catalogos/so', label: 'Sistemas Operativos', grupo: 'Equipo de Cómputo' },
-                  { to: '/catalogos/tipo-equipo', label: 'Tipo de Equipo', grupo: 'Equipo de Cómputo' },
-                  { to: '/consultas/equipos', label: 'Equipo de Cómputo', grupo: 'Equipo de Cómputo' },
-
-                  { to: '/catalogos/autoriza-internet', label: 'Autoriza Internet', grupo: 'Internet' },
-
-                  { to: '/catalogos/areas', label: 'Áreas', grupo: 'Organización' },
-                  { to: '/catalogos/cargos', label: 'Cargos', grupo: 'Organización' },
-                  { to: '/catalogos/poa', label: 'POA', grupo: 'Organización' },
-
-                  { to: '/catalogos/categoria-telefonia', label: 'Categorías de Telefonía', grupo: 'Telefonía' },
-                  { to: '/catalogos/telefonos', label: 'Teléfonos', grupo: 'Telefonía' },
-
-                  { to: '/catalogos/usuarios', label: 'Usuarios', grupo: 'Usuarios' },
+                  { to: '/catalogos/grupo/equipo-computo', label: 'Equipo de Cómputo' },
+                  { to: '/catalogos/grupo/organizacion', label: 'Organización' },
+                  { to: '/catalogos/grupo/telefonia', label: 'Telefonía' },
+                  { to: '/catalogos/usuarios', label: 'Usuarios' },
                 ]}
               />
               <Dropdown
@@ -185,10 +167,6 @@ export default function Navbar() {
           {rol === 'Capturista' && (
             <>
               <NavLink to="/solicitudes-uie" className={linkClass}>Solicitudes</NavLink>
-              {/* <NavLink to="/solicitudes" className={linkClass}>Tickets</NavLink> */}
-             {/*  <NavLink to="/asignadas" className={linkClass}>Asignadas</NavLink>
-              <NavLink to="/pendientes" className={linkClass}>Pendientes</NavLink>
-              <NavLink to="/historial" className={linkClass}>Historial</NavLink>  */}
               <NotificationBell />
             </>
           )}

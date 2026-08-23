@@ -27,6 +27,12 @@ import ResguardoTelefonia from './pages/ResguardoTelefonia';
 import ResguardoCorreo from './pages/ResguardoCorreo';
 import ResguardoVpn from './pages/ResguardoVpn';
 
+import CatalogoEquipoComputo from './pages/CatalogoEquipoComputo';
+import CatalogoOrganizacion from './pages/CatalogoOrganizacion';
+import CatalogoTelefoniaGrupo from './pages/CatalogoTelefoniaGrupo';
+import CatalogoInternetGrupo from './pages/CatalogoInternetGrupo';
+import CatalogoEncuestasGrupo from './pages/CatalogoEncuestasGrupo';
+
 
 function App() {
   return (
@@ -66,6 +72,12 @@ function App() {
           <Route path="/consultas/metas" element={<Metas />} />
           <Route path="/equipos-baja" element={<EquiposBaja />} />
           <Route path="/mis-asignadas" element={<MisAsignadas />} />
+
+          <Route path="/catalogos/grupo/equipo-computo" element={<CatalogoEquipoComputo />} />
+<Route path="/catalogos/grupo/organizacion" element={<CatalogoOrganizacion />} />
+<Route path="/catalogos/grupo/telefonia" element={<CatalogoTelefoniaGrupo />} />
+<Route path="/catalogos/grupo/internet" element={<CatalogoInternetGrupo />} />
+<Route path="/catalogos/grupo/encuestas" element={<CatalogoEncuestasGrupo />} />
         </Route>
       </Routes>
     </BrowserRouter>

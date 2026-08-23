@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\URL;
 
@@ -14,16 +15,41 @@ class SolicitudCorreoController extends Controller
     {
         return DB::table('solicitud_correo as sc')
             ->leftJoin('areas as a', 'a.id', '=', 'sc.id_area')
+            ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'sc.id_autoriza')
             ->select(
                 'sc.id', 'sc.tipo_solicitud', 'sc.nombre', 'sc.puesto',
                 'sc.id_area', 'a.area', 'sc.area_interna', 'sc.correo_secundario', 'sc.telefono_contacto',
                 'sc.extension',
+                'sc.id_autoriza', 'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo',
                 'sc.correo_institucional', 'sc.usuario_generado', 'sc.motivo_baja',
                 'sc.estatus', 'sc.oficio_cgd', 'sc.observaciones',
                 'sc.folio_glpi', 'sc.observacion_glpi',
                 'sc.fecha_creado_cgd', 'sc.fecha_atendiendo_dgti', 'sc.fecha_activo', 'sc.fecha_baja',
                 'sc.created_at'
             );
+    }
+
+    /**
+     * Reglas de validación del correo institucional según el tipo de solicitud:
+     * - Alta: solo se valida formato (aún no existe, se está solicitando).
+     * - Baja: debe existir y estar ACTIVO en el sistema (no se puede dar de baja
+     *   un correo que no está registrado o que ya no está activo).
+     */
+    private function reglasCorreoInstitucional(string $tipoSolicitud, ?int $ignorarId = null): array
+    {
+        $reglas = ['required', 'email', 'max:150'];
+
+        if ($tipoSolicitud === 'baja') {
+            $reglas[] = Rule::exists('solicitud_correo', 'correo_institucional')
+                ->where(function ($query) use ($ignorarId) {
+                    $query->where('estatus', 'activo');
+                    if ($ignorarId) {
+                        $query->where('id', '<>', $ignorarId);
+                    }
+                });
+        }
+
+        return $reglas;
     }
 
     public function index(Request $request)
@@ -36,7 +62,6 @@ class SolicitudCorreoController extends Controller
 
         $query = $this->baseQuery();
 
-        // Administrador ve todo; cualquier otro rol solo ve lo que él mismo creó
         if ($rol !== 'Administrador') {
             $query->where('sc.id_usuario_crea', $usuario->id);
         }
@@ -81,19 +106,24 @@ class SolicitudCorreoController extends Controller
 
     public function store(Request $request)
     {
+        $tipoSolicitud = $request->input('tipo_solicitud');
+
         $data = $request->validate([
             'tipo_solicitud' => 'required|in:alta,baja',
             'nombre' => 'required|string|max:150',
             'puesto' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'id_area' => 'required|integer|exists:areas,id',
+            'id_autoriza' => 'required|integer|exists:cat_autoriza_internet,id',
             'area_interna' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'correo_secundario' => ['required_if:tipo_solicitud,alta', 'nullable', 'email', 'max:150'],
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required_if:tipo_solicitud,alta|nullable|string|max:10',
-            'correo_institucional' => 'required|email|max:150',
+            'correo_institucional' => $this->reglasCorreoInstitucional($tipoSolicitud),
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
         ], [
             'correo_institucional.required' => 'El correo institucional (solicitado o a dar de baja) es obligatorio.',
+            'correo_institucional.exists' => 'Ese correo institucional no existe o no está activo en el sistema. Verifica que sea correcto.',
+            'id_autoriza.required' => 'La persona que autoriza es obligatoria.',
         ]);
 
         $data['estatus'] = 'creado_cgd';
@@ -121,19 +151,24 @@ class SolicitudCorreoController extends Controller
             ], 422);
         }
 
+        $tipoSolicitud = $request->input('tipo_solicitud');
+
         $data = $request->validate([
             'tipo_solicitud' => 'required|in:alta,baja',
             'nombre' => 'required|string|max:150',
             'puesto' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'id_area' => 'required|integer|exists:areas,id',
+            'id_autoriza' => 'required|integer|exists:cat_autoriza_internet,id',
             'area_interna' => 'required_if:tipo_solicitud,alta|nullable|string|max:200',
             'correo_secundario' => ['required_if:tipo_solicitud,alta', 'nullable', 'email', 'max:150'],
             'telefono_contacto' => ['required_if:tipo_solicitud,alta', 'nullable', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required_if:tipo_solicitud,alta|nullable|string|max:10',
-            'correo_institucional' => 'required|email|max:150',
+            'correo_institucional' => $this->reglasCorreoInstitucional($tipoSolicitud, (int) $id),
             'motivo_baja' => 'required_if:tipo_solicitud,baja|nullable|string|min:10',
         ], [
             'correo_institucional.required' => 'El correo institucional (solicitado o a dar de baja) es obligatorio.',
+            'correo_institucional.exists' => 'Ese correo institucional no existe o no está activo en el sistema. Verifica que sea correcto.',
+            'id_autoriza.required' => 'La persona que autoriza es obligatoria.',
         ]);
 
         $data['usuario_mov'] = $request->user()->usuario ?? null;
@@ -178,8 +213,6 @@ class SolicitudCorreoController extends Controller
                 return response()->json(['message' => 'Esta cuenta ya se encuentra activa.'], 422);
             }
 
-            // El correo ya se captura desde la creación de la solicitud, así que aquí
-            // solo se valida que no esté duplicado en otra cuenta ya activa.
             if (!empty($solicitud->correo_institucional)) {
                 $correoEnUso = DB::table('solicitud_correo')
                     ->where('correo_institucional', $solicitud->correo_institucional)
@@ -214,7 +247,6 @@ class SolicitudCorreoController extends Controller
         return response()->json(['message' => 'Estatus actualizado correctamente']);
     }
 
-    // Edita solo el correo institucional asignado (y usuario_generado) mientras el servicio ya está activo.
     public function actualizarAsignacion(Request $request, $id)
     {
         $usuario = $request->user();
@@ -256,7 +288,6 @@ class SolicitudCorreoController extends Controller
         return response()->json(['message' => 'Asignación actualizada correctamente']);
     }
 
-    // Elimina la solicitud definitivamente de la base de datos (hard delete)
     public function destroy($id)
     {
         $existe = DB::table('solicitud_correo')->where('id', $id)->exists();
@@ -269,7 +300,6 @@ class SolicitudCorreoController extends Controller
         return response()->json(['message' => 'Solicitud eliminada correctamente']);
     }
 
-    // Genera el PDF de la solicitud: usa la plantilla de alta o de baja según tipo_solicitud
     public function imprimir($id)
     {
         $s = $this->baseQuery()->where('sc.id', $id)->first();
@@ -306,7 +336,6 @@ class SolicitudCorreoController extends Controller
         return $this->imprimir($id);
     }
 
-    // PDF de "Oficio de creación/baja de correo institucional" usado en la vista de Resguardo.
     public function oficio($id)
     {
         $s = $this->baseQuery()->where('sc.id', $id)->first();
@@ -315,7 +344,12 @@ class SolicitudCorreoController extends Controller
             return response()->json(['message' => 'Solicitud no encontrada'], 404);
         }
 
-        $pdf = Pdf::loadView('pdf.oficio_correo', ['s' => $s]);
+        $enlace = DB::table('cat_enlace_informatico')
+            ->where('estatus', 'activo')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $pdf = Pdf::loadView('pdf.oficio_correo', ['s' => $s, 'enlace' => $enlace]);
 
         return $pdf->stream("oficio_correo_{$id}.pdf");
     }

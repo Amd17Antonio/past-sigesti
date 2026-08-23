@@ -23,6 +23,7 @@ export const registrarUsuarioTelefonia = async (payload: any) => {
 export interface CrearSolicitudTelefoniaPayload {
   usuario_id?: number;
   tipo_tramite: string;
+  id_autoriza?: number;
   observaciones?: string;
   detalle?: Record<string, any>;
 }
@@ -46,7 +47,7 @@ export const getTiposClave = async () => {
 // (el frontend debe mandar el objeto ya mergeado con lo que no cambió).
 export const actualizarSolicitudTelefonia = async (
   id: number,
-  payload: { estatus?: string; observaciones?: string; detalle?: Record<string, any> }
+  payload: { estatus?: string; id_autoriza?: number; observaciones?: string; detalle?: Record<string, any> }
 ) => {
   const { data } = await axiosClient.put(`/solicitud-telefono/${id}`, payload);
   return data;
@@ -91,16 +92,67 @@ export const actualizarAsignacionTelefonia = async (
   return data;
 };
 
-export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
-  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, { responseType: 'blob' });
-  const blob = new Blob([response.data], { type: 'application/pdf' });
+// Helper compartido para abrir el PDF en una pestaña nueva a partir de un blob.
+//
+// IMPORTANTE: window.open() debe llamarse de forma SÍNCRONA (antes de cualquier
+// await) para que el navegador lo asocie al click del usuario y no lo bloquee.
+// Por eso cada función de impresión abre la pestaña en blanco como PRIMERA
+// instrucción, y solo hasta después de tener el blob navega esa pestaña ya
+// abierta hacia el PDF. Si el navegador bloqueó el popup de todas formas
+// (nuevaVentana === null), se hace fallback a descarga directa.
+function abrirPdfEnVentana(nuevaVentana: Window | null, blob: Blob, nombreArchivo: string) {
   const url = window.URL.createObjectURL(blob);
-  window.open(url, '_blank');
+
+  if (nuevaVentana) {
+    nuevaVentana.location.href = url;
+  } else {
+    // Fallback: el navegador bloqueó el popup, se descarga en su lugar.
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Se libera un poco después para dar tiempo a que la pestaña/descarga cargue el blob.
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+}
+
+export const imprimirSolicitudTelefoniaPdf = async (id: number) => {
+  // Se abre la pestaña vacía de inmediato, en el mismo tick del click.
+  const nuevaVentana = window.open('', '_blank');
+
+  try {
+    const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf`, {
+      responseType: 'blob',
+      timeout: 20000, // dompdf con varios joins puede tardar más que el timeout global de 5s
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    abrirPdfEnVentana(nuevaVentana, blob, `solicitud_telefonia_${id}.pdf`);
+  } catch (err) {
+    nuevaVentana?.close();
+    throw err;
+  }
 };
 
 export const imprimirResguardoTelefonia = async (id: number) => {
-  const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf-resguardo`, { responseType: 'blob' });
-  const blob = new Blob([response.data], { type: 'application/pdf' });
-  const url = window.URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  const nuevaVentana = window.open('', '_blank');
+  try {
+    const response = await axiosClient.get(`/solicitud-telefono/${id}/pdf-resguardo`, {
+      responseType: 'blob',
+      timeout: 20000,
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    abrirPdfEnVentana(nuevaVentana, blob, `resguardo_telefonia_${id}.pdf`);
+  } catch (err: any) {
+    nuevaVentana?.close();
+    // Si el error viene como blob, léelo como texto para ver el mensaje real
+    if (err?.response?.data instanceof Blob) {
+      const texto = await err.response.data.text();
+      console.error('Error real del backend:', texto);
+    }
+    throw err;
+  }
+
 };

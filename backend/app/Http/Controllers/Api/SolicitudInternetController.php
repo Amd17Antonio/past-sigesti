@@ -59,10 +59,20 @@ class SolicitudInternetController extends Controller
         $macWifi = $data['mac_wifi'] ?? null;
         unset($data['mac_ethernet'], $data['mac_wifi']);
 
-        // Antes se forzaba id_enlace = 1, pero ese registro puede no existir
-        // en cat_enlace_informatico y truena la llave foránea. Tomamos el
-        // primer enlace informático disponible en el catálogo.
-        $idEnlace = DB::table('cat_enlace_informatico')->orderBy('id')->value('id');
+        // Se guarda como referencia el enlace informático ACTIVO en este momento.
+        // Nota: el PDF no usa este valor guardado para mostrar el nombre — siempre
+        // consulta en vivo cuál es el activo, para que el dato mostrado se mantenga
+        // correcto aunque después cambie el enlace activo en el catálogo.
+        $idEnlace = DB::table('cat_enlace_informatico')
+            ->where('estatus', 'activo')
+            ->orderBy('id', 'desc')
+            ->value('id');
+
+        if (!$idEnlace) {
+            // Si no hay ninguno marcado como activo, se usa el primero disponible
+            // para no bloquear la creación de la solicitud.
+            $idEnlace = DB::table('cat_enlace_informatico')->orderBy('id')->value('id');
+        }
 
         if (!$idEnlace) {
             return response()->json([
@@ -109,8 +119,6 @@ class SolicitudInternetController extends Controller
             ->join('cat_cargo as c', 'c.id', '=', 'si.id_cargo')
             ->select(
                 'si.*', 'a.area', 'de.no_inventario', 'de.mac_ethernet', 'de.mac_wifi',
-                // Se manda tanto 'tipo_equipo' (usado por CambiarEstatusModal) como
-                // 'tipo' (usado por EditarSolicitudInternetModal) para no romper nada.
                 'te.TipoEquipo as tipo_equipo',
                 'te.TipoEquipo as tipo',
                 'so.sistema',
@@ -134,8 +142,6 @@ class SolicitudInternetController extends Controller
             return response()->json(['message' => 'Solicitud no encontrada'], 404);
         }
 
-        // Una vez que Tecnologías la tomó, ya no se edita libremente:
-        // el único camino es el cambio de estatus.
         if ($actual->estatus !== 'generado_uie') {
             return response()->json([
                 'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse. Usa el cambio de estatus para darle seguimiento.',
@@ -216,7 +222,6 @@ class SolicitudInternetController extends Controller
                 return response()->json(['message' => 'Esta solicitud ya se encuentra activa.'], 422);
             }
 
-            // Evita que el mismo equipo tenga dos accesos a internet activos a la vez
             $yaActivo = DB::table('solicitud_internet')
                 ->where('id_equipo', $solicitud->id_equipo)
                 ->where('estatus', 'activo')
@@ -268,18 +273,25 @@ class SolicitudInternetController extends Controller
             ->leftJoin('cat_tipo_equipo as te', 'te.id', '=', 'de.id_tipo')
             ->join('cat_cargo as c', 'c.id', '=', 'si.id_cargo')
             ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'si.id_autoriza')
-            ->leftJoin('cat_enlace_informatico as enl', 'enl.id', '=', 'si.id_enlace')
             ->select(
                 'si.*', 'a.area', 'de.no_inventario', 'de.mac_ethernet', 'de.mac_wifi',
                 'te.TipoEquipo as tipo_equipo',
                 'c.cargo',
-                'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo',
-                'enl.enlace as enlace_nombre'
+                'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo'
             )
             ->where('si.id', $id)
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('pdf.solicitud_internet', ['s' => $s]);
+        // El enlace informático se consulta EN VIVO (el que esté marcado 'activo'
+        // en este momento), sin importar cuál se guardó al crear la solicitud.
+        // Así, si cambia cuál está activo en el catálogo, el PDF siempre refleja
+        // al enlace vigente.
+        $enlace = DB::table('cat_enlace_informatico')
+            ->where('estatus', 'activo')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $pdf = Pdf::loadView('pdf.solicitud_internet', ['s' => $s, 'enlace' => $enlace]);
         return $pdf->stream("formato288_{$id}.pdf");
     }
 

@@ -4,6 +4,7 @@ import { getAreas, type Area } from '../../services/areaService';
 import { getCatalogo } from '../../services/catalogoService';
 
 interface Cargo { id: number; cargo: string }
+interface Autoriza { id: number; nombre: string; cargo?: string; correo?: string }
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGEX_TELEFONO = /^[0-9]{7,15}$/;
@@ -14,6 +15,7 @@ export default function NuevaSolicitudCorreoModal({
 }: { onClose: () => void; onCreado: () => void }) {
   const [areas, setAreas] = useState<Area[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
 
@@ -22,11 +24,13 @@ export default function NuevaSolicitudCorreoModal({
     nombre: '', puesto: '', id_area: '', area_interna: '',
     correo_secundario: '', telefono_contacto: '', extension: '',
     correo_institucional: '', motivo_baja: '',
+    id_autoriza: '',
   });
 
   useEffect(() => {
     getAreas().then(setAreas);
     getCatalogo('cargos').then((r) => setCargos(r.registros as Cargo[]));
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
   }, []);
 
   const handleChange = (campo: string, valor: string) => {
@@ -34,12 +38,14 @@ export default function NuevaSolicitudCorreoModal({
   };
 
   const esAlta = form.tipo_solicitud === 'alta';
+  const autorizaSeleccionado = autorizantes.find((a) => a.id === Number(form.id_autoriza));
 
   const validar = (): string[] => {
     const errs: string[] = [];
 
     if (!form.nombre.trim()) errs.push('El nombre es obligatorio.');
     if (!form.id_area) errs.push('La dependencia / área es obligatoria.');
+    if (!form.id_autoriza) errs.push('La persona que autoriza es obligatoria.');
 
     if (!form.correo_institucional.trim()) {
       errs.push(esAlta ? 'El correo solicitado es obligatorio.' : 'El correo a dar de baja es obligatorio.');
@@ -94,13 +100,14 @@ export default function NuevaSolicitudCorreoModal({
         nombre: form.nombre.trim(),
         puesto: form.puesto || undefined,
         id_area: form.id_area ? Number(form.id_area) : undefined,
+        id_autoriza: form.id_autoriza ? Number(form.id_autoriza) : undefined,
         area_interna: form.area_interna.trim() || undefined,
         correo_secundario: form.correo_secundario.trim() || undefined,
         telefono_contacto: form.telefono_contacto.trim() || undefined,
         extension: form.extension.trim() || undefined,
         correo_institucional: form.correo_institucional.trim() || undefined,
         motivo_baja: form.motivo_baja.trim() || undefined,
-      });
+      } as any);
       onCreado();
       onClose();
     } catch (e: any) {
@@ -116,8 +123,8 @@ export default function NuevaSolicitudCorreoModal({
   };
 
   const formCompleto = esAlta
-    ? !!(form.nombre && form.puesto && form.id_area && form.area_interna && form.correo_secundario && form.telefono_contacto && form.extension && form.correo_institucional)
-    : !!(form.nombre && form.id_area && form.correo_institucional && form.motivo_baja.length >= 10);
+    ? !!(form.nombre && form.puesto && form.id_area && form.area_interna && form.correo_secundario && form.telefono_contacto && form.extension && form.correo_institucional && form.id_autoriza)
+    : !!(form.nombre && form.id_area && form.correo_institucional && form.motivo_baja.length >= 10 && form.id_autoriza);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
@@ -182,6 +189,21 @@ export default function NuevaSolicitudCorreoModal({
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
                 </select>
               </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
+                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                  <option value="">--Seleccionar--</option>
+                  {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+
+              {autorizaSeleccionado && (
+                <p className="text-xs text-gray-500 col-span-2">
+                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
+                </p>
+              )}
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import { getAreas, type Area } from '../../services/areaService';
 import { getCatalogo } from '../../services/catalogoService';
 
 interface Cargo { id: number; cargo: string }
+interface Autoriza { id: number; nombre: string; cargo?: string; correo?: string }
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGEX_TELEFONO = /^[0-9]{7,15}$/;
@@ -16,12 +17,14 @@ export default function NuevaSolicitudVpnModal({
 }: { onClose: () => void; onCreado: () => void }) {
   const [areas, setAreas] = useState<Area[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     nombre_usuario: '', puesto: '', id_area: '', dependencia: '',
     correo_institucional: '', telefono: '', extension: '',
+    id_autoriza: '',
     link_sistema: '', ip_puerto: '',
     justificacion_uso: '', fecha_inicio: '', fecha_fin: '',
   });
@@ -29,11 +32,14 @@ export default function NuevaSolicitudVpnModal({
   useEffect(() => {
     getAreas().then(setAreas);
     getCatalogo('cargos').then((r) => setCargos(r.registros as Cargo[]));
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
   }, []);
 
   const handleChange = (campo: string, valor: string) => {
     setForm((f) => ({ ...f, [campo]: valor }));
   };
+
+  const autorizaSeleccionado = autorizantes.find((a) => a.id === Number(form.id_autoriza));
 
   const validar = (): string[] => {
     const errs: string[] = [];
@@ -42,6 +48,7 @@ export default function NuevaSolicitudVpnModal({
     if (!form.puesto) errs.push('El puesto es obligatorio.');
     if (!form.id_area) errs.push('El área de adscripción es obligatoria.');
     if (!form.dependencia.trim()) errs.push('La dependencia o entidad es obligatoria.');
+    if (!form.id_autoriza) errs.push('La persona que autoriza es obligatoria.');
 
     if (!form.correo_institucional.trim()) {
       errs.push('El correo institucional es obligatorio.');
@@ -79,12 +86,8 @@ export default function NuevaSolicitudVpnModal({
       errs.push('La justificación de uso debe tener al menos 10 caracteres.');
     }
 
-    if (!form.fecha_inicio) {
-      errs.push('La fecha inicial es obligatoria.');
-    }
-    if (!form.fecha_fin) {
-      errs.push('La fecha final es obligatoria.');
-    }
+    if (!form.fecha_inicio) errs.push('La fecha inicial es obligatoria.');
+    if (!form.fecha_fin) errs.push('La fecha final es obligatoria.');
     if (form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio) {
       errs.push('La fecha final no puede ser anterior a la fecha inicial.');
     }
@@ -106,6 +109,7 @@ export default function NuevaSolicitudVpnModal({
         nombre_usuario: form.nombre_usuario.trim(),
         puesto: form.puesto || undefined,
         id_area: form.id_area ? Number(form.id_area) : undefined,
+        id_autoriza: form.id_autoriza ? Number(form.id_autoriza) : undefined,
         dependencia: form.dependencia.trim() || undefined,
         correo_institucional: form.correo_institucional.trim() || undefined,
         telefono: form.telefono.trim() || undefined,
@@ -133,6 +137,7 @@ export default function NuevaSolicitudVpnModal({
   const formCompleto = !!(
     form.nombre_usuario && form.puesto && form.id_area && form.dependencia &&
     form.correo_institucional && form.telefono && form.extension &&
+    form.id_autoriza &&
     form.link_sistema && form.ip_puerto &&
     form.justificacion_uso && form.fecha_inicio && form.fecha_fin
   );
@@ -195,6 +200,21 @@ export default function NuevaSolicitudVpnModal({
                     onChange={(e) => handleChange('extension', e.target.value)} />
                 </div>
               </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
+                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                  <option value="">--Seleccionar--</option>
+                  {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+
+              {autorizaSeleccionado && (
+                <p className="text-xs text-gray-500 col-span-2">
+                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
+                </p>
+              )}
             </div>
           </div>
 

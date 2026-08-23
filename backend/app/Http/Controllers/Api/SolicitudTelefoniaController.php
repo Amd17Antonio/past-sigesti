@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rule;
 
 class SolicitudTelefoniaController extends Controller
 {
@@ -14,32 +15,42 @@ class SolicitudTelefoniaController extends Controller
         'JEFE_SECRETARIA', 'CAMBIO_DID', 'CAMBIO_CATEGORIA', 'OTROS',
     ];
 
+    // Trámites que generan PDF firmado y por tanto requieren capturar quién autoriza y la justificación.
+private const TRAMITES_REQUIEREN_AUTORIZA = [
+    'SOLICITAR_TELEFONO', 'CAMBIO_PIN_CN', 'CAMBIO_USUARIO', 'CAMBIO_CATEGORIA', 'OTROS',
+];
+
     // Trámites que, al activarse, requieren capturar la extensión oficial asignada.
     private const TRAMITES_REQUIEREN_EXTENSION_ASIGNADA = ['SOLICITAR_TELEFONO'];
 
     public function index(Request $request)
-    {
-        $usuario = $request->user();
-        $rol = $usuario->rol->nombre ?? null;
+{
+    $usuario = $request->user();
+    $rol = $usuario->rol->nombre ?? null;
 
-        $query = DB::table('v_solicitudes_telefonia as v')
-            ->leftJoin('solicitudes_telefonia as st', 'st.id', '=', 'v.id')
-            ->select(
-                'v.*',
-                'st.usuario_mov',
-                'st.extension_asignada',
-                'st.did_asignado',
-                'st.tipo_clave',
-                'st.clave_asignada'
-            )
-            ->orderBy('v.id', 'desc');
+    $query = DB::table('v_solicitudes_telefonia as v')
+        ->leftJoin('solicitudes_telefonia as st', 'st.id', '=', 'v.id')
+        ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'st.id_autoriza')
+        ->select(
+            'v.*',
+            'st.usuario_mov',
+            'st.extension_asignada',
+            'st.did_asignado',
+            'st.tipo_clave',
+            'st.clave_asignada',
+            'st.id_autoriza',
+            'auth.nombre as autoriza_nombre',
+            'auth.cargo as autoriza_cargo',
+            'auth.correo as autoriza_correo'
+        )
+        ->orderBy('v.id', 'desc');
 
-        if ($rol !== 'Administrador') {
-            $query->where('st.usuario_mov', $usuario->usuario);
-        }
-
-        return response()->json($query->get());
+    if ($rol !== 'Administrador') {
+        $query->where('st.usuario_mov', $usuario->usuario);
     }
+
+    return response()->json($query->get());
+}
 
     public function buscarUsuarioPorExtension(string $extension)
     {
@@ -99,102 +110,126 @@ class SolicitudTelefoniaController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $usuario = $request->user();
+{
+    $usuario = $request->user();
 
-        $data = $request->validate([
-            'usuario_id' => 'nullable|integer|exists:usuarios_telefonia,id',
-            'tipo_tramite' => 'required|in:' . implode(',', self::TRAMITES),
-            'observaciones' => 'nullable|string',
-            'detalle' => 'nullable|array',
-        ]);
+    $data = $request->validate([
+        'usuario_id' => 'nullable|integer|exists:usuarios_telefonia,id',
+        'tipo_tramite' => 'required|in:' . implode(',', self::TRAMITES),
+        'id_autoriza' => [
+            Rule::requiredIf(fn () => in_array($request->input('tipo_tramite'), self::TRAMITES_REQUIEREN_AUTORIZA, true)),
+            'nullable', 'integer', 'exists:cat_autoriza_internet,id',
+        ],
+        'observaciones' => [
+            Rule::requiredIf(fn () => in_array($request->input('tipo_tramite'), self::TRAMITES_REQUIEREN_AUTORIZA, true)),
+            'nullable', 'string', 'min:10',
+        ],
+        'detalle' => 'nullable|array',
+    ], [
+        'id_autoriza.required' => 'La persona que autoriza es obligatoria para este trámite.',
+        'observaciones.required' => 'La justificación de la solicitud es obligatoria para este trámite.',
+        'observaciones.min' => 'La justificación debe ser más detallada (mínimo 10 caracteres).',
+    ]);
 
-        $id = DB::table('solicitudes_telefonia')->insertGetId([
-            'usuario_id' => $data['usuario_id'] ?? null,
-            'tipo_tramite' => $data['tipo_tramite'],
-            'estatus' => 'creado_cgd',
-            'fecha_creado_cgd' => now(),
+    $id = DB::table('solicitudes_telefonia')->insertGetId([
+        'usuario_id' => $data['usuario_id'] ?? null,
+        'tipo_tramite' => $data['tipo_tramite'],
+        'id_autoriza' => $data['id_autoriza'] ?? null,
+        'estatus' => 'creado_cgd',
+        'fecha_creado_cgd' => now(),
+        'observaciones' => $data['observaciones'] ?? null,
+        'detalle' => isset($data['detalle']) ? json_encode($data['detalle']) : null,
+        'usuario_mov' => $usuario->usuario,
+        'created_at' => now(),
+    ]);
+
+    if ($data['tipo_tramite'] === 'JEFE_SECRETARIA'
+        && isset($data['detalle']['jefe_usuario_id'], $data['detalle']['secretaria_usuario_id'])) {
+        DB::table('jefe_secretaria')->insert([
+            'jefe_id' => $data['detalle']['jefe_usuario_id'],
+            'secretaria_id' => $data['detalle']['secretaria_usuario_id'],
+            'mismos_privilegios' => $data['detalle']['mismos_privilegios'] ?? false,
             'observaciones' => $data['observaciones'] ?? null,
-            // Se guarda tal cual lo capturó el wizard; se usa después al activar el servicio
-            // para aplicar los cambios correspondientes al usuario real de telefonía.
-            'detalle' => isset($data['detalle']) ? json_encode($data['detalle']) : null,
-            'usuario_mov' => $usuario->usuario,
+            'estatus' => 'activo',
             'created_at' => now(),
         ]);
-
-        // Arreglo Jefe-Secretaria también deja rastro en su tabla propia
-        if ($data['tipo_tramite'] === 'JEFE_SECRETARIA'
-            && isset($data['detalle']['jefe_usuario_id'], $data['detalle']['secretaria_usuario_id'])) {
-            DB::table('jefe_secretaria')->insert([
-                'jefe_id' => $data['detalle']['jefe_usuario_id'],
-                'secretaria_id' => $data['detalle']['secretaria_usuario_id'],
-                'mismos_privilegios' => $data['detalle']['mismos_privilegios'] ?? false,
-                'observaciones' => $data['observaciones'] ?? null,
-                'estatus' => 'activo',
-                'created_at' => now(),
-            ]);
-        }
-
-        return response()->json(['id' => $id, 'message' => 'Solicitud de telefonía creada'], 201);
     }
+
+    return response()->json(['id' => $id, 'message' => 'Solicitud de telefonía creada'], 201);
+}
 
     public function show(int $id)
-    {
-        $s = DB::table('solicitudes_telefonia as st')
-            ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
-            ->leftJoin('cat_categoria_telefonia as cat', 'cat.id', '=', 'ut.categoria_id')
-            ->select('st.*', 'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
-                'ut.extension', 'ut.puesto', 'ut.correo_institucional', 'ut.edificio',
-                'ut.nivel', 'ut.did', 'ut.modelo', 'ut.mac', 'ut.numero_serie', 'cat.categoria')
-            ->where('st.id', $id)
-            ->first();
+{
+    $s = DB::table('solicitudes_telefonia as st')
+        ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
+        ->leftJoin('cat_categoria_telefonia as cat', 'cat.id', '=', 'ut.categoria_id')
+        ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'st.id_autoriza')
+        ->select('st.*', 'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
+            'ut.extension', 'ut.puesto', 'ut.correo_institucional', 'ut.edificio',
+            'ut.nivel', 'ut.did', 'ut.modelo', 'ut.mac', 'ut.numero_serie', 'cat.categoria',
+            'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo')
+        ->where('st.id', $id)
+        ->first();
 
-        if (!$s) {
-            return response()->json(['message' => 'Solicitud no encontrada'], 404);
-        }
-
-        // El detalle se guarda como JSON crudo en la BD; se decodifica para que el
-        // frontend lo reciba ya como objeto (usado para prellenar el modal de editar).
-        if (isset($s->detalle) && is_string($s->detalle)) {
-            $s->detalle = json_decode($s->detalle, true);
-        }
-
-        return response()->json(['solicitud' => $s]);
+    if (!$s) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
     }
+
+    if (isset($s->detalle) && is_string($s->detalle)) {
+        $s->detalle = json_decode($s->detalle, true);
+    }
+
+    return response()->json(['solicitud' => $s]);
+}
 
     public function update(Request $request, int $id)
-    {
-        $actual = DB::table('solicitudes_telefonia')->where('id', $id)->first();
-        if (!$actual) {
-            return response()->json(['message' => 'Solicitud no encontrada'], 404);
-        }
-
-        if ($actual->estatus !== 'creado_cgd') {
-            return response()->json([
-                'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse.',
-            ], 422);
-        }
-
-        $data = $request->validate([
-            'observaciones' => 'nullable|string',
-            'detalle' => 'nullable|array',
-        ]);
-
-        $update = [
-            'observaciones' => $data['observaciones'] ?? $actual->observaciones,
-            'updated_at' => now(),
-        ];
-
-        // Si mandan `detalle`, reemplaza lo guardado (el frontend envía el objeto completo,
-        // ya mergeado con lo que no cambió, para no perder datos previos).
-        if (array_key_exists('detalle', $data)) {
-            $update['detalle'] = $data['detalle'] !== null ? json_encode($data['detalle']) : null;
-        }
-
-        DB::table('solicitudes_telefonia')->where('id', $id)->update($update);
-
-        return response()->json(['message' => 'Solicitud actualizada']);
+{
+    $actual = DB::table('solicitudes_telefonia')->where('id', $id)->first();
+    if (!$actual) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
     }
+
+    if ($actual->estatus !== 'creado_cgd') {
+        return response()->json([
+            'message' => 'Esta solicitud ya está en atención de la Dirección General de Tecnologías e Innovación Digital y no puede editarse.',
+        ], 422);
+    }
+
+    $requiereAutoriza = in_array($actual->tipo_tramite, self::TRAMITES_REQUIEREN_AUTORIZA, true);
+
+    $data = $request->validate([
+        'id_autoriza' => [
+            Rule::requiredIf($requiereAutoriza),
+            'nullable', 'integer', 'exists:cat_autoriza_internet,id',
+        ],
+        'observaciones' => [
+            Rule::requiredIf($requiereAutoriza),
+            'nullable', 'string', 'min:10',
+        ],
+        'detalle' => 'nullable|array',
+    ], [
+        'id_autoriza.required' => 'La persona que autoriza es obligatoria para este trámite.',
+        'observaciones.required' => 'La justificación de la solicitud es obligatoria para este trámite.',
+        'observaciones.min' => 'La justificación debe ser más detallada (mínimo 10 caracteres).',
+    ]);
+
+    $update = [
+        'observaciones' => $data['observaciones'] ?? $actual->observaciones,
+        'updated_at' => now(),
+    ];
+
+    if (array_key_exists('id_autoriza', $data)) {
+        $update['id_autoriza'] = $data['id_autoriza'];
+    }
+
+    if (array_key_exists('detalle', $data)) {
+        $update['detalle'] = $data['detalle'] !== null ? json_encode($data['detalle']) : null;
+    }
+
+    DB::table('solicitudes_telefonia')->where('id', $id)->update($update);
+
+    return response()->json(['message' => 'Solicitud actualizada']);
+}
 
     public function cambiarEstatus(Request $request, int $id)
     {
@@ -462,25 +497,27 @@ class SolicitudTelefoniaController extends Controller
     }
 
     public function imprimir(int $id)
-    {
-        $s = DB::table('solicitudes_telefonia as st')
-            ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
-            ->select(
-                'st.*',
-                'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
-                'ut.puesto', 'ut.direccion', 'ut.correo_institucional',
-                'ut.extension', 'ut.mac', 'ut.numero_serie'
-            )
-            ->where('st.id', $id)
-            ->first();
+{
+    $s = DB::table('solicitudes_telefonia as st')
+        ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
+        ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'st.id_autoriza')
+        ->select(
+            'st.*',
+            'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
+            'ut.puesto', 'ut.direccion', 'ut.correo_institucional',
+            'ut.extension', 'ut.mac', 'ut.numero_serie',
+            'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo'
+        )
+        ->where('st.id', $id)
+        ->first();
 
-        if (!$s) {
-            abort(404, 'Solicitud no encontrada');
-        }
-
-        $pdf = Pdf::loadView('pdf.solicitud_telefonia', ['s' => $s])->setPaper('letter');
-        return $pdf->stream("solicitud_telefonia_{$s->id}.pdf");
+    if (!$s) {
+        abort(404, 'Solicitud no encontrada');
     }
+
+    $pdf = Pdf::loadView('pdf.solicitud_telefonia', ['s' => $s])->setPaper('letter');
+    return $pdf->stream("solicitud_telefonia_{$s->id}.pdf");
+}
 
     public function actualizarAsignacion(Request $request, int $id)
     {
@@ -543,7 +580,7 @@ class SolicitudTelefoniaController extends Controller
         return response()->json(['message' => 'Asignación actualizada correctamente']);
     }
 
-    public function imprimirResguardo(int $id)
+   /* public function imprimirResguardo(int $id)
 {
     $s = DB::table('solicitudes_telefonia as st')
         ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
@@ -557,6 +594,37 @@ class SolicitudTelefoniaController extends Controller
     }
 
     $pdf = Pdf::loadView('pdf.resguardo_telefonico', ['s' => $s])->setPaper('letter');
+    return $pdf->stream("resguardo_telefonia_{$s->id}.pdf");
+} */
+
+public function imprimirResguardo(int $id)
+{
+    $s = DB::table('solicitudes_telefonia as st')
+        ->leftJoin('usuarios_telefonia as ut', 'ut.id', '=', 'st.usuario_id')
+        ->leftJoin('cat_categoria_telefonia as cat', 'cat.id', '=', 'ut.categoria_id')
+        ->leftJoin('areas as a', 'a.id', '=', 'ut.area_id')
+        ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'st.id_autoriza')
+        ->select(
+            'st.*',
+            'ut.nombre', 'ut.apellido_paterno', 'ut.apellido_materno',
+            'ut.puesto', 'ut.extension', 'ut.mac', 'ut.numero_serie', 'ut.modelo',
+            'ut.rfc', 'ut.curp', 'ut.clave_puesto', 'ut.edificio', 'ut.nivel', 'ut.nodo',
+            'cat.categoria', 'a.area',
+            'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo'
+        )
+        ->where('st.id', $id)
+        ->first();
+
+    if (!$s) {
+        abort(404, 'Solicitud no encontrada');
+    }
+
+    $enlace = DB::table('cat_enlace_informatico')
+        ->where('estatus', 'activo')
+        ->orderBy('id', 'desc')
+        ->first();
+
+    $pdf = Pdf::loadView('pdf.resguardo_telefonico', ['s' => $s, 'enlace' => $enlace])->setPaper('letter');
     return $pdf->stream("resguardo_telefonia_{$s->id}.pdf");
 }
 

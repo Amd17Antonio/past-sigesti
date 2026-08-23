@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CATALOGOS } from '../components/catalogos/CatalogosConfig';
+import { CATALOGO_A_GRUPO } from '../components/catalogos/catalogosGrupoMap';
 import { getCatalogo, crearRegistroCatalogo, actualizarRegistroCatalogo, eliminarRegistroCatalogo } from '../services/catalogoService';
 import SortIcon from '../components/common/SortIcon';
 
@@ -8,7 +9,9 @@ interface Registro { id: number; _activo?: boolean; [key: string]: any }
 
 export default function CatalogoGenerico() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const config = CATALOGOS.find((c) => c.slug === slug);
+  const grupoDestino = CATALOGO_A_GRUPO[slug ?? ''] ?? '/catalogos/usuarios';
 
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [tieneEstatus, setTieneEstatus] = useState(false);
@@ -134,6 +137,13 @@ export default function CatalogoGenerico() {
 
   return (
     <div className="p-6">
+      <button
+        onClick={() => navigate(grupoDestino)}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded mb-4"
+      >
+        ← Regresar
+      </button>
+
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">{config.titulo}</h1>
         <button onClick={abrirCrear} className="bg-blue-600 text-white px-4 py-2 rounded text-sm">+ Agregar</button>

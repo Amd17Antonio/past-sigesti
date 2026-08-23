@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getSolicitudCorreoDetalle, actualizarSolicitudCorreo } from '../../services/solicitudCorreoService';
 import { getAreas, type Area } from '../../services/areaService';
+import { getCatalogo } from '../../services/catalogoService';
+
+interface Autoriza { id: number; nombre: string; cargo?: string; correo?: string }
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGEX_TELEFONO = /^[0-9]{7,15}$/;
@@ -13,17 +16,20 @@ export default function EditarSolicitudCorreoModal({
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
 
   const [form, setForm] = useState({
     tipo_solicitud: 'alta' as 'alta' | 'baja',
     nombre: '', puesto: '', id_area: '', area_interna: '',
     correo_secundario: '', telefono_contacto: '', extension: '',
     correo_institucional: '', usuario_generado: '', motivo_baja: '',
+    id_autoriza: '',
     estatus: 'generada',
   });
 
   useEffect(() => {
     getAreas().then(setAreas);
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
 
     getSolicitudCorreoDetalle(idSolicitud).then(({ solicitud }) => {
       setForm({
@@ -38,6 +44,7 @@ export default function EditarSolicitudCorreoModal({
         correo_institucional: solicitud.correo_institucional ?? '',
         usuario_generado: solicitud.usuario_generado ?? '',
         motivo_baja: solicitud.motivo_baja ?? '',
+        id_autoriza: (solicitud as any).id_autoriza ? String((solicitud as any).id_autoriza) : '',
         estatus: solicitud.estatus,
       });
       setCargando(false);
@@ -49,12 +56,14 @@ export default function EditarSolicitudCorreoModal({
   };
 
   const esAlta = form.tipo_solicitud === 'alta';
+  const autorizaSeleccionado = autorizantes.find((a) => a.id === Number(form.id_autoriza));
 
   const validar = (): string[] => {
     const errs: string[] = [];
 
     if (!form.nombre.trim()) errs.push('El nombre es obligatorio.');
     if (!form.id_area) errs.push('La dependencia / área es obligatoria.');
+    if (!form.id_autoriza) errs.push('La persona que autoriza es obligatoria.');
 
     if (!form.correo_institucional.trim()) {
       errs.push(esAlta ? 'El correo solicitado es obligatorio.' : 'El correo a dar de baja es obligatorio.');
@@ -113,6 +122,7 @@ export default function EditarSolicitudCorreoModal({
         nombre: form.nombre.trim(),
         puesto: form.puesto.trim() || null,
         id_area: form.id_area ? Number(form.id_area) : null,
+        id_autoriza: form.id_autoriza ? Number(form.id_autoriza) : null,
         area_interna: form.area_interna.trim() || null,
         correo_secundario: form.correo_secundario.trim() || null,
         telefono_contacto: form.telefono_contacto.trim() || null,
@@ -199,6 +209,21 @@ export default function EditarSolicitudCorreoModal({
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
                 </select>
               </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
+                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                  <option value="">--Seleccionar--</option>
+                  {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+
+              {autorizaSeleccionado && (
+                <p className="text-xs text-gray-500 col-span-2">
+                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
+                </p>
+              )}
             </div>
           </div>
 

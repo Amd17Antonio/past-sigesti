@@ -11,6 +11,10 @@ export interface SolicitudCorreo {
   correo_secundario?: string | null;
   telefono_contacto?: string | null;
   extension?: string | null;
+  id_autoriza?: number | null;
+  autoriza_nombre?: string | null;
+  autoriza_cargo?: string | null;
+  autoriza_correo?: string | null;
   correo_institucional?: string | null;
   usuario_generado?: string | null;
   motivo_baja?: string | null;
@@ -26,4 +30,4 @@ export interface SolicitudCorreo {
   created_at?: string;
 }
 
-export type NuevaSolicitudCorreo = Omit<SolicitudCorreo, 'id' | 'estatus' | 'created_at' | 'usuario_generado' | 'folio_glpi' | 'observacion_glpi' | 'oficio_cgd' | 'fecha_creado_cgd' | 'fecha_atendiendo_dgti' | 'fecha_activo' | 'fecha_baja'>;
+export type NuevaSolicitudCorreo = Omit<SolicitudCorreo, 'id' | 'estatus' | 'created_at' | 'usuario_generado' | 'folio_glpi' | 'observacion_glpi' | 'oficio_cgd' | 'fecha_creado_cgd' | 'fecha_atendiendo_dgti' | 'fecha_activo' | 'fecha_baja' | 'autoriza_nombre' | 'autoriza_cargo' | 'autoriza_correo'>;

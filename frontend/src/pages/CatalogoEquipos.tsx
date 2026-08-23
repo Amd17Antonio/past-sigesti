@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getEquipos, eliminarEquipo, type EquipoRow } from '../services/equipoService';
 import SortIcon from '../components/common/SortIcon';
 import EquipoFormModal from '../components/inventario/EquipoFormModal';
@@ -15,6 +16,7 @@ const COLUMNAS: { key: string; label: string }[] = [
 ];
 
 export default function CatalogoEquipos() {
+  const navigate = useNavigate();
   const [data, setData] = useState<EquipoRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -64,6 +66,13 @@ export default function CatalogoEquipos() {
 
   return (
     <div className="p-6">
+      <button
+        onClick={() => navigate('/catalogos/grupo/equipo-computo')}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded mb-4"
+      >
+        ← Regresar
+      </button>
+
       <div className="bg-blue-50 border px-4 py-2 font-semibold text-blue-900 rounded-t">
         Catálogo de equipos de cómputo
       </div>

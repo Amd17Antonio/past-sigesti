@@ -4,96 +4,193 @@
     <meta charset="utf-8">
     <title>Solicitud de Marcación de Telefonía {{ $s->id }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
         @page {
             size: letter;
-            margin: 28px 105px 28px 40px;
+            margin: 22px 105px 22px 70px;
         }
 
-        body { font-family: sans-serif; font-size: 10.2px; line-height: 1.26; color: #111; }
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            font-size: 13px; 
+            line-height: 1.25; 
+            color: #111; 
+        }
 
+        /* ---------- Franja lateral decorativa ---------- */
+        .franja-lateral {
+            position: absolute;
+            top: -55px;
+            right: -105px; 
+            width: 128px;
+            bottom: 0;
+            height: auto;
+            z-index: -1;
+        }
+        .franja-lateral img { width: 100%; height: 100%; }
+
+        /* ---------- Membrete ---------- */
         .membrete {
             width: 100%;
-            border-bottom: 2px solid #7a1f6b;
-            padding-bottom: 5px;
-            margin-bottom: 8px;
+            padding-bottom: 0px;
+            margin-bottom: 4px;
         }
         .membrete table { width: 100%; border: none; }
         .membrete td { border: none; vertical-align: middle; padding: 0; }
-        .membrete .logo-cell img { height: 78px; }
-
-        .pie-pagina {
-            text-align: right;
-            font-size: 8px;
-            color: #555;
-            border-top: 1px solid #ccc;
-            padding-top: 4px;
-            padding-right: 4px;
-            margin-top: 8px;
+        .membrete .logo-cell img { 
+            display: block; 
+            height: 74px; 
+            width: auto; 
+            margin: 0 !important; 
+            padding: 0 !important;
         }
 
-        .franja-lateral {
-            position: absolute;
-            top: -30px;
-            right: -105px;
-            width: 98px;
-            height: 700px;
-            z-index: -1;
-        }
-        .franja-lateral img { width: 100%; height: 170%; }
-
-        .subtitulo { text-align: center; font-size: 13.5px; font-weight: bold; margin: 12px 0 18px 0; text-transform: uppercase; }
-
-        .fecha-ticket { width: 100%; margin-bottom: 14px; }
-        .fecha-ticket table { width: 100%; border-collapse: collapse; }
-        .fecha-ticket td { border: none; padding: 0 10px 0 0; vertical-align: middle; }
-        .fecha-ticket .etiqueta { font-weight: bold; width: 90px; }
-        .fecha-ticket .caja { border: 1px solid #333; padding: 5px; }
-
-        .seccion-titulo { text-align: center; font-weight: bold; font-size: 11px; margin: 10px 0 4px 0; }
-
-        table.formato { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-        table.formato td, table.formato th {
-            border: 1px solid #333; padding: 6px; vertical-align: top; text-align: left;
-        }
-        table.formato .label { font-weight: bold; width: 32%; background-color: #d9d9d9; }
-
-        table.tipo-solicitud { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-        table.tipo-solicitud th, table.tipo-solicitud td {
-            border: 1px solid #333; padding: 6px; text-align: center; vertical-align: middle; font-size: 9.5px;
-        }
-        table.tipo-solicitud th { background-color: #d9d9d9; font-weight: bold; }
-        table.tipo-solicitud .fila-label {
-            text-align: left; font-weight: bold; background-color: #d9d9d9; width: 15%;
-        }
-        table.tipo-solicitud .marca { font-size: 13px; font-weight: bold; }
-
-        .justificacion-box {
-            border: 1px solid #333;
-            min-height: 70px;
-            padding: 8px;
-            margin-bottom: 30px;
-        }
-        .justificacion-titulo {
+        /* Leyenda debajo del logo */
+        .leyenda-logo {
+            font-size: 11px;
             font-weight: bold;
-            font-size: 9.5px;
-            margin-bottom: 4px;
+            text-align: center;
+            margin-top: 0px;
+            margin-bottom: 6px;
         }
 
-        table.solicita-autoriza { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        table.solicita-autoriza td { border: none; padding: 4px; vertical-align: top; text-align: center; }
-        table.solicita-autoriza .col-firma { width: 40%; padding-top: 34px; }
-        table.solicita-autoriza .col-sello { border: 1px solid #333; width: 30%; padding-top: 34px; }
-        .firma-linea { border-top: 1px solid #333; margin: 0 12px; padding-top: 3px; }
+        .subtitulo { 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin: 10px 0 14px 0; 
+            text-transform: uppercase; 
+        }
 
-        .nota-roja { color: #b91c1c; font-size: 8.5px; margin-top: 10px; font-weight: bold; text-align: center; }
+        /* Ajustes para Fecha y Ticket alineados al 100% con las tablas */
+        .fecha-ticket { 
+            width: 100%; 
+            margin-bottom: 12px; 
+            box-sizing: border-box;
+        }
+        .fecha-ticket table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .fecha-ticket td { border: none; padding: 0; vertical-align: middle; }
+        .fecha-ticket .etiqueta { font-weight: bold; white-space: nowrap; }
+        .fecha-ticket .caja { border: 1px solid #333; padding: 4px; text-align: center; }
+
+        /* ---------- Títulos de sección centrados ---------- */
+        .seccion-titulo-centrado { 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 14px; 
+            margin: 12px 0 6px 0;
+        }
+
+        /* ---------- Estructura de tablas ---------- */
+        .tabla-datos {
+            border-collapse: collapse;
+            width: 100%;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            table-layout: fixed;
+        }
+
+        .tabla-datos td {
+            padding: 8px 8px; 
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+
+        .tabla-datos td.etiqueta {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            width: 32%;
+            border-right: 1px solid #333;
+            border-bottom: 1px solid #333;
+        }
+
+        .subtexto-etiqueta {
+            font-size: 11px; 
+            font-weight: normal;
+            font-style: italic;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .tabla-datos td.valor {
+            border-bottom: 1px solid #333;
+            width: 68%;
+        }
+
+        .tabla-datos td.valor-matriz {
+            padding: 0 !important;
+            border-bottom: 1px solid #333;
+            vertical-align: top;
+        }
+
+        .tabla-datos td.sin-borde-inferior {
+            border-bottom: none !important;
+        }
+
+        .tabla-datos tr:last-child td.etiqueta,
+        .tabla-datos tr:last-child td.valor,
+        .tabla-datos tr:last-child td.valor-matriz {
+            border-bottom: none;
+        }
+
+        /* ---------- Matriz Tipo de Solicitud ---------- */
+        .subtabla-solicitud {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin: 0;
+        }
+        .subtabla-solicitud td {
+            border-right: 1px solid #333;
+            border-bottom: 1px solid #333;
+            text-align: center;
+            padding: 4px 2px !important;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        .subtabla-solicitud tr:first-child td {
+            border-top: none;
+            height: 35px;
+        }
+        .subtabla-solicitud tr:last-child td {
+            border-bottom: none;
+            background-color: #e0e0e0;
+            font-weight: bold;
+            font-style: italic;
+            font-size: 10.5px; 
+            height: 32px;
+        }
+
+        .subtabla-solicitud td:last-child {
+            border-right: none;
+        }
+
+        .subtabla-solicitud .col-1 { width: 19%; }
+        .subtabla-solicitud .col-2 { width: 17%; }
+        .subtabla-solicitud .col-3 { width: 22%; }
+        .subtabla-solicitud .col-4 { width: 18%; }
+        .subtabla-solicitud .col-5 { width: 24%; }
+
+        /* ---------- Firmas y Sello ---------- */
+        table.solicita-autoriza { width: 100%; border-collapse: collapse; margin-top: 0px; }
+        table.solicita-autoriza td { border: none; padding: 4px; vertical-align: bottom; text-align: center; }
+        table.solicita-autoriza .col-firma { width: 36%; }
+        table.solicita-autoriza .col-sello { width: 28%; font-weight: bold; text-align: center; vertical-align: bottom; }
+        
+        .firma-linea { border-top: 1px solid #333; margin: 0 10px; padding-top: 5px; }
+
+        .nota-roja { font-size: 12.5px; margin-top: 20px; font-weight: bold; text-align: left; }
     </style>
 </head>
 <body>
 
+    <!-- Franja lateral -->
     <div class="franja-lateral">
-        <img src="{{ public_path('images/Lateral.png') }}" alt="">
+        <img src="{{ public_path('images/Lateral.png') }}" alt="Lateral">
     </div>
 
+    <!-- Membrete con Logo -->
     <div class="membrete">
         <table>
             <tr>
@@ -104,112 +201,157 @@
         </table>
     </div>
 
+    <!-- Leyenda a 0px del logo -->
+    <p class="leyenda-logo">"2025, Bicentenario de la Primera Constitución Política del Estado Libre y Soberano de Oaxaca"</p>
+
+    <br>
+
     <p class="subtitulo">Solicitud de marcación de usuario de telefonía</p>
 
+    <br>
+
+    <!-- Fecha y Ticket con el ticket perfectamente limitado al borde de las tablas -->
     <div class="fecha-ticket">
         <table>
             <tr>
-                <td class="etiqueta">Fecha:</td>
-                <td class="caja" style="width: 140px;">{{ \Carbon\Carbon::parse($s->fecha_creado_cgd ?? $s->created_at)->format('d/m/Y') }}</td>
-                <td style="width: 30px;"></td>
-                <td class="etiqueta" style="width: 110px;">Núm. de Ticket:</td>
-                <td class="caja">{{ $s->folio_glpi ?? '-' }}</td>
+                <td class="etiqueta" style="width: 50px; padding-left: 50px;">Fecha:</td>
+                <td class="caja" style="width: 80px;">{{ \Carbon\Carbon::parse($s->fecha_creado_cgd ?? $s->created_at)->format('d/m/Y') }}</td>
+                
+                <td></td>
+                
+                <td class="etiqueta" style="width: 110px; text-align: right; padding-right: 8px;">Núm. De Ticket:</td>
+                <td class="caja" style="width: 80px;">{{ $s->folio_glpi ?? '-' }}</td>
             </tr>
         </table>
     </div>
 
-    <p class="seccion-titulo">Datos del Usuario</p>
-    <table class="formato">
+    <!-- TABLA 1: Datos del Usuario -->
+    <p class="seccion-titulo-centrado">Datos del Usuario.</p>
+    <table class="tabla-datos">
         <tr>
-            <td class="label">Nombre Completo:</td>
-            <td>{{ trim(($s->nombre ?? '') . ' ' . ($s->apellido_paterno ?? '') . ' ' . ($s->apellido_materno ?? '')) ?: '-' }}</td>
+            <td class="etiqueta">Nombre Completo:</td>
+            <td class="valor">{{ trim(($s->nombre ?? '') . ' ' . ($s->apellido_paterno ?? '') . ' ' . ($s->apellido_materno ?? '')) ?: '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Puesto o Cargo:</td>
-            <td>{{ $s->puesto ?? '-' }}</td>
+            <td class="etiqueta sin-borde-inferior">Puesto o Cargo:</td>
+            <td class="valor">{{ $s->puesto ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Dependencia:</td>
-            <td>{{ $s->direccion ?? '-' }}</td>
+            <td class="etiqueta">Área de Adscripción:</td>
+            <td class="valor">{{ $s->area_adscripcion ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">Correo Electrónico Institucional:</td>
-            <td>{{ $s->correo_institucional ?? '-' }}</td>
-        </tr>
-    </table>
-
-    <p class="seccion-titulo">Datos del Equipo Telefónico</p>
-    <table class="formato">
-        <tr>
-            <td class="label">Núm. de Extensión:</td>
-            <td>{{ $s->extension ?? '-' }}</td>
+            <td class="etiqueta">Dependencia:</td>
+            <td class="valor">{{ $s->direccion ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="label">MAC:</td>
-            <td>{{ $s->mac ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td class="label">Núm. de Serie:</td>
-            <td>{{ $s->numero_serie ?? '-' }}</td>
+            <td class="etiqueta">Correo Electrónico Institucional:</td>
+            <td class="valor">{{ $s->correo_institucional ?? '-' }}</td>
         </tr>
     </table>
 
-    @php
-        // Mapea el trámite del sistema a la columna del formato oficial
-        $columnas = ['CAMBIO_USUARIO', 'CAMBIO_PIN_CN', 'CAMBIO_CATEGORIA', 'SOLICITAR_TELEFONO', 'OTRO'];
-        $tramiteActual = in_array($s->tipo_tramite, ['CAMBIO_USUARIO', 'CAMBIO_PIN_CN', 'CAMBIO_CATEGORIA', 'SOLICITAR_TELEFONO'])
-            ? $s->tipo_tramite
-            : 'OTRO';
-    @endphp
-
-    <p class="seccion-titulo">Tipo de Solicitud</p>
-    <table class="tipo-solicitud">
+    <!-- TABLA 2: Datos del Equipo Telefónico y Solicitud -->
+    <p class="seccion-titulo-centrado">Datos del Equipo Telefónico.</p>
+    <table class="tabla-datos">
         <tr>
-            <th>Cambio de Usuario</th>
-            <th>Cambio de PIN / CN</th>
-            <th>Categoría de Marcación</th>
-            <th>Nueva Extensión</th>
-            <th>Otro Tipo de Solicitud</th>
+            <td class="etiqueta">Núm. de Extensión:</td>
+            <td class="valor">{{ $s->extension ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="marca">{{ $tramiteActual === 'CAMBIO_USUARIO' ? 'X' : '' }}</td>
-            <td class="marca">{{ $tramiteActual === 'CAMBIO_PIN_CN' ? 'X' : '' }}</td>
-            <td class="marca">{{ $tramiteActual === 'CAMBIO_CATEGORIA' ? 'X' : '' }}</td>
-            <td class="marca">{{ $tramiteActual === 'SOLICITAR_TELEFONO' ? 'X' : '' }}</td>
-            <td class="marca">
-                {{ $tramiteActual === 'OTRO' ? 'X' : '' }}
-                @if($tramiteActual === 'OTRO')
-                    <br><span style="font-size:8px; font-weight:normal;">({{ str_replace('_', ' ', $s->tipo_tramite) }})</span>
-                @endif
+            <td class="etiqueta">
+                MAC:
+                <span class="subtexto-etiqueta">Ubicar en la etiqueta, atrás del Teléfono.</span>
+            </td>
+            <td class="valor">{{ $s->mac ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="etiqueta">
+                Núm. De HAC:
+                <span class="subtexto-etiqueta">Ubicar en la etiqueta, atrás del Teléfono.</span>
+            </td>
+            <td class="valor">{{ $s->numero_hac ?? $s->numero_serie ?? '-' }}</td>
+        </tr>
+
+        @php
+            $tramiteActual = in_array($s->tipo_tramite, ['CAMBIO_USUARIO', 'CAMBIO_PIN_CN', 'CAMBIO_CATEGORIA', 'SOLICITAR_TELEFONO'])
+                ? $s->tipo_tramite
+                : 'OTRO';
+        @endphp
+
+        <tr>
+            <td class="etiqueta">
+                Tipo de Solicitud:
+                <span class="subtexto-etiqueta">Seleccione con una "X" el tipo de solicitud.</span>
+            </td>
+            <td class="valor-matriz">
+                <table class="subtabla-solicitud">
+                    <tr>
+                        <td class="col-1">{{ $tramiteActual === 'CAMBIO_USUARIO' ? 'X' : '' }}</td>
+                        <td class="col-2">{{ $tramiteActual === 'CAMBIO_PIN_CN' ? 'X' : '' }}</td>
+                        <td class="col-3">{{ $tramiteActual === 'CAMBIO_CATEGORIA' ? 'X' : '' }}</td>
+                        <td class="col-4">{{ $tramiteActual === 'SOLICITAR_TELEFONO' ? 'X' : '' }}</td>
+                        <td class="col-5">
+                            {{ $tramiteActual === 'OTRO' ? 'X' : '' }}
+                            @if($tramiteActual === 'OTRO')
+                                <br><span style="font-size:10px; font-weight:normal;">({{ str_replace('_', ' ', $s->tipo_tramite) }})</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="col-1">Cambio de Usuario</td>
+                        <td class="col-2">Cambio de PIN</td>
+                        <td class="col-3">Categoría de Marcación</td>
+                        <td class="col-4">Nueva Extensión</td>
+                        <td class="col-5">Otro Tipo de Solicitud</td>
+                    </tr>
+                </table>
             </td>
         </tr>
+        <tr>
+            <td class="etiqueta">
+                Justificación para Solicitud:
+                <span class="subtexto-etiqueta">Porque requiere la solicitud, con base a sus actividades laborales.</span>
+            </td>
+            <td class="valor" style="min-height: 40px; vertical-align: top;">{{ $s->observaciones ?? '-' }}</td>
+        </tr>
     </table>
 
-    <div class="justificacion-titulo">Justificación para Solicitud:</div>
-    <div class="justificacion-box">{{ $s->observaciones ?? '-' }}</div>
+    <br>
+    <br>
 
+    <!-- Área de Firmas y Sello -->
     <table class="solicita-autoriza">
         <tr>
             <td class="col-firma">
-                <div class="firma-linea">
+                <div style="font-weight: bold;">Usuario</div>
+                <br><br><br><br>
+                <div style="margin-bottom: 4px; font-weight: bold;">
                     {{ trim(($s->nombre ?? '') . ' ' . ($s->apellido_paterno ?? '') . ' ' . ($s->apellido_materno ?? '')) ?: '-' }}
-                    <br>Usuario — Nombre y Firma
+                </div>
+                <div class="firma-linea">
+                    Nombre y Firma
                 </div>
             </td>
-            <td class="col-sello">Sello de la Dependencia</td>
+            <td class="col-sello">
+                Sello de la Dependencia
+            </td>
             <td class="col-firma">
-                <div class="firma-linea">Autoriza — Nombre y Firma</div>
+                <div style="font-weight: bold;">Autoriza</div>
+                <br><br><br><br>
+                <div style="margin-bottom: 4px; font-weight: bold;">
+                    {{ $s->autoriza_nombre ?? '-' }}<br>
+                    <span style="font-weight:normal; font-size:11px;">{{ $s->autoriza_cargo ?? '' }}</span>
+                </div>
+                <div class="firma-linea">
+                    Nombre y Firma
+                </div>
             </td>
         </tr>
     </table>
 
-    <p class="nota-roja">Nota: Es OBLIGATORIO que, el jefe que AUTORIZA debe de ser NIVEL 22 o superior.</p>
-
-    <div class="pie-pagina">
-        Carretera Internacional Oaxaca-Istmo Km 11.5<br>
-        Ciudad Administrativa Benemérito de las Américas Edificio 2,<br>
-        segundo nivel, Tlalixtac de Cabrera, Oaxaca. C.P. 68270
-    </div>
+    <p class="nota-roja">
+        <strong>Nota: Es OBLIGATORIO que, el jefe que AUTORIZA debe de ser NIVEL 22 o superior.</strong>
+    </p>
 
 </body>
 </html>

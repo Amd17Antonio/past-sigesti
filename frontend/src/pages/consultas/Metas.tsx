@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getResumenEncuesta, type ResumenEncuesta } from '../../services/encuestaService';
 
 export default function Metas() {
+  const navigate = useNavigate();
   const [del, setDel] = useState('');
   const [al, setAl] = useState('');
   const [data, setData] = useState<ResumenEncuesta | null>(null);
@@ -30,7 +32,17 @@ export default function Metas() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Metas — Evaluación del servicio</h1>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+        <h1 className="text-xl font-bold">Metas — Evaluación del servicio</h1>
+
+        <button
+          onClick={() => navigate('/catalogos/preguntas')}
+          className="bg-white border border-purple-200 hover:border-purple-500 hover:bg-purple-50 rounded-lg px-4 py-3 text-left shadow-sm transition-colors flex items-center gap-3"
+        >
+          <span className="text-2xl">📝</span>
+          <span className="font-medium text-gray-800 text-sm">Preguntas (Encuesta)</span>
+        </button>
+      </div>
 
       <div className="flex flex-wrap items-end gap-3 mb-6 bg-gray-50 border rounded p-4">
         <div>

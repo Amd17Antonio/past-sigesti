@@ -10,6 +10,10 @@ export interface SolicitudVpn {
   correo_institucional?: string | null;
   telefono?: string | null;
   extension?: string | null;
+  id_autoriza?: number | null;
+  autoriza_nombre?: string | null;
+  autoriza_cargo?: string | null;
+  autoriza_correo?: string | null;
   tipo_acceso: 'link' | 'ip_puerto' | 'ambos';
   link_sistema?: string | null;
   ip_puerto?: string | null;
@@ -30,4 +34,4 @@ export interface SolicitudVpn {
   updated_at?: string | null;
 }
 
-export type NuevaSolicitudVpn = Omit<SolicitudVpn, 'id' | 'estatus' | 'created_at' | 'updated_at' | 'folio_glpi' | 'observacion_glpi' | 'motivo_baja' | 'fecha_creado_cgd' | 'fecha_atendiendo_dgti' | 'fecha_activo' | 'fecha_baja'>;
+export type NuevaSolicitudVpn = Omit<SolicitudVpn, 'id' | 'estatus' | 'created_at' | 'updated_at' | 'folio_glpi' | 'observacion_glpi' | 'motivo_baja' | 'fecha_creado_cgd' | 'fecha_atendiendo_dgti' | 'fecha_activo' | 'fecha_baja' | 'autoriza_nombre' | 'autoriza_cargo' | 'autoriza_correo'>;

@@ -38,6 +38,7 @@ export default function Pendientes() {
 
   const puedeAsignar = rol !== 'Usuario Solicitante';
   const puedeCrear = rol === 'Administrador';
+  const puedeRegresar = rol === 'Administrador' || rol === 'Capturista';
 
   const cargar = () => {
     getPendientes().then(setSolicitudes);
@@ -76,12 +77,14 @@ export default function Pendientes() {
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold">Solicitudes Pendientes</h1>
-          <button
-            onClick={() => navigate('/solicitudes-uie')}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
-          >
-            ← Regresar
-          </button>
+          {puedeRegresar && (
+            <button
+              onClick={() => navigate('/solicitudes-uie')}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+            >
+              ← Regresar
+            </button>
+          )}
         </div>
         <div className="flex gap-2">
           <input

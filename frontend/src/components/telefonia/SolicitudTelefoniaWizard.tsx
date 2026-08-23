@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { TRAMITES } from './TramitesConfig';
 import BuscarPorExtension from './BuscarPorExtension';
 import ResumenUsuarioTelefonia from './ResumenUsuarioTelefonia';
+import { getCatalogo } from '../../services/catalogoService';
 
 import {
   getCategoriasTelefonia, crearSolicitudTelefonia,
@@ -12,6 +13,8 @@ interface Props {
   onCreado: () => void;
   onBack: () => void;
 }
+
+interface Autoriza { id: number; nombre: string; cargo?: string; correo?: string }
 
 // TODO: reemplazar por catálogo real (getCatalogo('complejos')) cuando exista en backend.
 const COMPLEJOS = [
@@ -179,6 +182,28 @@ function BotonEnviar({ onClick, enviando, label = 'Enviar Solicitud' }: { onClic
   );
 }
 
+// Selector reutilizable de "Persona que autoriza" (catálogo cat_autoriza_internet).
+// Usado en los trámites que generan PDF firmado: SOLICITAR_TELEFONO, CAMBIO_PIN_CN,
+// CAMBIO_USUARIO, CAMBIO_CATEGORIA y OTROS.
+function SelectAutoriza({
+  autorizantes, value, onChange,
+}: { autorizantes: Autoriza[]; value: string; onChange: (v: string) => void }) {
+  const seleccionado = autorizantes.find((a) => a.id === Number(value));
+  return (
+    <Campo label="Persona que autoriza:" full>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+        <option value="">--Seleccionar--</option>
+        {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+      </select>
+      {seleccionado && (
+        <p className="text-xs text-gray-500 mt-1">
+          Cargo: {seleccionado.cargo} — Correo: {seleccionado.correo}
+        </p>
+      )}
+    </Campo>
+  );
+}
+
 // ---------- 1. Solicitar Teléfono ----------
 
 function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
@@ -193,8 +218,14 @@ function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
     nombre_secretaria: '', extension_secretaria: '',
     observaciones: '',
   });
+  const [idAutoriza, setIdAutoriza] = useState('');
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
+  }, []);
 
   const esArregloJefeSecretaria = form.arreglo_jefe_secretaria === 'Si';
 
@@ -223,6 +254,14 @@ function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
       setError('Completa Nombre Jefe, Nombre Secretaria y Extensión Secretaria.');
       return;
     }
+    if (!idAutoriza) {
+      setError('La persona que autoriza es obligatoria.');
+      return;
+    }
+    if (!form.observaciones.trim() || form.observaciones.trim().length < 10) {
+      setError('La justificación (observaciones) es obligatoria, mínimo 10 caracteres.');
+      return;
+    }
 
     setEnviando(true);
     setError('');
@@ -249,7 +288,8 @@ function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
       await crearSolicitudTelefonia({
         usuario_id: nuevo.id,
         tipo_tramite: 'SOLICITAR_TELEFONO',
-        observaciones: form.observaciones || undefined,
+        id_autoriza: Number(idAutoriza),
+        observaciones: form.observaciones,
         detalle: {
           complejo: form.complejo || undefined,
           arreglo_jefe_secretaria: esArregloJefeSecretaria,
@@ -347,6 +387,8 @@ function FormSolicitarTelefono({ onClose, onCreado, onBack }: Props) {
           <Campo label="Extensión:"><input name="extension" value={form.extension} onChange={handleChange} className={inputClass} /></Campo>
         )}
 
+        <SelectAutoriza autorizantes={autorizantes} value={idAutoriza} onChange={setIdAutoriza} />
+
         <Campo label="Observaciones:" full>
           <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={3} className={inputClass} />
         </Campo>
@@ -374,8 +416,14 @@ function FormCambioPinCn({ onClose, onCreado, onBack }: Props) {
   const [correo, setCorreo] = useState('');
   const [motivo, setMotivo] = useState('Extravío');
   const [observaciones, setObservaciones] = useState('');
+  const [idAutoriza, setIdAutoriza] = useState('');
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
+  }, []);
 
   const handleEncontrado = (u: any) => {
     setUsuario(u);
@@ -388,19 +436,26 @@ function FormCambioPinCn({ onClose, onCreado, onBack }: Props) {
     setCorreo('');
     setMotivo('Extravío');
     setObservaciones('');
+    setIdAutoriza('');
     setError('');
   };
 
   const handleSubmit = async () => {
     if (!usuario) { setError('Busca primero al usuario por extensión.'); return; }
     if (!correo) { setError('El correo electrónico es obligatorio.'); return; }
+    if (!idAutoriza) { setError('La persona que autoriza es obligatoria.'); return; }
+    if (!observaciones.trim() || observaciones.trim().length < 10) {
+      setError('La justificación (observaciones) es obligatoria, mínimo 10 caracteres.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
         usuario_id: usuario.id,
         tipo_tramite: 'CAMBIO_PIN_CN',
-        observaciones: observaciones || undefined,
+        id_autoriza: Number(idAutoriza),
+        observaciones,
         detalle: { tipo_clave: usuario.tipo_clave, motivo_cambio: motivo, correo_notificacion: correo || undefined },
       });
       onCreado();
@@ -464,6 +519,7 @@ function FormCambioPinCn({ onClose, onCreado, onBack }: Props) {
                 <option value="Otro">Otro</option>
               </select>
             </Campo>
+            <SelectAutoriza autorizantes={autorizantes} value={idAutoriza} onChange={setIdAutoriza} />
             <Campo label="Observaciones:" full>
               <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className={inputClass} />
             </Campo>
@@ -490,8 +546,14 @@ function FormCambioUsuario({ onClose, onCreado, onBack }: Props) {
     nombre_secretaria: '', extension_secretaria: '',
   });
   const [observaciones, setObservaciones] = useState('');
+  const [idAutoriza, setIdAutoriza] = useState('');
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
+  }, []);
 
   const esArregloJefeSecretaria = nuevo.arreglo_jefe_secretaria === 'Si';
 
@@ -510,13 +572,19 @@ function FormCambioUsuario({ onClose, onCreado, onBack }: Props) {
       setError('Completa Nombre Jefe, Extensión Jefe, Nombre Secretaria y Extensión Secretaria.');
       return;
     }
+    if (!idAutoriza) { setError('La persona que autoriza es obligatoria.'); return; }
+    if (!observaciones.trim() || observaciones.trim().length < 10) {
+      setError('La justificación (observaciones) es obligatoria, mínimo 10 caracteres.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
         usuario_id: actual.id,
         tipo_tramite: 'CAMBIO_USUARIO',
-        observaciones: observaciones || undefined,
+        id_autoriza: Number(idAutoriza),
+        observaciones,
         detalle: { nuevo_usuario: nuevo },
       });
       onCreado();
@@ -614,6 +682,8 @@ function FormCambioUsuario({ onClose, onCreado, onBack }: Props) {
               <Campo label="Extensión Secretaria:"><input name="extension_secretaria" value={nuevo.extension_secretaria} onChange={handleChange} className={inputClass} /></Campo>
             </>
           )}
+
+          <SelectAutoriza autorizantes={autorizantes} value={idAutoriza} onChange={setIdAutoriza} />
 
           <Campo label="Observaciones:" full>
             <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2} className={inputClass} />
@@ -1033,10 +1103,15 @@ function FormCambioCategoria({ onClose, onCreado, onBack }: Props) {
   const [clavePuesto, setClavePuesto] = useState('');
   const [direccion, setDireccion] = useState('');
   const [justificacion, setJustificacion] = useState('');
+  const [idAutoriza, setIdAutoriza] = useState('');
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => { getCategoriasTelefonia().then(setCategorias); }, []);
+  useEffect(() => {
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
+  }, []);
 
   const handleEncontrado = (u: any) => {
     setUsuario(u);
@@ -1057,6 +1132,7 @@ function FormCambioCategoria({ onClose, onCreado, onBack }: Props) {
     setDireccion('');
     setCategoriaId('');
     setJustificacion('');
+    setIdAutoriza('');
     setError('');
   };
 
@@ -1066,12 +1142,18 @@ function FormCambioCategoria({ onClose, onCreado, onBack }: Props) {
       setError('Completa todos los campos.');
       return;
     }
+    if (!idAutoriza) { setError('La persona que autoriza es obligatoria.'); return; }
+    if (justificacion.trim().length < 10) {
+      setError('La justificación debe tener al menos 10 caracteres.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
       await crearSolicitudTelefonia({
         usuario_id: usuario.id,
         tipo_tramite: 'CAMBIO_CATEGORIA',
+        id_autoriza: Number(idAutoriza),
         observaciones: justificacion,
         detalle: {
           categoria_id: Number(categoriaId),
@@ -1146,6 +1228,8 @@ function FormCambioCategoria({ onClose, onCreado, onBack }: Props) {
               </select>
             </Campo>
 
+            <SelectAutoriza autorizantes={autorizantes} value={idAutoriza} onChange={setIdAutoriza} />
+
             <Campo label="Justificación:" full>
               <textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} rows={3} className={inputClass} />
             </Campo>
@@ -1164,12 +1248,23 @@ function FormOtros({ onClose, onCreado, onBack }: Props) {
   const [nodos, setNodos] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [observaciones, setObservaciones] = useState('');
+  const [idAutoriza, setIdAutoriza] = useState('');
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
+  }, []);
 
   const handleSubmit = async () => {
     if (!descripcion) {
       setError('La descripción del problema es obligatoria.');
+      return;
+    }
+    if (!idAutoriza) { setError('La persona que autoriza es obligatoria.'); return; }
+    if (!observaciones.trim() || observaciones.trim().length < 10) {
+      setError('La justificación (observaciones) es obligatoria, mínimo 10 caracteres.');
       return;
     }
     setEnviando(true);
@@ -1177,7 +1272,8 @@ function FormOtros({ onClose, onCreado, onBack }: Props) {
     try {
       await crearSolicitudTelefonia({
         tipo_tramite: 'OTROS',
-        observaciones: observaciones || undefined,
+        id_autoriza: Number(idAutoriza),
+        observaciones,
         detalle: {
           extensiones: extensiones || undefined,
           nodos: nodos || undefined,
@@ -1210,6 +1306,9 @@ function FormOtros({ onClose, onCreado, onBack }: Props) {
         <Campo label="Descripción del problema:" full>
           <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={3} className={inputClass} />
         </Campo>
+
+        <SelectAutoriza autorizantes={autorizantes} value={idAutoriza} onChange={setIdAutoriza} />
+
         <Campo label="Observaciones:" full>
           <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={3} className={inputClass} />
         </Campo>

@@ -21,6 +21,8 @@ export const RUTAS_POR_ROL: Record<string, string[]> = {
     '/solicitud-internet', '/solicitud-telefono',
     '/solicitud-correo', '/solicitud-vpn',
     '/resguardo/telefonia', '/resguardo/correo', '/resguardo/vpn',
+    '/catalogos/grupo/equipo-computo', '/catalogos/grupo/organizacion',
+    '/catalogos/grupo/telefonia',
   ],
   'Capturista': [
     '/solicitudes-uie', '/solicitudes', '/asignadas', '/pendientes', '/historial',

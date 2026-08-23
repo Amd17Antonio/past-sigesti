@@ -106,9 +106,8 @@ export default function Login() {
           Km. 11.5, Tlalixtco de Cabrera, Oaxaca C.P. 68270.
         </p>
         <p>Conmutador (951) 501 50 00.</p>
-        <p className="mt-1 font-medium">CONTACTO:</p>
-        <p>M.C.E. Gustavo Hamlet Oropeza Arévalo</p>
-        <p>Jefe del Departamento de Tecnologías de la Información</p>
+        <p className="mt-1 font-medium">EXTENSIÓN:</p>
+        <p>10214</p>
       </footer>
     </div>
   );

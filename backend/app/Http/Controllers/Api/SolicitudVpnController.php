@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\URL;
 
@@ -14,9 +15,11 @@ class SolicitudVpnController extends Controller
     {
         return DB::table('solicitud_vpn as sv')
             ->leftJoin('areas as a', 'a.id', '=', 'sv.id_area')
+            ->leftJoin('cat_autoriza_internet as auth', 'auth.id', '=', 'sv.id_autoriza')
             ->select(
                 'sv.id', 'sv.nombre_usuario', 'sv.puesto', 'sv.id_area', 'a.area', 'sv.dependencia',
                 'sv.correo_institucional', 'sv.telefono', 'sv.extension',
+                'sv.id_autoriza', 'auth.nombre as autoriza_nombre', 'auth.cargo as autoriza_cargo', 'auth.correo as autoriza_correo',
                 'sv.tipo_acceso', 'sv.link_sistema', 'sv.ip_puerto',
                 'sv.justificacion_uso', 'sv.fecha_inicio', 'sv.fecha_fin',
                 'sv.num_ticket', 'sv.estatus', 'sv.observaciones',
@@ -24,6 +27,21 @@ class SolicitudVpnController extends Controller
                 'sv.fecha_creado_cgd', 'sv.fecha_atendiendo_dgti', 'sv.fecha_activo', 'sv.fecha_baja',
                 'sv.created_at'
             );
+    }
+
+    /**
+     * El correo institucional para VPN debe pertenecer a una cuenta institucional
+     * ya existente y activa (registrada previamente vía el módulo de Correo).
+     */
+    private function reglasCorreoInstitucional(?int $ignorarId = null): array
+    {
+        return [
+            'required', 'email', 'max:150',
+            Rule::exists('solicitud_correo', 'correo_institucional')
+                ->where(function ($query) use ($ignorarId) {
+                    $query->where('estatus', 'activo');
+                }),
+        ];
     }
 
     public function index(Request $request)
@@ -78,8 +96,9 @@ class SolicitudVpnController extends Controller
             'nombre_usuario' => 'required|string|max:150',
             'puesto' => 'required|string|max:200',
             'id_area' => 'required|integer|exists:areas,id',
+            'id_autoriza' => 'required|integer|exists:cat_autoriza_internet,id',
             'dependencia' => 'required|string|max:200',
-            'correo_institucional' => 'required|email|max:150',
+            'correo_institucional' => $this->reglasCorreoInstitucional(),
             'telefono' => ['required', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required|string|max:10',
             'link_sistema' => 'required|url|max:255',
@@ -88,6 +107,8 @@ class SolicitudVpnController extends Controller
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
         ], [
+            'id_autoriza.required' => 'La persona que autoriza es obligatoria.',
+            'correo_institucional.exists' => 'Ese correo institucional no existe o no está activo en el sistema. Verifica que sea correcto.',
             'telefono.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
             'link_sistema.required' => 'El link del sistema es obligatorio.',
             'ip_puerto.required' => 'La IP y puerto del servidor son obligatorios.',
@@ -125,8 +146,9 @@ class SolicitudVpnController extends Controller
             'nombre_usuario' => 'required|string|max:150',
             'puesto' => 'required|string|max:200',
             'id_area' => 'required|integer|exists:areas,id',
+            'id_autoriza' => 'required|integer|exists:cat_autoriza_internet,id',
             'dependencia' => 'required|string|max:200',
-            'correo_institucional' => 'required|email|max:150',
+            'correo_institucional' => $this->reglasCorreoInstitucional((int) $id),
             'telefono' => ['required', 'regex:/^[0-9]{7,15}$/'],
             'extension' => 'required|string|max:10',
             'link_sistema' => 'required|url|max:255',
@@ -136,6 +158,8 @@ class SolicitudVpnController extends Controller
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'num_ticket' => 'nullable|string|max:50',
         ], [
+            'id_autoriza.required' => 'La persona que autoriza es obligatoria.',
+            'correo_institucional.exists' => 'Ese correo institucional no existe o no está activo en el sistema. Verifica que sea correcto.',
             'telefono.regex' => 'El teléfono debe contener solo dígitos (7 a 15).',
             'link_sistema.required' => 'El link del sistema es obligatorio.',
             'ip_puerto.required' => 'La IP y puerto del servidor son obligatorios.',
@@ -214,7 +238,6 @@ class SolicitudVpnController extends Controller
         return response()->json(['message' => 'Estatus actualizado correctamente']);
     }
 
-    // Edita solo el link y la IP/puerto asignados mientras el servicio ya está activo (ambos requeridos).
     public function actualizarAsignacion(Request $request, $id)
     {
         $usuario = $request->user();
@@ -249,7 +272,6 @@ class SolicitudVpnController extends Controller
         return response()->json(['message' => 'Asignación actualizada correctamente']);
     }
 
-    // Elimina la solicitud definitivamente de la base de datos (hard delete)
     public function destroy($id)
     {
         $existe = DB::table('solicitud_vpn')->where('id', $id)->exists();
@@ -262,7 +284,6 @@ class SolicitudVpnController extends Controller
         return response()->json(['message' => 'Solicitud eliminada correctamente']);
     }
 
-    // Genera el PDF de la solicitud de VPN
     public function imprimir($id)
     {
         $s = $this->baseQuery()->where('sv.id', $id)->first();
@@ -271,7 +292,12 @@ class SolicitudVpnController extends Controller
             return response()->json(['message' => 'Solicitud no encontrada'], 404);
         }
 
-        $pdf = Pdf::loadView('pdf.vpn_solicitud', ['s' => $s]);
+        $enlace = DB::table('cat_enlace_informatico')
+            ->where('estatus', 'activo')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $pdf = Pdf::loadView('pdf.vpn_solicitud', ['s' => $s, 'enlace' => $enlace]);
 
         return $pdf->stream("solicitud_vpn_{$id}.pdf");
     }

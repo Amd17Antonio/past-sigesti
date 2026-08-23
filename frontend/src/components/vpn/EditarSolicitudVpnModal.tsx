@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getSolicitudVpnDetalle, actualizarSolicitudVpn } from '../../services/solicitudVpnService';
 import { getAreas, type Area } from '../../services/areaService';
+import { getCatalogo } from '../../services/catalogoService';
+
+interface Autoriza { id: number; nombre: string; cargo?: string; correo?: string }
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGEX_TELEFONO = /^[0-9]{7,15}$/;
@@ -15,10 +18,12 @@ export default function EditarSolicitudVpnModal({
   const [guardando, setGuardando] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
+  const [autorizantes, setAutorizantes] = useState<Autoriza[]>([]);
 
   const [form, setForm] = useState({
     nombre_usuario: '', puesto: '', id_area: '', dependencia: '',
     correo_institucional: '', telefono: '', extension: '',
+    id_autoriza: '',
     link_sistema: '', ip_puerto: '',
     justificacion_uso: '', fecha_inicio: '', fecha_fin: '',
     num_ticket: '', estatus: 'generada',
@@ -26,6 +31,7 @@ export default function EditarSolicitudVpnModal({
 
   useEffect(() => {
     getAreas().then(setAreas);
+    getCatalogo('autoriza-internet').then((r) => setAutorizantes(r.registros as Autoriza[]));
 
     getSolicitudVpnDetalle(idSolicitud).then(({ solicitud }) => {
       setForm({
@@ -36,7 +42,7 @@ export default function EditarSolicitudVpnModal({
         correo_institucional: solicitud.correo_institucional ?? '',
         telefono: solicitud.telefono ?? '',
         extension: solicitud.extension ?? '',
-        // Ahora se capturan ambos datos de acceso siempre, sin importar tipo_acceso guardado
+        id_autoriza: solicitud.id_autoriza ? String(solicitud.id_autoriza) : '',
         link_sistema: solicitud.link_sistema ?? '',
         ip_puerto: solicitud.ip_puerto ?? '',
         justificacion_uso: solicitud.justificacion_uso ?? '',
@@ -53,6 +59,8 @@ export default function EditarSolicitudVpnModal({
     setForm((f) => ({ ...f, [campo]: valor }));
   };
 
+  const autorizaSeleccionado = autorizantes.find((a) => a.id === Number(form.id_autoriza));
+
   const validar = (): string[] => {
     const errs: string[] = [];
 
@@ -60,6 +68,7 @@ export default function EditarSolicitudVpnModal({
     if (!form.puesto.trim()) errs.push('El puesto es obligatorio.');
     if (!form.id_area) errs.push('El área de adscripción es obligatoria.');
     if (!form.dependencia.trim()) errs.push('La dependencia o entidad es obligatoria.');
+    if (!form.id_autoriza) errs.push('La persona que autoriza es obligatoria.');
 
     if (!form.correo_institucional.trim()) {
       errs.push('El correo institucional es obligatorio.');
@@ -120,11 +129,11 @@ export default function EditarSolicitudVpnModal({
         nombre_usuario: form.nombre_usuario.trim(),
         puesto: form.puesto.trim() || null,
         id_area: form.id_area ? Number(form.id_area) : null,
+        id_autoriza: form.id_autoriza ? Number(form.id_autoriza) : null,
         dependencia: form.dependencia.trim() || null,
         correo_institucional: form.correo_institucional.trim() || null,
         telefono: form.telefono.trim() || null,
         extension: form.extension.trim() || null,
-        // Ya no se elige un tipo; siempre se guardan ambos datos de acceso
         tipo_acceso: 'ambos',
         link_sistema: form.link_sistema.trim() || null,
         ip_puerto: form.ip_puerto.trim() || null,
@@ -211,6 +220,21 @@ export default function EditarSolicitudVpnModal({
                     onChange={(e) => handleChange('extension', e.target.value)} />
                 </div>
               </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
+                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                  <option value="">--Seleccionar--</option>
+                  {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+
+              {autorizaSeleccionado && (
+                <p className="text-xs text-gray-500 col-span-2">
+                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
+                </p>
+              )}
             </div>
           </div>
 

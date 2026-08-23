@@ -35,7 +35,11 @@ interface UsuarioTelefonia {
   observaciones: string | null;
   categoria_id: number | null;
   categoria?: string | null;
-  vinculado_como_secretaria_de?: string | null; // = Jefe Superior (solo lectura)
+  justificacion_categoria: string | null;
+  jefe_id: number | null;
+  // Enlace: nombre del jefe del arreglo Jefe-Secretaria vinculado a este usuario (solo lectura,
+  // se calcula en el backend a partir de la tabla jefe_secretaria).
+  vinculado_como_secretaria_de?: string | null;
 }
 
 interface Categoria {
@@ -52,6 +56,7 @@ const labelClase = 'text-xs font-semibold uppercase text-gray-600 mb-1 block';
 
 export default function EditarResguardoTelefoniaModal({ extension, onClose, onActualizado }: Props) {
   const [usuario, setUsuario] = useState<UsuarioTelefonia | null>(null);
+  const [todosLosUsuarios, setTodosLosUsuarios] = useState<UsuarioTelefonia[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -60,8 +65,10 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
   // Campos editables
   const [nivelPuesto, setNivelPuesto] = useState('');
   const [correoJefe, setCorreoJefe] = useState('');
+  const [jefeId, setJefeId] = useState<string>('');
   const [modelo, setModelo] = useState('');
   const [categoriaId, setCategoriaId] = useState<string>('');
+  const [justificacion, setJustificacion] = useState('');
   const [status, setStatus] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [edificio, setEdificio] = useState('');
@@ -76,17 +83,21 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
     Promise.all([getCatalogoTelefonos(), getCategoriasTelefonia()])
       .then(([todos, listaCategorias]) => {
         if (!activo) return;
-        const encontrado = (todos as UsuarioTelefonia[]).find((u) => u.extension === extension);
+        const lista = todos as UsuarioTelefonia[];
+        const encontrado = lista.find((u) => u.extension === extension);
         if (!encontrado) {
           setError('No se encontró el usuario con esa extensión.');
           return;
         }
         setUsuario(encontrado);
+        setTodosLosUsuarios(lista);
         setCategorias(listaCategorias);
         setNivelPuesto(encontrado.nivel_puesto ?? '');
         setCorreoJefe(encontrado.correo_jefe ?? '');
+        setJefeId(encontrado.jefe_id ? String(encontrado.jefe_id) : '');
         setModelo(encontrado.modelo ?? '');
         setCategoriaId(encontrado.categoria_id ? String(encontrado.categoria_id) : '');
+        setJustificacion(encontrado.justificacion_categoria ?? '');
         setStatus(encontrado.status ?? '');
         setObservaciones(encontrado.observaciones ?? '');
         setEdificio(encontrado.edificio ?? '');
@@ -111,8 +122,10 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
       await actualizarTelefono(usuario.id, {
         nivel_puesto: nivelPuesto || null,
         correo_jefe: correoJefe || null,
+        jefe_id: jefeId ? Number(jefeId) : null,
         modelo: modelo || null,
         categoria_id: categoriaId ? Number(categoriaId) : null,
+        justificacion_categoria: justificacion || null,
         status: status || null,
         observaciones: observaciones || null,
         edificio: edificio || null,
@@ -198,7 +211,20 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClase}>Jefe Superior:</label>
-                <div className={campoReadOnlyClase}>{usuario.vinculado_como_secretaria_de || '-'}</div>
+                <select
+                  value={jefeId}
+                  onChange={(e) => setJefeId(e.target.value)}
+                  className={campoEditableClase}
+                >
+                  <option value="">Sin jefe asignado</option>
+                  {todosLosUsuarios
+                    .filter((u) => u.id !== usuario.id)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.nombre} {u.apellido_paterno ?? ''} {u.apellido_materno ?? ''}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div>
                 <label className={labelClase}>Correo del Jefe:</label>
@@ -212,20 +238,27 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className={labelClase}>Dependencia:</label>
-                <div className={campoReadOnlyClase}>{usuario.dependencia || '-'}</div>
+                <label className={labelClase}>Enlace:</label>
+                <div className={campoReadOnlyClase}>{usuario.vinculado_como_secretaria_de || '-'}</div>
               </div>
               <div>
-                <label className={labelClase}>Área Específica:</label>
-                <div className={campoReadOnlyClase}>{usuario.area_especifica || '-'}</div>
+                <label className={labelClase}>Dependencia:</label>
+                <div className={campoReadOnlyClase}>{usuario.dependencia || '-'}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
+                <label className={labelClase}>Área Específica:</label>
+                <div className={campoReadOnlyClase}>{usuario.area_especifica || '-'}</div>
+              </div>
+              <div>
                 <label className={labelClase}>Correo Institucional:</label>
                 <div className={campoReadOnlyClase}>{usuario.correo_institucional || '-'}</div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelClase}>Correo Externo:</label>
                 <div className={campoReadOnlyClase}>{usuario.correo_externo || '-'}</div>
@@ -273,6 +306,16 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className={labelClase}>Justificación de la categoría:</label>
+              <textarea
+                value={justificacion}
+                onChange={(e) => setJustificacion(e.target.value)}
+                rows={2}
+                className={campoEditableClase}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

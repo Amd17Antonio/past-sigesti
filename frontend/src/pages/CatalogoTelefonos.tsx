@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCatalogoTelefonos, actualizarTelefono, eliminarTelefono } from '../services/catalogoTelefoniaService';
 import SortIcon from '../components/common/SortIcon';
 
@@ -21,6 +22,7 @@ const COLUMNAS: { key: keyof TelefonoRow; label: string }[] = [
 ];
 
 export default function CatalogoTelefonos() {
+  const navigate = useNavigate();
   const [registros, setRegistros] = useState<TelefonoRow[]>([]);
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [sortKey, setSortKey] = useState<keyof TelefonoRow | null>(null);
@@ -98,6 +100,13 @@ export default function CatalogoTelefonos() {
 
   return (
     <div className="p-6">
+      <button
+        onClick={() => navigate('/catalogos/grupo/telefonia')}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded mb-4"
+      >
+        ← Regresar
+      </button>
+
       <h1 className="text-xl font-bold mb-4">Catálogo de Teléfonos</h1>
 
       <table className="w-full border text-sm">
