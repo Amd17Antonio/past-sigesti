@@ -12,10 +12,10 @@ export const getSolicitudesUie = async (params: {
   return data;
 };
 
-export const agregarEquipoSolicitud = async (idSolicitud: number, idEquipo: number) => {
-  const { data } = await axiosClient.post(`/solicitudes-uie/${idSolicitud}/equipo`, { id_equipo: idEquipo });
-  return data;
-};
+export const agregarEquipoSolicitud = (idSolicitud: number, idEquipo: number) =>
+  axiosClient
+    .post(`/solicitudes-uie/${idSolicitud}/equipo`, { id_equipo: idEquipo })
+    .then((r) => r.data as { message: string; id_equipo_solicitud: number; ya_sugerido_baja: boolean });
 
 export const desautorizarDictamenTecnico = async (idSolicitud: number) => {
   const { data } = await axiosClient.post(`/solicitudes-uie/${idSolicitud}/desautorizar-dictamen`);
@@ -89,4 +89,5 @@ export const autorizarDictamenSolicitud = async (idSolicitud: number) => {
   const { data } = await axiosClient.post(`/solicitudes-uie/${idSolicitud}/autorizar-dictamen`);
   return data;
 };
+
 

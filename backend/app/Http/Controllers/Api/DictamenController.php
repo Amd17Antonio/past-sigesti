@@ -91,7 +91,8 @@ class DictamenController extends Controller
         ->leftJoin('dictamen as d', 'd.id_solicitud', '=', 's.id')
         ->whereNull('d.id')
         ->whereNotNull('s.fecha_cierre')
-        ->whereNotNull('s.fecha_autoriza_dictamen')
+        //  ->whereNotNull('s.fecha_autoriza_dictamen')
+        ->whereNotNull('s.fecha_autoriza_tecnico') 
         ->select(
             's.id',
             's.solicitante',

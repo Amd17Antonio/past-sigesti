@@ -103,7 +103,7 @@
             border-left: none;
             border-top: none;
             border-bottom: 1px solid #555; 
-            padding: 13px 12px; 
+            padding: 8px 12px; /* Reducido de 10px a 8px (~20% menos altura vertical) */
             vertical-align: middle; 
             font-size: 15px; 
         }
@@ -138,7 +138,7 @@
             margin-top: 80px; 
             margin-bottom: 25px;
         }
-        
+
         table.solicita-autoriza tr.fila-nombres td {
             vertical-align: bottom;
             text-align: center;
@@ -214,17 +214,17 @@
 
         .notas-titulo {
             font-weight: 700;
-            font-size: 15px;
+            font-size: 13px;
             color: #111111;
             margin-bottom: 10px;
         }
 
         .nota-item {
-            font-size: 15px; /* Aumentado 2px */
+            font-size: 13px;
             font-weight: 400;
             line-height: 1.35;
             color: #111111;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
             text-align: justify;
         }
 
@@ -321,7 +321,7 @@
     <div class="notas-box">
         <div class="notas-titulo">NOTAS:</div>
         <div class="nota-item">• Si después de 3 meses la cuenta no es utilizada, será dada de baja automáticamente.</div>
-        <div class="nota-item">• La contraseña asignada al momento de la creación del correo tiene una vigencia de 5 días, <br>   después de esos días caducará y tendrá que solicitar el reseteo de la misma.</div>
+        <div class="nota-item">• La contraseña asignada al momento de la creación del correo tiene una vigencia de 5 días, <br>  después de esos días caducará y tendrá que solicitar el reseteo de la misma.</div>
         <div class="nota-item">• El correo secundario se solicita en caso de necesitar restablecer su contraseña.</div>
     </div>
 

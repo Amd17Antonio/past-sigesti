@@ -388,5 +388,18 @@ public function update(Request $request, int $id)
     return response()->json(['message' => 'Solicitud actualizada correctamente']);
 }
 
+// Devuelve el historial de seguimiento guardado (para mostrarlo al reabrir el modal)
+public function verSeguimiento(int $id)
+{
+    $solicitud = DB::table('solicitud')->where('id', $id)->first();
+
+    if (!$solicitud) {
+        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    }
+
+    return response()->json([
+        'seguimiento' => $solicitud->seguimiento,
+    ]);
+}
 
 }

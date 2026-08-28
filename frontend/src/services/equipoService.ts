@@ -31,6 +31,12 @@ export const buscarEquipo = async (noInventario: string) => {
   return data;
 };
 
+// NUEVO: búsqueda por número de serie
+export const buscarEquipoPorSerie = async (noSerie: string) => {
+  const { data } = await axiosClient.get(`/equipos/buscar-serie/${encodeURIComponent(noSerie)}`);
+  return data;
+};
+
 export const verificarSerie = async (noSerie: string): Promise<boolean> => {
   const { data } = await axiosClient.get(`/equipos/verificar-serie/${encodeURIComponent(noSerie)}`);
   return data.disponible as boolean;

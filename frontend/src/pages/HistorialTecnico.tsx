@@ -10,6 +10,7 @@ interface SolicitudHistorial {
   descripcion: string;
   fecha_solicitud: string;
   fecha_cierre: string | null;
+  seguimiento: string | null;   // NUEVO
   observaciones: string | null;
 }
 
@@ -21,6 +22,7 @@ const COLUMNAS: { key: keyof SolicitudHistorial; label: string }[] = [
   { key: 'descripcion', label: 'Desc. Problema' },
   { key: 'fecha_solicitud', label: 'Fecha Inicio' },
   { key: 'fecha_cierre', label: 'Fecha Cierre' },
+  { key: 'seguimiento', label: 'Seguimiento' },   // NUEVO
   { key: 'observaciones', label: 'Respuesta' },
 ];
 
@@ -113,6 +115,7 @@ export default function HistorialTecnico() {
               <td className="p-2">{s.descripcion}</td>
               <td className="p-2">{s.fecha_solicitud}</td>
               <td className="p-2">{s.fecha_cierre ?? '-'}</td>
+              <td className="p-2 max-w-xs whitespace-pre-wrap text-xs">{s.seguimiento ?? '-'}</td>
               <td className="p-2">{s.observaciones ?? '-'}</td>
             </tr>
           ))}

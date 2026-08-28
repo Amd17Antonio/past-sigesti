@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <title>Dictamen {{ $dictamen->folio }}/{{ $dictamen->ejercicio }}</title>
     <style>
+
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+        
         @page {
             size: letter;
             margin: 150px 60px 90px 100px;
@@ -41,7 +44,7 @@
             height: 1090px;
             z-index: -1;
         }
-        .franja-lateral img { width: 150%; height: 165%; }
+        .franja-lateral img { width: 100%; height: 100%; }
 
         /* ---------- Pie de Página institucional (anclado al fondo real de cada hoja con la misma técnica del membrete superior) ---------- */
         .pie-pagina-primera {
@@ -240,7 +243,14 @@
             @endif
         </div>
 
-        <p class="pie-derecha" style="margin-top: 20px;">{{ $dictamen->expediente }} Ccp. Archivo</p>
+        @php
+            $prefijoExpediente = 'RAGG/';
+            $expedienteMostrar = $dictamen->expediente;
+            if ($expedienteMostrar && !str_starts_with($expedienteMostrar, $prefijoExpediente)) {
+                $expedienteMostrar = $prefijoExpediente . $expedienteMostrar;
+            }
+        @endphp
+        <p class="pie-derecha" style="margin-top: 20px;">{{ $expedienteMostrar }} Ccp. Archivo</p>
         @foreach($copias as $c)
             <p class="pie-derecha">{{ $c }}</p>
         @endforeach

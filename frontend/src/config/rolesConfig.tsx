@@ -2,7 +2,7 @@
 
 // Ruta a la que se redirige cada rol justo después de iniciar sesión.
 export const HOME_POR_ROL: Record<string, string> = {
-  'Administrador': '/solicitudes-uie',
+  'Administrador': '/dashboard',
   'Capturista': '/solicitudes-uie',
   'Soporte Técnico': '/asignadas',
   'Recursos Materiales': '/equipos-baja',
@@ -14,6 +14,7 @@ export const DEFAULT_HOME = '/pendientes';
 // Rutas permitidas por rol. Debe reflejar lo que cada rol ve en el Navbar.
 export const RUTAS_POR_ROL: Record<string, string[]> = {
   'Administrador': [
+    '/dashboard',
     '/solicitudes-uie', '/pendientes', '/asignadas', '/mis-asignadas',
     '/historial', '/dictamenes', '/mantenimiento',
     '/consultas/metas', '/consultas/actividades', '/consultas/equipos',

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Layout from './components/common/Layout';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import InactivityWatcher from './components/common/InactivityWatcher';
 import Pendientes from './pages/Pendientes';
 import Asignadas from './pages/Asignadas';
 import Historial from './pages/Historial';
@@ -32,11 +33,13 @@ import CatalogoOrganizacion from './pages/CatalogoOrganizacion';
 import CatalogoTelefoniaGrupo from './pages/CatalogoTelefoniaGrupo';
 import CatalogoInternetGrupo from './pages/CatalogoInternetGrupo';
 import CatalogoEncuestasGrupo from './pages/CatalogoEncuestasGrupo';
+import Dashboard from './pages/Dashboard';
 
 
 function App() {
   return (
     <BrowserRouter>
+      <InactivityWatcher />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route
@@ -72,6 +75,7 @@ function App() {
           <Route path="/consultas/metas" element={<Metas />} />
           <Route path="/equipos-baja" element={<EquiposBaja />} />
           <Route path="/mis-asignadas" element={<MisAsignadas />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/catalogos/grupo/equipo-computo" element={<CatalogoEquipoComputo />} />
 <Route path="/catalogos/grupo/organizacion" element={<CatalogoOrganizacion />} />

@@ -22,6 +22,8 @@ export interface SolicitudUieRow {
   acuseDictamen: number;
   memoSolicitud: number;
   dada_baja: number | null;
+  tiene_checklist?: boolean | number;
+  id_equipo_solicitud?: number | null;
 }
 
 export interface SolicitudUieResponse {

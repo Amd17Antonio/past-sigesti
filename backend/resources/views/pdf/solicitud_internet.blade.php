@@ -11,7 +11,12 @@
             margin: 22px 105px 22px 70px;
         }
 
-        body { font-family: 'Montserrat', sans-serif; font-size: 10.2px; line-height: 1.25; color: #111; }
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            font-size: 10.2px; 
+            line-height: 1.25; 
+            color: #111; 
+        }
 
         /* ---------- Membrete ---------- */
         .membrete {
@@ -30,7 +35,7 @@
         }
 
         .texto-instrucciones {
-            font-size: 13.8px;
+            font-size: 12.8px;
             line-height: 1.3;
             margin: 8px 0;
             width: 100%;
@@ -49,7 +54,7 @@
 
         /* ---------- Franja lateral decorativa ---------- */
         .franja-lateral {
-            position: absolute;
+            position: fixed;
             top: -22px;
             right: -84px; 
             width: 128px;
@@ -62,7 +67,7 @@
         /* ---------- Títulos conmemorativos ---------- */
         .titulo-linea1 { 
             text-align: left;
-            font-size: 10.7px; 
+            font-size: 10px; 
             font-weight: bold; 
             line-height: 1.1;
             margin-top: -4px !important;
@@ -72,7 +77,7 @@
 
         .titulo-linea2 { 
             text-align: center;
-            font-size: 10.7px; 
+            font-size: 10px; 
             font-weight: bold; 
             line-height: 1.1; 
             margin-top: 0 !important; 
@@ -82,25 +87,25 @@
 
         .subtitulo { 
             text-align: center; 
-            font-size: 13px; 
+            font-size: 12.9px; 
             font-weight: bold; 
             line-height: 1.2;
             margin-top: 12px;
             margin-bottom: 22px; 
         }
 
-        table.formato { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        table.formato { width: 100%; border-collapse: collapse; margin: 0 0 8px 0; }
         table.formato td { 
             border: 1px solid #333; 
-            padding: 4px 5px; 
-            vertical-align: top;
+            padding: 3px 4px; 
+            vertical-align: middle;
             text-align: justify;
         }
-        table.formato th { border: 1px solid #333; padding: 4px; vertical-align: top; }
-        .celda-x { width: 24px; text-align: center; font-weight: bold; }
-        .celda-nivel { width: 34px; text-align: center; font-weight: bold; }
-        .nota-roja { color: #b91c1c; font-size: 8px; margin-top: 4px; margin-bottom: 2px; font-weight: bold; }
-        .nota { font-size: 8px; margin-top: 1px; margin-bottom: 1px; }
+        table.formato th { border: 1px solid #333; padding: 2px; vertical-align: middle; }
+        .celda-x { width: 24px; text-align: center; font-weight: bold; vertical-align: middle; }
+        .celda-nivel { width: 34px; text-align: center; font-weight: bold; vertical-align: middle; }
+        .nota-roja { color: #b91c1c; font-size: 10px; margin-top: 0; margin-bottom: 0; font-weight: bold; text-align: justify; }
+        .nota { font-size: 8px; margin-top: 0; margin-bottom: 0; text-align: justify; }
 
         /* ---------- Sección Solicita / Autoriza / Sello ---------- */
         table.solicita-autoriza { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
@@ -114,15 +119,15 @@
         }
         table.solicita-autoriza .col-sello { 
             border: 1px solid #333; 
-            width: 34%; 
+            width: 25.5%; 
             font-size: 10px;
             font-weight: bold;
             vertical-align: bottom !important;
-            padding-bottom: 6px;
+            padding-bottom: 3.26px;
+            height: 32.64px; 
         }
-        table.solicita-autoriza .col-firma { width: 33%; }
+        table.solicita-autoriza .col-firma { width: 37.25%; }
 
-        /* Formato de nombre sobre la línea */
         .nombre-sobre-linea {
             border-bottom: 1px solid #333;
             margin: 0 10px;
@@ -138,30 +143,31 @@
         table.tabla-datos {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 3px;
             table-layout: fixed;
         }
 
         table.tabla-datos th, 
         table.tabla-datos td {
             border: 1px solid #333;
-            padding: 4px 2px;
-            text-align: center;
+            padding: 3px 2px;
+            text-align: justify;
             vertical-align: middle;
-            font-size: 13px;
+            font-size: 9.5px;
             background-color: #ffffff;
+            overflow: hidden;
         }
 
         table.tabla-datos th {
-            font-size: 13px;
-            line-height: 1.15;
-            background-color: #ffffff;
+            font-size: 10px;
+            line-height: 1.1;
             font-weight: bold;
+            text-align: center;
         }
 
-        .col-eq-etiqueta { width: 16%; text-align: right !important; padding-right: 2px !important; font-size: 10px !important; }
-        .col-eq-casilla  { width: 4%; font-weight: bold; text-align: center !important; font-size: 9px !important; }
-        .col-mac         { width: 20%; text-align: center !important; font-size: 12px !important; }
+        .col-eq-etiqueta { text-align: right !important; padding-right: 2px !important; font-size: 7.5px !important; white-space: nowrap; }
+        .col-eq-casilla  { font-weight: bold; text-align: center !important; font-size: 8px !important; }
+        .col-mac         { text-align: center !important; font-size: 7.5px !important; white-space: nowrap; }
 
         .page-break { page-break-before: always; }
         .sin-borde, .sin-borde td { border: none !important; }
@@ -181,7 +187,7 @@
             border: 1px solid #333;
         }
         table.justificacion-unificada td { 
-            text-align: left; 
+            text-align: justify; 
             font-size: 15px;
             padding: 6px;
             border: 1px solid #333;
@@ -193,38 +199,40 @@
             line-height: 1.25;
         }
 
-        /* Ajustes reducidos sólo para esta sección */
         .celda-contenido-justificacion {
             font-family: 'Montserrat', sans-serif !important;
             padding: 16px 14px 20px 14px !important;
             vertical-align: top;
-            font-size: 15px; /* Un número más chico */
+            font-size: 15px;
             line-height: 1.35;
             color: #000;
+            text-align: justify;
         }
         .celda-contenido-justificacion p {
             margin: 0 0 12px 0;
             font-weight: 400;
+            text-align: justify;
         }
         .celda-contenido-justificacion ul {
             margin: 0;
-            padding-left: 35px; /* Se redujo el espacio entre borde y viñeta */
+            padding-left: 35px;
             list-style-type: disc;
         }
         .celda-contenido-justificacion li {
-            margin-bottom: 4px; /* Se quitó la separación excesiva entre viñetas */
+            margin-bottom: 4px;
             padding-left: 0;
-            text-align: left;
+            text-align: justify;
             font-weight: 400;
         }
 
         .celda-privilegios {
-            font-size: 13px;
-            line-height: 1.25;
+            font-size: 11.8px;
+            line-height: 1;
+            text-align: justify;
         }
 
         .texto-mini {
-            font-size: 8px;
+            font-size: 6px;
             font-weight: normal;
         }
     </style>
@@ -232,7 +240,7 @@
 <body>
 
     <div class="franja-lateral">
-        <img src="{{ public_path('images/Lateral.png') }}" alt="">
+        <img src="{{ public_path('images/Lateral.png') }}" alt="Franja">
     </div>
 
     <div class="membrete">
@@ -292,32 +300,42 @@
     <p class="texto-instrucciones">Para asignar los privilegios seleccionados requisite la siguiente información:</p>
 
     <table class="tabla-datos">
+        <colgroup>
+            <col style="width: 10%;">
+            <col style="width: 3%;">
+            <col style="width: 10%;">
+            <col style="width: 3%;">
+            <col style="width: 38%;">
+            <col style="width: 4%;">
+            <col style="width: 16%;">
+            <col style="width: 16%;">
+        </colgroup>
         <tr>
             <th colspan="6">Conexión</th>
-            <th class="col-mac">Dirección MAC <br> Nueva:</th>
-            <th class="col-mac">Dirección MAC <br> anterior 1:</th>
+            <th class="col-mac" style="width: 16%;">Dirección MAC <br> Nueva:</th>
+            <th class="col-mac" style="width: 16%;">Dirección MAC <br> anterior 1:</th>
         </tr>
         <tr>
-            <td colspan="2" class="col-eq-etiqueta">Cableado:</td>
+            <td colspan="2" class="col-eq-etiqueta" style="text-align: right !important;">Cableado:</td>
             <td class="col-eq-casilla">{{ $s->tipo_conexion === 'cableada' ? 'X' : '' }}</td>
-            <td colspan="2" class="col-eq-etiqueta">Inalámbrico:</td>
+            <td colspan="2" class="col-eq-etiqueta" style="text-align: right !important;">Inalámbrico:</td>
             <td class="col-eq-casilla">{{ $s->tipo_conexion === 'inalambrica' ? 'X' : '' }}</td>
             <td class="col-mac">{{ $s->tipo_conexion === 'cableada' ? ($s->mac_ethernet ?? '-') : ($s->mac_wifi ?? '-') }}</td>
             <td class="col-mac">{{ $s->tipo_solicitud === 'cambio' ? ($s->motivo_actualizacion ?? '-') : '' }}</td>
         </tr>
         <tr>
             <th colspan="6">Tipo de Equipo</th>
-            <th class="col-mac">Fecha de solicitud:</th>
-            <th class="col-mac">No. de nodo de <br> red 2:</th>
+            <th class="col-mac" style="width: 16%;">Fecha de solicitud:</th>
+            <th class="col-mac" style="width: 16%;">No. de nodo de <br> red 2:</th>
         </tr>
         <tr>
-            <td class="col-eq-etiqueta">Escritorio:</td>
+            <td class="col-eq-etiqueta" style="text-align: right !important;">Escritorio:</td>
             <td class="col-eq-casilla">{{ str_contains(strtoupper($s->tipo_equipo ?? ''), 'ESCRITORIO') ? 'X' : '' }}</td>
             
-            <td class="col-eq-etiqueta">Laptop:</td>
+            <td class="col-eq-etiqueta" style="text-align: right !important;">Laptop:</td>
             <td class="col-eq-casilla">{{ str_contains(strtoupper($s->tipo_equipo ?? ''), 'LAPTOP') ? 'X' : '' }}</td>
             
-            <td class="col-eq-etiqueta">Otro<span class="texto-mini">(especifique)</span>:</td>
+            <td class="col-eq-etiqueta" style="text-align: right !important;">Otro <span class="texto-mini">(especifique)</span>:</td>
             <td class="col-eq-casilla">{{ (!str_contains(strtoupper($s->tipo_equipo ?? ''), 'ESCRITORIO') && !str_contains(strtoupper($s->tipo_equipo ?? ''), 'LAPTOP') && !empty($s->tipo_equipo)) ? 'X' : '' }}</td>
             
             <td class="col-mac">{{ \Carbon\Carbon::parse($s->created_at)->format('d/m/Y') }}</td>
@@ -332,20 +350,20 @@
             <td class="col-sello" rowspan="3">Sello de la dependencia</td>
         </tr>
         <tr>
-            <td class="col-firma" style="padding-top:24px;">
+            <td class="col-firma" style="padding-top:8.5px;">
                 <div class="nombre-sobre-linea">{{ $s->usuario_internet }}</div>
                 <div class="etiqueta-firma">Nombre y Firma</div>
             </td>
-            <td class="col-firma" style="padding-top:24px;">
+            <td class="col-firma" style="padding-top:8.5px;">
                 <div class="nombre-sobre-linea">{{ $s->autoriza_nombre ?? '-' }}</div>
                 <div class="etiqueta-firma">Nombre y Firma</div>
             </td>
         </tr>
         <tr>
-            <td colspan="2" style="padding-top:12px; text-align:center;">
+            <td colspan="2" style="padding-top:5px; text-align:center;">
                 <strong>Vo.Bo.</strong><br>
                 Enlace informático
-                <div style="margin-top:18px;">
+                <div style="margin-top:8px;">
                     <div class="nombre-sobre-linea" style="display:inline-block; min-width:240px;">
                         {{ $enlace->enlace ?? 'L.I. Romualdo Alejandro Guzmán García' }}
                     </div>
@@ -355,17 +373,22 @@
         </tr>
     </table>
 
-    <p style="font-weight:bold; margin-top:4px; margin-bottom:2px; font-size: 10px;">Información interna (no rellenar)</p>
-    <table class="formato">
+    <p style="font-weight:normal; margin-top:4px; margin-bottom:2px; font-size: 10px;">Información interna (no rellenar)</p>
+    <table class="formato" style="table-layout: fixed;">
+        <colgroup>
+            <col style="width: 45%;">
+            <col style="width: 40%;">
+            <col style="width: 15%;">
+        </colgroup>
         <tr>
-            <td style="font-size: 9.5px; padding: 3px 5px;">
-                Configuró: _______________ &nbsp;&nbsp;&nbsp; Fecha de atención: _______________ &nbsp;&nbsp;&nbsp; IP: _______________
-            </td>
+            <td style="font-size: 9.5px; padding: 1px 5px; line-height: 1;">Configuró:</td>
+            <td style="font-size: 9.5px; padding: 1px 5px; line-height: 1;">Fecha de atención:</td>
+            <td style="font-size: 9.5px; padding: 1px 5px; line-height: 1;">IP:</td>
         </tr>
     </table>
 
     <p class="nota-roja">
-        Todo tráfico en la red de las instalaciones del Gobierno del Estado es auditada y registrada por cuestiones de seguridad y transparencia,
+        Todo tráfico en la red de las instalaciones del Gobierno del Estado es auditada y registrada por cuestiones de <br> seguridad y transparencia,
         la información podrá ser entregada si es solicitada por una autoridad competente.
     </p>
     <p class="nota">*La autorización debe ser por un Director con nivel 20 o superior según la página de transparencia gubernamental, no se puede firmar por ausencia.</p>

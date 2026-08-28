@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>Resguardo de Equipo Telefónico {{ $s->id }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
         /* Definición de los 4 márgenes: arriba, derecha, abajo, izquierda */
         @page { size: letter; margin: 12px 100px 24px 36px; }
         
@@ -153,7 +154,7 @@
             <td style="width:40%; text-align: left; padding-left: 10px;">
                 <div style="font-weight: bold; font-size: 10px; margin-bottom: 2px;">Enterado</div>
                 <div class="firma-linea" style="margin: 20px 0 0 0; width: 80%;"></div>
-                <div class="firma-nombre" style="margin-top: 0px;">{{ $s->enterado_nombre ?? '' }}</div>
+                <div class="firma-nombre" style="margin-top: 0px;">{{ $administrativo->nombre ?? '' }}</div>
             </td>
             <td style="width:60%;"></td>
         </tr>

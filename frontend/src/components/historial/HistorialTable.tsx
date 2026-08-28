@@ -10,6 +10,7 @@ export interface HistorialItem {
   fecha_cierre: string | null;
   nombre: string | null;
   observaciones: string | null;
+  seguimiento: string | null;   // NUEVO
 }
 
 interface Filtros {
@@ -21,12 +22,13 @@ interface Filtros {
   fechaInicio: string;
   fechaCierre: string;
   tecnico: string;
+  seguimiento: string;   // NUEVO
   respuesta: string;
 }
 
 const FILTROS_VACIOS: Filtros = {
   folio: '', solicitante: '', extension: '', area: '', desc: '',
-  fechaInicio: '', fechaCierre: '', tecnico: '', respuesta: '',
+  fechaInicio: '', fechaCierre: '', tecnico: '', seguimiento: '', respuesta: '',
 };
 
 function getPaginas(actual: number, total: number): (number | '...')[] {
@@ -65,6 +67,7 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
         (s.fecha_solicitud ?? '').includes(filtros.fechaInicio) &&
         (s.fecha_cierre ?? '').includes(filtros.fechaCierre) &&
         (s.nombre ?? '').toLowerCase().includes(filtros.tecnico.toLowerCase()) &&
+        (s.seguimiento ?? '').toLowerCase().includes(filtros.seguimiento.toLowerCase()) &&
         (s.observaciones ?? '').toLowerCase().includes(filtros.respuesta.toLowerCase());
 
       const coincideGlobal = busquedaGlobal
@@ -118,6 +121,7 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
             <th className="p-2 text-left">Fecha Inicio</th>
             <th className="p-2 text-left">Fecha Cierre</th>
             <th className="p-2 text-left">Técnico</th>
+            <th className="p-2 text-left">Seguimiento</th>
             <th className="p-2 text-left">Respuesta</th>
             {renderAcciones && <th className="p-2 text-left">{labelAcciones ?? 'Acciones'}</th>}
           </tr>
@@ -130,6 +134,7 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
             <th className="p-1"><input value={filtros.fechaInicio} onChange={(e) => handleFiltro('fechaInicio', e.target.value)} className="border p-1 w-full rounded" /></th>
             <th className="p-1"><input value={filtros.fechaCierre} onChange={(e) => handleFiltro('fechaCierre', e.target.value)} className="border p-1 w-full rounded" /></th>
             <th className="p-1"><input value={filtros.tecnico} onChange={(e) => handleFiltro('tecnico', e.target.value)} className="border p-1 w-full rounded" /></th>
+            <th className="p-1"><input value={filtros.seguimiento} onChange={(e) => handleFiltro('seguimiento', e.target.value)} className="border p-1 w-full rounded" /></th>
             <th className="p-1"><input value={filtros.respuesta} onChange={(e) => handleFiltro('respuesta', e.target.value)} className="border p-1 w-full rounded" /></th>
             {renderAcciones && <th className="p-1"></th>}
           </tr>
@@ -145,6 +150,7 @@ export default function HistorialTable({ data, renderAcciones, labelAcciones }: 
               <td className="p-2">{s.fecha_solicitud ?? '-'}</td>
               <td className="p-2">{s.fecha_cierre ?? '-'}</td>
               <td className="p-2">{s.nombre ?? '-'}</td>
+              <td className="p-2 max-w-xs whitespace-pre-wrap text-xs">{s.seguimiento ?? '-'}</td>
               <td className="p-2">{s.observaciones ?? '-'}</td>
               {renderAcciones && <td className="p-2">{renderAcciones(s)}</td>}
             </tr>

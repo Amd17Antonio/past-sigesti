@@ -6,17 +6,37 @@ import SelectConAgregar from '../common/SelectConAgregar';
 interface Opcion { id: number; [key: string]: any }
 
 interface Props {
-  noInventario: string;
+  // Compatibilidad con quien todavía llame al modal solo con "noInventario"
+  // (ej. NuevaSolicitudInternetModal, que siempre busca por inventario)
+  noInventario?: string;
+  // Nueva forma: se indica qué se buscó y con qué valor, para autorrellenar
+  // el campo correcto (Inventario o Serie) en este formulario.
+  valorBusqueda?: string;
+  tipoBusqueda?: 'inventario' | 'serie';
   onClose: () => void;
   onRegistrado: (equipo: any) => void;
 }
 
-export default function RegistrarEquipoModal({ noInventario, onClose, onRegistrado }: Props) {
+export default function RegistrarEquipoModal({
+  noInventario, valorBusqueda, tipoBusqueda = 'inventario', onClose, onRegistrado,
+}: Props) {
+  // Si viene el prop viejo "noInventario", se respeta como búsqueda por inventario.
+  const valor = valorBusqueda ?? noInventario ?? '';
+  const esBusquedaPorSerie = tipoBusqueda === 'serie';
+
   const [tipos, setTipos] = useState<Opcion[]>([]);
   const [marcas, setMarcas] = useState<Opcion[]>([]);
   const [modelos, setModelos] = useState<Opcion[]>([]);
   const [sos, setSos] = useState<Opcion[]>([]);
-  const [form, setForm] = useState({ id_tipo: '', id_marca: '', id_modelo: '', id_so: '', no_serie: '', observacion: '' });
+  const [form, setForm] = useState({
+    id_tipo: '',
+    id_marca: '',
+    id_modelo: '',
+    id_so: '',
+    no_serie: esBusquedaPorSerie ? valor : '',
+    no_inventario: esBusquedaPorSerie ? '' : valor,
+    observacion: '',
+  });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [serieDisponible, setSerieDisponible] = useState<boolean | null>(null);
@@ -35,6 +55,10 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleInventarioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, no_inventario: e.target.value });
   };
 
   const handleSerieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,6 +92,10 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
       setError('Completa tipo, marca, modelo y sistema operativo.');
       return;
     }
+    if (!form.no_inventario.trim()) {
+      setError('El número de inventario es obligatorio.');
+      return;
+    }
     if (serieDisponible === false) {
       setError('Ese número de serie ya está registrado en otro equipo.');
       return;
@@ -80,7 +108,7 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
         id_modelo: Number(form.id_modelo),
         id_so: Number(form.id_so),
         no_serie: form.no_serie || undefined,
-        no_inventario: noInventario,
+        no_inventario: form.no_inventario.trim(),
         observacion: form.observacion || undefined,
       });
       onRegistrado(equipo);
@@ -99,6 +127,12 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
         <div className="bg-blue-600 text-white px-4 py-3 font-semibold">Registrar Equipo</div>
 
         <div className="p-4 space-y-3 overflow-y-auto">
+          {esBusquedaPorSerie && (
+            <p className="text-xs bg-blue-50 border border-blue-200 text-blue-700 rounded p-2">
+              Buscaste por número de serie — se autocompletó ese campo. Captura el número de inventario para completar el registro.
+            </p>
+          )}
+
           <SelectConAgregar
             label="Tipo Equipo"
             opciones={tipos}
@@ -149,16 +183,19 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
                 value={form.no_serie}
                 onChange={handleSerieChange}
                 onBlur={handleSerieBlur}
-                className="border p-2 flex-1"
+                readOnly={esBusquedaPorSerie}
+                className={`border p-2 flex-1 ${esBusquedaPorSerie ? 'bg-gray-100 text-gray-500' : ''}`}
               />
-              <button
-                type="button"
-                onClick={handleUsarSN}
-                className="text-blue-600 text-sm border border-blue-600 rounded px-2 py-1 hover:bg-blue-50"
-                title="Este equipo no tiene número de serie"
-              >
-                S/N
-              </button>
+              {!esBusquedaPorSerie && (
+                <button
+                  type="button"
+                  onClick={handleUsarSN}
+                  className="text-blue-600 text-sm border border-blue-600 rounded px-2 py-1 hover:bg-blue-50"
+                  title="Este equipo no tiene número de serie"
+                >
+                  S/N
+                </button>
+              )}
             </div>
             {verificando && <p className="text-xs text-gray-400 mt-1">Verificando...</p>}
             {serieDisponible === false && <p className="text-xs text-red-500 mt-1">Ese número de serie ya existe.</p>}
@@ -167,7 +204,17 @@ export default function RegistrarEquipoModal({ noInventario, onClose, onRegistra
 
           <div>
             <label className="text-sm font-medium">No. Inventario:</label>
-            <input readOnly value={noInventario} className="border p-2 w-full mt-1 bg-gray-100 text-gray-500" />
+            {esBusquedaPorSerie ? (
+              <input
+                name="no_inventario"
+                value={form.no_inventario}
+                onChange={handleInventarioChange}
+                placeholder="Captura el número de inventario"
+                className="border p-2 w-full mt-1"
+              />
+            ) : (
+              <input readOnly value={form.no_inventario} className="border p-2 w-full mt-1 bg-gray-100 text-gray-500" />
+            )}
           </div>
 
           <SelectConAgregar

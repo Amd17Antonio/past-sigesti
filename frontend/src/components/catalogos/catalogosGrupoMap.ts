@@ -6,6 +6,7 @@ export const CATALOGO_A_GRUPO: Record<string, string> = {
   'cargos': '/catalogos/grupo/organizacion',
   'poa': '/catalogos/grupo/organizacion',
   'autoriza-internet': '/catalogos/grupo/organizacion',
+  'administrativo': '/catalogos/grupo/organizacion', 
 
   // Equipo de Cómputo
   'enlace-informatico': '/catalogos/grupo/equipo-computo',

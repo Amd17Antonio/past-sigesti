@@ -54,8 +54,14 @@ export default function CatalogoGenerico() {
     return <div className="p-6 text-red-500">Catálogo no encontrado.</div>;
   }
 
+  // Para "modelos": no mostrar la columna cruda "id_marca" (select), sino el nombre
+  // de la marca ya resuelto (marca_nombre) que trae el join del backend. Así solo
+  // aparece una columna "Marca" en vez de dos.
   const columnas = slug === 'modelos'
-    ? [...config.campos, { name: 'marca_nombre', label: 'Marca' }]
+    ? [
+        ...config.campos.filter((c) => c.name !== 'id_marca'),
+        { name: 'marca_nombre', label: 'Marca' },
+      ]
     : config.campos;
 
   const handleSort = (key: string) => {

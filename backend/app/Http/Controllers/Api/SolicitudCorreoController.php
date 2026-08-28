@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Exports\CorreoResguardoExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\URL;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SolicitudCorreoController extends Controller
 {
@@ -373,5 +375,27 @@ class SolicitudCorreoController extends Controller
     public function oficioFirmado($id)
     {
         return $this->oficio($id);
+    }
+
+    /**
+     * Exporta a Excel los correos institucionales activos filtrados por rango
+     * de fecha_activo. Usado en la página ResguardoCorreo.
+     */
+    public function exportarResguardo(Request $request)
+    {
+        $data = $request->validate([
+            'del' => 'nullable|date',
+            'al' => 'nullable|date|after_or_equal:del',
+        ]);
+
+        $del = $data['del'] ?? null;
+        $al = $data['al'] ?? null;
+
+        $nombreArchivo = 'resguardo_correo'
+            . ($del ? '_' . $del : '')
+            . ($al ? '_a_' . $al : '')
+            . '.xlsx';
+
+        return Excel::download(new CorreoResguardoExport($del, $al), $nombreArchivo);
     }
 }

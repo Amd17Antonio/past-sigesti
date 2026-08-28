@@ -9,7 +9,6 @@ export interface RolOption {
 export interface UsuarioRow {
   id: number;
   usuario: string;
-  clave: string;
   nombre: string;
   rol_id: number;
   rol: string | null;

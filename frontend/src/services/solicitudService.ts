@@ -88,3 +88,8 @@ export const getMisAsignadas = async () => {
   const { data } = await axiosClient.get('/solicitudes/mis-asignadas');
   return data;
 };
+
+export const getSeguimiento = async (id: number) => {
+  const { data } = await axiosClient.get<{ seguimiento: string | null }>(`/solicitudes/${id}/seguimiento`);
+  return data.seguimiento;
+};

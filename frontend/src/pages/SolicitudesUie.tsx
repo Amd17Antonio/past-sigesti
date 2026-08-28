@@ -10,6 +10,7 @@ import {
   darBajaSolicitud,
   getArchivosSolicitud,
 } from '../services/solicitudUieService';
+import { abrirPdfEquipoMantenimiento } from '../services/equipoMantenimientoCgdService';
 import type { SolicitudUieRow } from '../types/SolicitudUie';
 import ActionsDropdown from '../components/common/ActionsDropdown';
 import AgregarEquipoModal from '../components/solicitudes/AgregarEquipoModal';
@@ -23,13 +24,14 @@ import AsignarModal from '../components/tickets/AsignarModal';
 const BACKEND_ORIGIN = (import.meta.env.VITE_API_URL ?? '').replace(/\/api\/?$/, '');
 
 const navBtnClass =
-  'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap';
+  'bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap transition';
 
 export default function SolicitudesUie() {
   const { user } = useAuth();
   const rolActual = user?.rol?.nombre ?? '';
   const esAdmin = rolActual === 'Administrador';
   const esSoporte = rolActual === 'Soporte Técnico';
+  const puedeAgregarEquipo = ['Administrador', 'Capturista'].includes(rolActual); // NUEVO
 
   const [registros, setRegistros] = useState<SolicitudUieRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -142,6 +144,15 @@ export default function SolicitudesUie() {
   const handleVerMemorandum = (id: number) => abrirArchivo(id, 'memoSolicitud');
   const handleVerAcuseDictamen = (id: number) => abrirArchivo(id, 'acuseDictamen');
 
+  // NUEVO: abrir PDF del checklist de mantenimiento
+  const handleVerChecklist = async (idEquipoSolicitud: number) => {
+    try {
+      await abrirPdfEquipoMantenimiento(idEquipoSolicitud);
+    } catch {
+      alert('No fue posible abrir el checklist de mantenimiento.');
+    }
+  };
+
   const columnas: { campo: string; label: string }[] = [
     { campo: 'folio_sistema', label: 'Folio Sistema' },
     { campo: 'ejercicio', label: 'Ejercicio' },
@@ -162,34 +173,21 @@ export default function SolicitudesUie() {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h1 className="text-xl font-semibold">Solicitudes</h1>
+        <h1 className="text-xl font-semibold text-blue-950">Solicitudes</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {rolActual !== 'Capturista' && (
             <NavLink to="/mis-asignadas" className={navBtnClass}>Mis Asignadas</NavLink>
           )}
           <NavLink
-  to="/asignadas"
-  className={`${navBtnClass} bg-blue-600`}
->
-  Asignadas
-</NavLink>
+            to="/asignadas"
+            className={`${navBtnClass} bg-blue-600 hover:bg-blue-700`}
+          >
+            Asignadas
+          </NavLink>
 
-<NavLink
-  to="/pendientes"
-  className={`${navBtnClass} bg-blue-600`}
->
-  Pendientes
-</NavLink>
-
-<NavLink
-  to="/historial"
-  className={`${navBtnClass} bg-blue-600`}
->
-  Historial
-</NavLink>
           <button
             onClick={() => setModalCrear(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap transition"
           >
             + Agregar solicitud
           </button>
@@ -218,7 +216,7 @@ export default function SolicitudesUie() {
             {columnas.map((c) => (
               <td key={c.campo} className="p-1">
                 <input
-                  className="border rounded w-full px-1 py-0.5 text-xs"
+                  className="border border-blue-200 rounded w-full px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   onChange={(e) => handleFiltro(c.campo, e.target.value)}
                 />
               </td>
@@ -236,7 +234,17 @@ export default function SolicitudesUie() {
                   color={getColorSemaforo(r)}
                   actions={[
                     { label: 'Detalle', onClick: () => setModalDetalle(r.id) },
-                    { label: 'Agregar Equipo', onClick: () => setModalEquipo(r.id) },
+                    {
+                      label: 'Agregar Equipo',
+                      onClick: () => setModalEquipo(r.id),
+                      hidden: !puedeAgregarEquipo || !!r.no_inventario, // NUEVO: rol + solo 1 equipo
+                    },
+                    {
+                      // NUEVO: ver checklist de mantenimiento (PDF) desde el dropdown de Acciones
+                      label: 'Ver Checklist Mantenimiento',
+                      onClick: () => handleVerChecklist(r.id_equipo_solicitud!),
+                      hidden: !r.tiene_checklist || !r.id_equipo_solicitud,
+                    },
                     {
                       label: 'Autorizar Dictamen',
                       onClick: () => handleAutorizarDictamen(r.id),
@@ -272,7 +280,7 @@ export default function SolicitudesUie() {
                 {r.memoSolicitud > 0 && (
                   <button
                     onClick={() => handleVerMemorandum(r.id)}
-                    className="bg-red-500 text-white text-xs px-2 py-1 rounded block mb-1 w-full"
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block mb-1 w-full transition"
                   >
                     Memorándum
                   </button>
@@ -280,9 +288,19 @@ export default function SolicitudesUie() {
                 {r.acuseDictamen > 0 && (
                   <button
                     onClick={() => handleVerAcuseDictamen(r.id)}
-                    className="bg-red-500 text-white text-xs px-2 py-1 rounded block w-full"
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block mb-1 w-full transition"
                   >
                     Acuse Dictamen
+                  </button>
+                )}
+                {/* NUEVO: checklist de mantenimiento, solo si ya se capturó */}
+                {r.tiene_checklist && r.id_equipo_solicitud && (
+                  <button
+                    onClick={() => handleVerChecklist(r.id_equipo_solicitud!)}
+                    className="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2 py-1 rounded block w-full transition"
+                    title="Ver / imprimir checklist de mantenimiento"
+                  >
+                    🖨 Mantenimiento
                   </button>
                 )}
               </td>
@@ -293,7 +311,7 @@ export default function SolicitudesUie() {
                   <button
                     onClick={() => setAsignarId(r.id)}
                     disabled={!!r.tecnico}
-                    className="px-2 py-1 bg-purple-800 text-white rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed transition"
                   >
                     Asignar
                   </button>
@@ -308,7 +326,7 @@ export default function SolicitudesUie() {
         <div>
           Por página:
           <select
-            className="border rounded ml-2 px-2 py-1"
+            className="border border-blue-200 rounded ml-2 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
             value={porPagina}
             onChange={(e) => { setPagina(1); setPorPagina(Number(e.target.value)); }}
           >
@@ -318,7 +336,7 @@ export default function SolicitudesUie() {
           </select>
         </div>
         <div className="flex gap-2 items-center">
-          <button disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>◀</button>
+          <button disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)} className="disabled:opacity-40">◀</button>
           <span>Página {pagina}</span>
           <button onClick={() => setPagina((p) => p + 1)}>▶</button>
         </div>

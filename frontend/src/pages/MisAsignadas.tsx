@@ -86,10 +86,10 @@ export default function MisAsignadas() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold">Mis Asignadas</h1>
+          <h1 className="text-xl font-bold text-blue-950">Mis Asignadas</h1>
           <button
             onClick={() => navigate('/solicitudes-uie')}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition"
           >
             ← Regresar
           </button>
@@ -98,17 +98,17 @@ export default function MisAsignadas() {
           placeholder="Buscar..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="border p-2 rounded"
+          className="border border-blue-200 p-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
-      <table className="w-full border text-sm">
+      <table className="w-full border-collapse border border-gray-200 text-sm">
         <thead>
           <tr className="bg-gray-100">
             {COLUMNAS.map((c) => (
               <th
                 key={c.key}
-                className="p-2 text-left cursor-pointer select-none"
+                className="p-2 text-left cursor-pointer select-none border-b border-gray-200"
                 onClick={() => handleSort(c.key)}
               >
                 <span className="inline-flex items-center">
@@ -117,12 +117,12 @@ export default function MisAsignadas() {
                 </span>
               </th>
             ))}
-            <th className="p-2 text-left">Acciones</th>
+            <th className="p-2 text-left border-b border-gray-200">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {filtradas.map((s) => (
-            <tr key={s.id} className="border-t align-top">
+            <tr key={s.id} className="border-t border-gray-200 hover:bg-gray-50 align-top">
               <td className="p-2">
                 <button
                   onClick={() => setDetalleId(s.id)}
@@ -144,13 +144,13 @@ export default function MisAsignadas() {
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => setSeguimientoId(s.id)}
-                    className="px-2 py-1 bg-blue-700 text-white rounded text-xs"
+                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition"
                   >
                     Seguimiento
                   </button>
                   <button
                     onClick={() => setCerrarId(s.id)}
-                    className="px-2 py-1 bg-purple-800 text-white rounded text-xs"
+                    className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition"
                   >
                     Cerrar
                   </button>
@@ -161,7 +161,7 @@ export default function MisAsignadas() {
         </tbody>
       </table>
 
-      {filtradas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+      {filtradas.length === 0 && <p className="text-gray-500 mt-4 text-sm">Sin resultados</p>}
 
       {seguimientoId !== null && (
         <SeguimientoModal

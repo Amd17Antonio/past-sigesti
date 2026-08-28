@@ -30,6 +30,8 @@ const COLUMNAS_SOLICITUD: { key: keyof SolicitudDisponible; label: string }[] = 
   { key: 'descripcion', label: 'Desc. Problema' },
 ];
 
+const PREFIJO_EXPEDIENTE = 'RAGG/';
+
 export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [equipos, setEquipos] = useState<any[]>([]);
@@ -44,7 +46,7 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
   const [sortDirSolicitud, setSortDirSolicitud] = useState<'asc' | 'desc'>('asc');
 
   const [form, setForm] = useState({
-    servicio: '', dictamen: '', expediente: '', copias: '', fallas: '', tipo_falla: '',
+    servicio: '', dictamen: '', expediente: PREFIJO_EXPEDIENTE, copias: '', fallas: '', tipo_falla: '',
   });
   const [sugiereBaja, setSugiereBaja] = useState(false);
   const [error, setError] = useState('');
@@ -115,6 +117,14 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const handleChangeExpediente = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, expediente: PREFIJO_EXPEDIENTE + e.target.value });
+  };
+
+  const sufijoExpediente = form.expediente.startsWith(PREFIJO_EXPEDIENTE)
+    ? form.expediente.slice(PREFIJO_EXPEDIENTE.length)
+    : form.expediente;
 
   const handleGuardar = async () => {
     if (!idSolicitud || !form.dictamen || !folioInfo) {
@@ -289,7 +299,16 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Expediente:</label>
-                <input name="expediente" value={form.expediente} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <div className="flex items-center border rounded mt-1 overflow-hidden">
+                  <span className="bg-gray-100 text-gray-500 px-2 py-2 text-sm select-none border-r whitespace-nowrap">
+                    {PREFIJO_EXPEDIENTE}
+                  </span>
+                  <input
+                    value={sufijoExpediente}
+                    onChange={handleChangeExpediente}
+                    className="p-2 flex-1 outline-none min-w-0"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Copias:</label>

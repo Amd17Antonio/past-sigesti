@@ -53,3 +53,25 @@ export const actualizarAsignacionVpn = async (
   const { data } = await axiosClient.patch(`/solicitud-vpn/${id}/asignacion`, payload);
   return data;
 };
+
+// Descarga el Excel de accesos VPN activos, filtrado por rango de fecha_activo.
+export const exportarResguardoVpnExcel = async (params: { del?: string; al?: string }) => {
+  const response = await axiosClient.get('/solicitud-vpn/exportar/resguardo', {
+    params,
+    responseType: 'blob',
+    timeout: 30000,
+  });
+
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const sufijo = params.del || params.al ? `_${params.del || 'inicio'}_a_${params.al || 'hoy'}` : '';
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `resguardo_vpn${sufijo}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+};

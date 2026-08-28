@@ -22,6 +22,8 @@ const OPCIONES_TIPO_DOCTO = [
   { value: 'CIRCULAR', label: 'CIRCULAR' },
 ];
 
+const PREFIJO_EXPEDIENTE = 'RAGG/';
+
 export default function EditarDictamenModal({ idSolicitud, onClose, onActualizado }: Props) {
   // id real del registro en la tabla `dictamen` (la última captura de esta solicitud)
   const [dictamenId, setDictamenId] = useState<number | null>(null);
@@ -67,7 +69,7 @@ export default function EditarDictamenModal({ idSolicitud, onClose, onActualizad
         setForm({
           servicio: d.servicio ?? '',
           dictamen: d.dictamen ?? '',
-          expediente: d.expediente ?? '',
+          expediente: d.expediente || PREFIJO_EXPEDIENTE,
           copias: d.copias ?? '',
           fallas: d.fallas ?? '',
           tipo_falla: d.tipo_falla ?? '',
@@ -101,6 +103,14 @@ export default function EditarDictamenModal({ idSolicitud, onClose, onActualizad
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  const handleChangeExpediente = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, expediente: PREFIJO_EXPEDIENTE + e.target.value });
+  };
+
+  const sufijoExpediente = form && typeof form.expediente === 'string' && form.expediente.startsWith(PREFIJO_EXPEDIENTE)
+    ? form.expediente.slice(PREFIJO_EXPEDIENTE.length)
+    : (form?.expediente ?? '');
 
   const handleChangeSolicitud = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setSolicitudForm({ ...solicitudForm, [e.target.name]: e.target.value });
@@ -314,7 +324,16 @@ export default function EditarDictamenModal({ idSolicitud, onClose, onActualizad
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">Expediente:</label>
-              <input name="expediente" value={form.expediente} onChange={handleChange} className="border p-2 w-full mt-1" />
+              <div className="flex items-center border rounded mt-1 overflow-hidden">
+                <span className="bg-gray-100 text-gray-500 px-2 py-2 text-sm select-none border-r whitespace-nowrap">
+                  {PREFIJO_EXPEDIENTE}
+                </span>
+                <input
+                  value={sufijoExpediente}
+                  onChange={handleChangeExpediente}
+                  className="p-2 flex-1 outline-none min-w-0"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Con copia para:</label>

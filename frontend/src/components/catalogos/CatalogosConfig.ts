@@ -23,8 +23,8 @@ export const CATALOGOS: CatalogoConfig[] = [
     { name: 'marca', label: 'Marca', required: true },
   ]},
   { slug: 'modelos', titulo: 'Modelos', campoLabel: 'modelo', campos: [
-    { name: 'modelo', label: 'Modelo', required: true },
     { name: 'id_marca', label: 'Marca', required: true, tipo: 'select', opciones: 'marcas' },
+    { name: 'modelo', label: 'Modelo', required: true },
   ]},
   { slug: 'tipo-equipo', titulo: 'Tipo de Equipo', campoLabel: 'TipoEquipo', campos: [
     { name: 'TipoEquipo', label: 'Tipo de Equipo', required: true },
@@ -55,5 +55,11 @@ export const CATALOGOS: CatalogoConfig[] = [
   ]},
   { slug: 'preguntas', titulo: 'Preguntas (Encuesta)', campoLabel: 'pregunta', campos: [
     { name: 'pregunta', label: 'Pregunta', required: true },
+  ]},
+  { slug: 'administrativo', titulo: 'Administrativo (Enterado)', campoLabel: 'nombre', campos: [
+    { name: 'nombre', label: 'Nombre Completo', required: true },
+    { name: 'puesto', label: 'Puesto' },
+    { name: 'correo', label: 'Correo', tipo: 'email' },
+    { name: 'ext', label: 'Extensión' },
   ]},
 ];

@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    
+    'expiration' => env('SANCTUM_EXPIRATION', 480), // es en min, estaba en null
 
     /*
     |--------------------------------------------------------------------------

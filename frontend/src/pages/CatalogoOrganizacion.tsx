@@ -9,6 +9,8 @@ export default function CatalogoOrganizacion() {
         { label: 'Cargos', to: '/catalogos/cargos', icono: '🧑‍💼' },
         { label: 'POA', to: '/catalogos/poa', icono: '📊' },
         { label: 'Autoriza Internet', to: '/catalogos/autoriza-internet', icono: '🌐' },
+        { label: 'Enlace Informático', to: '/catalogos/enlace-informatico', icono: '🔗' },
+        { label: 'Administrativo', to: '/catalogos/administrativo', icono: '🗂️' },
       ]}
     />
   );

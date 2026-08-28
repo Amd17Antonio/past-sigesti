@@ -132,6 +132,7 @@ export default function Navbar() {
 
           {rol === 'Administrador' && (
             <>
+              <NavLink to="/dashboard" className={linkClass}>📊 Dashboard</NavLink>
               <NavLink to="/solicitudes-uie" className={linkClass}>Solicitudes</NavLink>
               <NavLink to="/dictamenes" className={linkClass}>Dictámenes</NavLink>
               <Dropdown

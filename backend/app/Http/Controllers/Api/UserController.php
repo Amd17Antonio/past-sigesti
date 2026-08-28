@@ -25,7 +25,7 @@ class UserController extends Controller
             ->map(fn($u) => [
                 'id' => $u->id,
                 'usuario' => $u->usuario,
-                'clave' => $u->clave,
+                // 'clave' ya NO se envía nunca al frontend
                 'nombre' => $u->nombre,
                 'rol_id' => $u->rol_id,
                 'rol' => $u->rol->nombre ?? null,
@@ -61,7 +61,9 @@ class UserController extends Controller
         $rol = DB::table('roles')->where('id', $data['rol_id'])->first();
         $requiereSoporte = $rol && in_array($rol->nombre, self::ROLES_CON_SOPORTE);
 
-        $usuarioCreado = DB::transaction(function () use ($data, $requiereSoporte) {
+        $claveHasheada = Hash::make($data['clave']);
+
+        $usuarioCreado = DB::transaction(function () use ($data, $requiereSoporte, $claveHasheada) {
             $idSoporte = null;
 
             if ($requiereSoporte) {
@@ -74,8 +76,8 @@ class UserController extends Controller
 
             $id = DB::table('usuarios')->insertGetId([
                 'usuario' => $data['usuario'],
-                'clave' => $data['clave'],
-                'new_clave' => $data['clave'],
+                'clave' => $claveHasheada,
+                'new_clave' => $claveHasheada,
                 'id_soporte' => $idSoporte,
                 'id_area' => $data['id_area'] ?? null,
                 'ip' => $data['ip'] ?? null,
@@ -162,9 +164,12 @@ class UserController extends Controller
 
             $update['id_soporte'] = $idSoporte;
 
+            // Solo se toca la clave si el admin explícitamente mandó una nueva
+            // (restablecimiento de contraseña olvidada)
             if (!empty($data['clave'])) {
-                $update['clave'] = $data['clave'];
-                $update['new_clave'] = $data['clave'];
+                $claveHasheada = Hash::make($data['clave']);
+                $update['clave'] = $claveHasheada;
+                $update['new_clave'] = $claveHasheada;
             }
 
             DB::table('usuarios')->where('id', $usuario->id)->update($update);

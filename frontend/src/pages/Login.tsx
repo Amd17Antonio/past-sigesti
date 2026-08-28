@@ -17,10 +17,6 @@ export default function Login() {
     setError('');
     setCargando(true);
     try {
-      // IMPORTANTE: esto asume que tu función login() del AuthContext
-      // devuelve el usuario logueado (con su rol) al resolverse.
-      // Si login() no devuelve nada actualmente, agrega un `return usuario;`
-      // al final de esa función en AuthContext.tsx.
       const loggedUser = await login(usuario, clave);
       const rol = loggedUser?.rol?.nombre;
       navigate(HOME_POR_ROL[rol ?? ''] ?? DEFAULT_HOME);
@@ -32,7 +28,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-purple-50 via-white to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-white">
       {/* Encabezado */}
       <header className="flex justify-center items-center bg-white py-3 border-b">
         <img
@@ -45,9 +41,9 @@ export default function Login() {
       {/* Contenido */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
-          <div className="bg-white rounded-2xl shadow-xl shadow-purple-900/10 border border-purple-100 p-8">
+          <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/10 border border-blue-100 p-8">
             <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-purple-900">Iniciar sesión</h1>
+              <h1 className="text-2xl font-bold text-blue-900">Iniciar sesión</h1>
               <p className="text-sm text-gray-500 mt-1">Accede con tu usuario institucional</p>
             </div>
 
@@ -62,7 +58,8 @@ export default function Login() {
                   onChange={(e) => setUsuario(e.target.value)}
                   placeholder="Ingresa tu usuario"
                   autoComplete="username"
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  required
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 />
               </div>
 
@@ -77,7 +74,8 @@ export default function Login() {
                   onChange={(e) => setClave(e.target.value)}
                   placeholder="Ingresa tu contraseña"
                   autoComplete="current-password"
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  required
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 />
               </div>
 
@@ -90,7 +88,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={cargando}
-                className="bg-purple-800 hover:bg-purple-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium rounded-lg p-2.5 w-full transition"
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium rounded-lg p-2.5 w-full transition shadow-md shadow-indigo-600/20"
               >
                 {cargando ? 'Entrando...' : 'Entrar'}
               </button>
@@ -100,7 +98,7 @@ export default function Login() {
       </main>
 
       {/* Pie de página */}
-      <footer className="bg-gray-100 border-t border-purple-300 text-center text-[10px] text-gray-700 py-3 px-4">
+      <footer className="bg-gray-100 border-t border-blue-200 text-center text-[10px] text-gray-700 py-3 px-4">
         <p>
           Ciudad Administrativa Benemérito de las Américas Edificio 4 nivel 3. Carretera Oaxaca-Istmo
           Km. 11.5, Tlalixtco de Cabrera, Oaxaca C.P. 68270.

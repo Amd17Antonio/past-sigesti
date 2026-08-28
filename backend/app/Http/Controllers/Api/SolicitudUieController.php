@@ -22,67 +22,91 @@ class SolicitudUieController extends Controller
         ];
     }
 
-    public function index(Request $request)
-{
-    $porPagina = (int) $request->get('por_pagina', 10);
-    $pagina = max(1, (int) $request->get('pagina', 1));
-    $filtros = $this->columnasFiltrables();
+            public function index(Request $request)
+    {
+        $porPagina = (int) $request->get('por_pagina', 10);
+        $pagina = max(1, (int) $request->get('pagina', 1));
+        $filtros = $this->columnasFiltrables();
 
-    $query = DB::table('v_solicitud_uie as v')
-        ->leftJoin('solicitud as s', 's.id', '=', 'v.id')
-        ->select('v.*', 's.dada_baja', 's.fecha_autoriza_tecnico', 's.fecha_autoriza_dictamen')
-        ->where(function ($q) {
-            $q->whereNull('s.dada_baja')->orWhere('s.dada_baja', 0);
-        });
+        $query = DB::table('v_solicitud_uie as v')
+            ->leftJoin('solicitud as s', 's.id', '=', 'v.id')
+            ->leftJoin('equipos_solicitud as es', 'es.id_solicitud', '=', 'v.id')
+            ->leftJoin('equipo_mantenimiento_cgd as emc', 'emc.id_equipo_solicitud', '=', 'es.id')
+            ->select(
+                'v.*',
+                's.dada_baja', 's.fecha_autoriza_tecnico', 's.fecha_autoriza_dictamen',
+                'es.id as id_equipo_solicitud',
+                DB::raw('(emc.id IS NOT NULL) as tiene_checklist')
+            )
+            ->where(function ($q) {
+                $q->whereNull('s.dada_baja')->orWhere('s.dada_baja', 0);
+            });
 
-    foreach ($filtros as $param => $columna) {
-        if ($request->filled($param)) {
-            $query->where($columna, 'like', '%' . $request->get($param) . '%');
+        foreach ($filtros as $param => $columna) {
+            if ($request->filled($param)) {
+                $query->where($columna, 'like', '%' . $request->get($param) . '%');
+            }
         }
+
+        $sortBy = $request->get('sort_by');
+        $sortDir = $request->get('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        if ($sortBy && isset($filtros[$sortBy])) {
+            $query->orderBy($filtros[$sortBy], $sortDir);
+        } else {
+            $query->orderBy('v.id', 'desc');
+        }
+
+        $total = (clone $query)->count();
+        $registros = $query->forPage($pagina, $porPagina)->get();
+
+        return response()->json([
+            'registros' => $registros,
+            'total' => $total,
+            'pagina' => $pagina,
+            'por_pagina' => $porPagina,
+            'total_paginas' => max(1, (int) ceil($total / $porPagina)),
+        ]);
     }
 
-    $sortBy = $request->get('sort_by');
-    $sortDir = $request->get('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
-    if ($sortBy && isset($filtros[$sortBy])) {
-        $query->orderBy($filtros[$sortBy], $sortDir);
-    } else {
-        $query->orderBy('v.id', 'desc');
-    }
-
-    $total = (clone $query)->count();
-    $registros = $query->forPage($pagina, $porPagina)->get();
-
-    return response()->json([
-        'registros' => $registros,
-        'total' => $total,
-        'pagina' => $pagina,
-        'por_pagina' => $porPagina,
-        'total_paginas' => max(1, (int) ceil($total / $porPagina)),
-    ]);
-}
-
+    // Vincula un equipo existente (datos_equipos) a la solicitud
     // Vincula un equipo existente (datos_equipos) a la solicitud
     public function agregarEquipo(Request $request, int $id)
     {
+        $rol = $request->user()->rol->nombre ?? null;
+        if (!in_array($rol, ['Administrador', 'Capturista'])) {
+            return response()->json(['message' => 'No tienes permiso para esta acción'], 403);
+        }
+
         $data = $request->validate([
             'id_equipo' => 'required|integer|exists:datos_equipos,id',
         ]);
 
-        $yaExiste = DB::table('equipos_solicitud')
+        // Solo un equipo por solicitud/dictamen
+        $yaTieneEquipo = DB::table('equipos_solicitud')
             ->where('id_solicitud', $id)
-            ->where('id_equipo', $data['id_equipo'])
             ->exists();
 
-        if ($yaExiste) {
-            return response()->json(['message' => 'Ese equipo ya está vinculado a esta solicitud'], 422);
+        if ($yaTieneEquipo) {
+            return response()->json([
+                'message' => 'Esta solicitud ya tiene un equipo vinculado. Solo se permite uno por dictamen.',
+            ], 422);
         }
 
-        DB::table('equipos_solicitud')->insert([
+        $idEquipoSolicitud = DB::table('equipos_solicitud')->insertGetId([
             'id_solicitud' => $id,
             'id_equipo' => $data['id_equipo'],
         ]);
 
-        return response()->json(['message' => 'Equipo vinculado correctamente']);
+        $yaSugeridoBaja = DB::table('dictamen')
+            ->where('id_equipo', $data['id_equipo'])
+            ->where('sugiere_baja', 1)
+            ->exists();
+
+        return response()->json([
+            'message' => 'Equipo vinculado correctamente',
+            'id_equipo_solicitud' => $idEquipoSolicitud,
+            'ya_sugerido_baja' => $yaSugeridoBaja,
+        ]);
     }
 
     // Solo Administrador
@@ -95,9 +119,13 @@ public function desautorizarDictamen(Request $request, int $id)
 
     DB::table('solicitud')->where('id', $id)->update([
         'fecha_autoriza_dictamen' => null,
+        'fecha_autoriza_tecnico'  => null,
+        'fecha_cierre'            => null,
+        'id_soporte'              => null,
+        'fecha_asignacion'        => null,
     ]);
 
-    return response()->json(['message' => 'Dictamen técnico desautorizado']);
+    return response()->json(['message' => 'Dictamen desautorizado. El ticket regresó a estado sin atender y puede reasignarse.']);
 }
 
     public function duplicar(Request $request, int $id)
@@ -283,6 +311,5 @@ public function autorizarDictamen(Request $request, int $id)
 
     return response()->json(['message' => 'Dictamen autorizado correctamente']);
 }
-
 
 }

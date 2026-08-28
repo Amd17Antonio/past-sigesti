@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesVpn,
   actualizarAsignacionVpn,
+  exportarResguardoVpnExcel,
 } from '../services/solicitudVpnService';
 import type { SolicitudVpn } from '../types/SolicitudVpn';
-import EditarAsignacionModal from '../components/common/EditarAsignacionModal';
 import SortIcon from '../components/common/SortIcon';
 import EditarResguardoVpnModal from '../components/vpn/EditarResguardoVpnModal';
 
@@ -14,6 +14,12 @@ const COLUMNAS: { key: keyof SolicitudVpn; label: string }[] = [
   { key: 'ip_puerto', label: 'IP y puerto' },
   { key: 'nombre_usuario', label: 'Nombre' },
 ];
+
+// Convierte 'YYYY-MM-DD' a 'DD/MM/YYYY' para mostrar en el resumen.
+const formatFecha = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+};
 
 export default function ResguardoVpn() {
   const navigate = useNavigate();
@@ -24,6 +30,12 @@ export default function ResguardoVpn() {
   const [sortKey, setSortKey] = useState<keyof SolicitudVpn | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [editando, setEditando] = useState<SolicitudVpn | null>(null);
+
+  // Filtro de fechas (Del / Al): ahora afecta tanto la tabla como el Excel.
+  const [fechaDel, setFechaDel] = useState('');
+  const [fechaAl, setFechaAl] = useState('');
+  const [exportando, setExportando] = useState(false);
+  const [errorExport, setErrorExport] = useState<string | null>(null);
 
   const cargar = () => {
     getSolicitudesVpn({ pagina: 1, por_pagina: 1000, estatus: 'activo' }).then((r) => {
@@ -40,6 +52,16 @@ export default function ResguardoVpn() {
     setPagina(1);
   };
 
+  const handleFechaDelChange = (value: string) => {
+    setFechaDel(value);
+    setPagina(1);
+  };
+
+  const handleFechaAlChange = (value: string) => {
+    setFechaAl(value);
+    setPagina(1);
+  };
+
   const handleSort = (key: keyof SolicitudVpn) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -49,15 +71,30 @@ export default function ResguardoVpn() {
     }
   };
 
+  // Si no hay fechas seleccionadas, se comporta como antes (muestra todo).
+  // Si hay una o ambas fechas, filtra por fecha_activo dentro del rango.
+  const dataPorFecha = useMemo(() => {
+    if (!fechaDel && !fechaAl) return data;
+
+    return data.filter((s) => {
+      const fechaActivo = (s as any).fecha_activo as string | null | undefined;
+      if (!fechaActivo) return false;
+      const fecha = fechaActivo.slice(0, 10);
+      if (fechaDel && fecha < fechaDel) return false;
+      if (fechaAl && fecha > fechaAl) return false;
+      return true;
+    });
+  }, [data, fechaDel, fechaAl]);
+
   const filtrados = useMemo(() => {
-    return data.filter((s) =>
+    return dataPorFecha.filter((s) =>
       COLUMNAS.every(({ key }) => {
         const filtro = filtros[key];
         if (!filtro) return true;
         return String(s[key] ?? '').toLowerCase().includes(filtro.toLowerCase());
       })
     );
-  }, [data, filtros]);
+  }, [dataPorFecha, filtros]);
 
   const ordenados = useMemo(() => {
     if (!sortKey) return filtrados;
@@ -74,6 +111,38 @@ export default function ResguardoVpn() {
   const paginaSegura = Math.min(pagina, totalPaginas);
   const inicio = (paginaSegura - 1) * porPagina;
   const paginadas = ordenados.slice(inicio, inicio + porPagina);
+
+  // Texto resumen del rango de fechas seleccionado.
+  const resumenFechas = useMemo(() => {
+    const cantidad = dataPorFecha.length;
+    const plural = cantidad === 1 ? 'resguardo' : 'resguardos';
+
+    if (fechaDel && fechaAl) {
+      return `Del ${formatFecha(fechaDel)} al ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (fechaDel && !fechaAl) {
+      return `Desde el ${formatFecha(fechaDel)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (!fechaDel && fechaAl) {
+      return `Hasta el ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    return null;
+  }, [fechaDel, fechaAl, dataPorFecha]);
+
+  const handleExportarExcel = async () => {
+    setErrorExport(null);
+    setExportando(true);
+    try {
+      await exportarResguardoVpnExcel({
+        del: fechaDel || undefined,
+        al: fechaAl || undefined,
+      });
+    } catch {
+      setErrorExport('No se pudo generar el Excel de resguardos.');
+    } finally {
+      setExportando(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -97,6 +166,48 @@ export default function ResguardoVpn() {
             <span>registros</span>
           </div>
         </div>
+
+        {/* Filtro de fechas + exportar a Excel (solo VPN) */}
+        <div className="flex flex-wrap items-end gap-4 mb-2 p-3 bg-gray-50 border rounded">
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Del:</label>
+            <input
+              type="date"
+              value={fechaDel}
+              onChange={(e) => handleFechaDelChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Al:</label>
+            <input
+              type="date"
+              value={fechaAl}
+              onChange={(e) => handleFechaAlChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <button
+            onClick={handleExportarExcel}
+            disabled={exportando}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {exportando ? 'Generando...' : 'Exportar a Excel'}
+          </button>
+          {(fechaDel || fechaAl) && (
+            <button
+              onClick={() => { setFechaDel(''); setFechaAl(''); setPagina(1); }}
+              className="text-gray-500 hover:text-gray-700 text-sm underline"
+            >
+              Quitar filtro de fechas
+            </button>
+          )}
+          {errorExport && <span className="text-red-600 text-sm">{errorExport}</span>}
+        </div>
+
+        {resumenFechas && (
+          <p className="text-sm text-gray-700 mb-4 px-1">{resumenFechas}</p>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full border text-sm">
@@ -161,13 +272,13 @@ export default function ResguardoVpn() {
       </div>
 
       {editando && (
-  <EditarResguardoVpnModal
-    folio={editando.id}
-    onGuardar={(payload) => actualizarAsignacionVpn(editando.id, payload as any)}
-    onClose={() => setEditando(null)}
-    onActualizado={cargar}
-  />
-)}
+        <EditarResguardoVpnModal
+          folio={editando.id}
+          onGuardar={(payload) => actualizarAsignacionVpn(editando.id, payload as any)}
+          onClose={() => setEditando(null)}
+          onActualizado={cargar}
+        />
+      )}
     </div>
   );
 }

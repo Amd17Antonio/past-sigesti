@@ -25,6 +25,7 @@ class CatalogoController extends Controller
             'firma-ofi-internet' => ['tabla' => 'cat_firma_ofi_internet', 'campos' => ['nombre', 'cargo', 'correo', 'tipo'], 'estatus' => 'estatus', 'tipoEstatus' => 'enum'],
             'poa' => ['tabla' => 'cat_poa', 'campos' => ['poa'], 'estatus' => null],
             'preguntas' => ['tabla' => 'cat_preguntas', 'campos' => ['pregunta'], 'estatus' => 'estatus', 'tipoEstatus' => 'int'],
+            'administrativo' => ['tabla' => 'cat_administrativo', 'campos' => ['nombre', 'puesto', 'correo', 'ext'], 'estatus' => 'estatus', 'tipoEstatus' => 'enum'],
         ];
     }
 
@@ -100,10 +101,17 @@ class CatalogoController extends Controller
 
         $campoPrincipal = $cat['campos'][0];
         if (!empty($data[$campoPrincipal])) {
-            $existe = DB::table($cat['tabla'])
-                ->whereRaw('LOWER(' . $campoPrincipal . ') = ?', [strtolower($data[$campoPrincipal])])
-                ->exists();
-            if ($existe) {
+            $query = DB::table($cat['tabla'])
+                ->whereRaw('LOWER(' . $campoPrincipal . ') = ?', [strtolower($data[$campoPrincipal])]);
+
+            // "modelos" es un caso especial: el mismo nombre de modelo puede repetirse
+            // entre marcas distintas (ej. varias marcas tienen un modelo "Pro"), así que
+            // solo es duplicado si coincide el modelo Y la marca.
+            if ($slug === 'modelos' && !empty($data['id_marca'])) {
+                $query->where('id_marca', $data['id_marca']);
+            }
+
+            if ($query->exists()) {
                 return response()->json([
                     'message' => 'Ese registro ya existe en el catálogo.',
                     'errors' => [$campoPrincipal => ['Valor duplicado']],
@@ -128,6 +136,24 @@ class CatalogoController extends Controller
             $reglas[$campo] = 'nullable|string|max:255';
         }
         $data = $request->validate($reglas);
+
+        $campoPrincipal = $cat['campos'][0];
+        if (!empty($data[$campoPrincipal])) {
+            $query = DB::table($cat['tabla'])
+                ->whereRaw('LOWER(' . $campoPrincipal . ') = ?', [strtolower($data[$campoPrincipal])])
+                ->where('id', '<>', $id);
+
+            if ($slug === 'modelos' && !empty($data['id_marca'])) {
+                $query->where('id_marca', $data['id_marca']);
+            }
+
+            if ($query->exists()) {
+                return response()->json([
+                    'message' => 'Ese registro ya existe en el catálogo.',
+                    'errors' => [$campoPrincipal => ['Valor duplicado']],
+                ], 422);
+            }
+        }
 
         DB::table($cat['tabla'])->where('id', $id)->update($data);
         return response()->json(['id' => $id, ...$data]);
@@ -220,5 +246,5 @@ class CatalogoController extends Controller
         DB::table('telefonia')->where('id', $id)->update(['status' => 0]);
         return response()->json(['message' => 'Línea telefónica dada de baja']);
     }
-    
+
 }

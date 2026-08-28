@@ -4,9 +4,9 @@ import {
   getSolicitudesCorreo,
   imprimirOficioCorreo,
   actualizarAsignacionCorreo,
+  exportarResguardoCorreoExcel,
 } from '../services/solicitudCorreoService';
 import type { SolicitudCorreo } from '../types/SolicitudCorreo';
-//import EditarAsignacionModal from '../components/common/EditarAsignacionModal';
 import SortIcon from '../components/common/SortIcon';
 import EditarResguardoCorreoModal from '../components/correo/EditarResguardoCorreoModal';
 
@@ -14,6 +14,12 @@ const COLUMNAS: { key: keyof SolicitudCorreo; label: string }[] = [
   { key: 'correo_institucional', label: 'Correo' },
   { key: 'nombre', label: 'Nombre' },
 ];
+
+// Convierte 'YYYY-MM-DD' a 'DD/MM/YYYY' para mostrar en el resumen.
+const formatFecha = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+};
 
 export default function ResguardoCorreo() {
   const navigate = useNavigate();
@@ -24,6 +30,12 @@ export default function ResguardoCorreo() {
   const [sortKey, setSortKey] = useState<keyof SolicitudCorreo | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [editando, setEditando] = useState<SolicitudCorreo | null>(null);
+
+  // Filtro de fechas (Del / Al): ahora afecta tanto la tabla como el Excel.
+  const [fechaDel, setFechaDel] = useState('');
+  const [fechaAl, setFechaAl] = useState('');
+  const [exportando, setExportando] = useState(false);
+  const [errorExport, setErrorExport] = useState<string | null>(null);
 
   const cargar = () => {
     getSolicitudesCorreo({ pagina: 1, por_pagina: 1000, estatus: 'activo' }).then((r) => {
@@ -40,6 +52,16 @@ export default function ResguardoCorreo() {
     setPagina(1);
   };
 
+  const handleFechaDelChange = (value: string) => {
+    setFechaDel(value);
+    setPagina(1);
+  };
+
+  const handleFechaAlChange = (value: string) => {
+    setFechaAl(value);
+    setPagina(1);
+  };
+
   const handleSort = (key: keyof SolicitudCorreo) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -49,15 +71,30 @@ export default function ResguardoCorreo() {
     }
   };
 
+  // Si no hay fechas seleccionadas, se comporta como antes (muestra todo).
+  // Si hay una o ambas fechas, filtra por fecha_activo dentro del rango.
+  const dataPorFecha = useMemo(() => {
+    if (!fechaDel && !fechaAl) return data;
+
+    return data.filter((s) => {
+      const fechaActivo = (s as any).fecha_activo as string | null | undefined;
+      if (!fechaActivo) return false;
+      const fecha = fechaActivo.slice(0, 10);
+      if (fechaDel && fecha < fechaDel) return false;
+      if (fechaAl && fecha > fechaAl) return false;
+      return true;
+    });
+  }, [data, fechaDel, fechaAl]);
+
   const filtrados = useMemo(() => {
-    return data.filter((s) =>
+    return dataPorFecha.filter((s) =>
       COLUMNAS.every(({ key }) => {
         const filtro = filtros[key];
         if (!filtro) return true;
         return String(s[key] ?? '').toLowerCase().includes(filtro.toLowerCase());
       })
     );
-  }, [data, filtros]);
+  }, [dataPorFecha, filtros]);
 
   const ordenados = useMemo(() => {
     if (!sortKey) return filtrados;
@@ -75,11 +112,43 @@ export default function ResguardoCorreo() {
   const inicio = (paginaSegura - 1) * porPagina;
   const paginadas = ordenados.slice(inicio, inicio + porPagina);
 
+  // Texto resumen del rango de fechas seleccionado.
+  const resumenFechas = useMemo(() => {
+    const cantidad = dataPorFecha.length;
+    const plural = cantidad === 1 ? 'resguardo' : 'resguardos';
+
+    if (fechaDel && fechaAl) {
+      return `Del ${formatFecha(fechaDel)} al ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (fechaDel && !fechaAl) {
+      return `Desde el ${formatFecha(fechaDel)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (!fechaDel && fechaAl) {
+      return `Hasta el ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    return null;
+  }, [fechaDel, fechaAl, dataPorFecha]);
+
   const handleImprimir = async (id: number) => {
     try {
       await imprimirOficioCorreo(id);
     } catch {
       alert('No se pudo generar el oficio en PDF.');
+    }
+  };
+
+  const handleExportarExcel = async () => {
+    setErrorExport(null);
+    setExportando(true);
+    try {
+      await exportarResguardoCorreoExcel({
+        del: fechaDel || undefined,
+        al: fechaAl || undefined,
+      });
+    } catch {
+      setErrorExport('No se pudo generar el Excel de resguardos.');
+    } finally {
+      setExportando(false);
     }
   };
 
@@ -105,6 +174,48 @@ export default function ResguardoCorreo() {
             <span>registros</span>
           </div>
         </div>
+
+        {/* Filtro de fechas + exportar a Excel (solo correo) */}
+        <div className="flex flex-wrap items-end gap-4 mb-2 p-3 bg-gray-50 border rounded">
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Del:</label>
+            <input
+              type="date"
+              value={fechaDel}
+              onChange={(e) => handleFechaDelChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Al:</label>
+            <input
+              type="date"
+              value={fechaAl}
+              onChange={(e) => handleFechaAlChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <button
+            onClick={handleExportarExcel}
+            disabled={exportando}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {exportando ? 'Generando...' : 'Exportar a Excel'}
+          </button>
+          {(fechaDel || fechaAl) && (
+            <button
+              onClick={() => { setFechaDel(''); setFechaAl(''); setPagina(1); }}
+              className="text-gray-500 hover:text-gray-700 text-sm underline"
+            >
+              Quitar filtro de fechas
+            </button>
+          )}
+          {errorExport && <span className="text-red-600 text-sm">{errorExport}</span>}
+        </div>
+
+        {resumenFechas && (
+          <p className="text-sm text-gray-700 mb-4 px-1">{resumenFechas}</p>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full border text-sm">
@@ -178,13 +289,13 @@ export default function ResguardoCorreo() {
       </div>
 
       {editando && (
-  <EditarResguardoCorreoModal
-    folio={editando.id}
-    onGuardar={(payload) => actualizarAsignacionCorreo(editando.id, payload as any)}
-    onClose={() => setEditando(null)}
-    onActualizado={cargar}
-  />
-)}
+        <EditarResguardoCorreoModal
+          folio={editando.id}
+          onGuardar={(payload) => actualizarAsignacionCorreo(editando.id, payload as any)}
+          onClose={() => setEditando(null)}
+          onActualizado={cargar}
+        />
+      )}
     </div>
   );
 }

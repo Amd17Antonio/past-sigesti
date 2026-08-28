@@ -37,6 +37,29 @@ class EquipoController extends Controller
             ...(array) $equipo,
             ...(array) $macs,
             'ultima_solicitud' => $ultimaSolicitud,
+            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id), // <-- NUEVO
+        ]);
+    }
+
+    public function buscarPorSerie(string $noSerie)
+    {
+        $equipo = DB::table('v_equipos')
+            ->where('no_serie', $noSerie)
+            ->first();
+
+        if (!$equipo) {
+            return response()->json(['message' => 'Equipo no encontrado'], 404);
+        }
+
+        $macs = DB::table('datos_equipos')
+            ->where('id', $equipo->id)
+            ->select('mac_ethernet', 'mac_wifi')
+            ->first();
+
+        return response()->json([
+            ...(array) $equipo,
+            ...(array) $macs,
+            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id), // <-- NUEVO
         ]);
     }
 
@@ -65,6 +88,17 @@ class EquipoController extends Controller
                     'errors' => ['no_serie' => ['Número de serie duplicado']],
                 ], 422);
             }
+        }
+
+        $existeInventario = DB::table('datos_equipos')
+            ->where('no_inventario', $data['no_inventario'])
+            ->exists();
+
+        if ($existeInventario) {
+            return response()->json([
+                'message' => 'Ya existe un equipo registrado con ese número de inventario.',
+                'errors' => ['no_inventario' => ['Número de inventario duplicado']],
+            ], 422);
         }
 
         $id = DB::table('datos_equipos')->insertGetId([
@@ -314,4 +348,13 @@ class EquipoController extends Controller
 
         return response()->json($registros);
     }
+
+    private function sugeridoParaBaja(int $idEquipo): bool
+    {
+        return DB::table('dictamen')
+            ->where('id_equipo', $idEquipo)
+            ->where('sugiere_baja', 1)
+            ->exists();
+    }
+
 }

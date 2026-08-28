@@ -74,13 +74,6 @@ export default function Reportes() {
           </button>
         </div>
 
-        {contador && (
-          <div className="px-4 pb-2 flex gap-4 text-sm">
-            <span className="text-green-700 font-medium">✔ {contador.con_dictamen} con número de dictamen</span>
-            <span className="text-red-700 font-medium">✘ {contador.sin_dictamen} sin número de dictamen</span>
-          </div>
-        )}
-
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-100 text-left">
@@ -128,6 +121,13 @@ export default function Reportes() {
           </div>
           <span>Se han encontrado {total} registros</span>
         </div>
+
+        {contador && (
+          <div className="px-4 pb-4 flex gap-4 text-sm justify-end">
+            <span className="text-green-700 font-medium">✔ {contador.con_dictamen} con número de dictamen</span>
+            <span className="text-red-700 font-medium">✘ {contador.sin_dictamen} sin número de dictamen</span>
+          </div>
+        )}
       </div>
     </div>
   );

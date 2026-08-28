@@ -66,3 +66,25 @@ export const actualizarAsignacionCorreo = async (
   const { data } = await axiosClient.patch(`/solicitud-correo/${id}/asignacion`, payload);
   return data;
 };
+
+// Descarga el Excel de correos institucionales activos, filtrado por rango de fecha_activo.
+export const exportarResguardoCorreoExcel = async (params: { del?: string; al?: string }) => {
+  const response = await axiosClient.get('/solicitud-correo/exportar/resguardo', {
+    params,
+    responseType: 'blob',
+    timeout: 30000,
+  });
+
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const sufijo = params.del || params.al ? `_${params.del || 'inicio'}_a_${params.al || 'hoy'}` : '';
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `resguardo_correo${sufijo}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+};

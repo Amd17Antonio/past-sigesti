@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <title>Oficio de correo institucional {{ $s->id }}</title>
     <style>
+
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+        
         @page { 
             size: letter; 
             margin: 140px 120px 90px 100px; 

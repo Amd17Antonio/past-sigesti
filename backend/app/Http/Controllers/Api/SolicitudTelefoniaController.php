@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
+use App\Exports\TelefoniaResguardoExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SolicitudTelefoniaController extends Controller
 {
@@ -624,8 +626,37 @@ public function imprimirResguardo(int $id)
         ->orderBy('id', 'desc')
         ->first();
 
-    $pdf = Pdf::loadView('pdf.resguardo_telefonico', ['s' => $s, 'enlace' => $enlace])->setPaper('letter');
+    // Nuevo: catálogo administrativo para el campo "Enterado" del resguardo.
+    $administrativo = DB::table('cat_administrativo')
+        ->where('estatus', 'activo')
+        ->orderBy('id', 'desc')
+        ->first();
+
+    $pdf = Pdf::loadView('pdf.resguardo_telefonico', [
+        's' => $s,
+        'enlace' => $enlace,
+        'administrativo' => $administrativo,
+    ])->setPaper('letter');
+
     return $pdf->stream("resguardo_telefonia_{$s->id}.pdf");
+}
+
+public function exportarResguardo(Request $request)
+{
+    $data = $request->validate([
+        'del' => 'nullable|date',
+        'al' => 'nullable|date|after_or_equal:del',
+    ]);
+
+    $del = $data['del'] ?? null;
+    $al = $data['al'] ?? null;
+
+    $nombreArchivo = 'resguardo_telefonia'
+        . ($del ? '_' . $del : '')
+        . ($al ? '_a_' . $al : '')
+        . '.xlsx';
+
+    return Excel::download(new TelefoniaResguardoExport($del, $al), $nombreArchivo);
 }
 
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getSolicitudesTelefonia,
   imprimirResguardoTelefonia,
+  exportarResguardoTelefoniaExcel,
 } from '../services/solicitudTelefoniaService';
 import type { SolicitudTelefoniaRow } from '../types/SolicitudTelefonia';
 import EditarResguardoTelefoniaModal from '../components/telefonia/EditarResguardoTelefoniaModal';
@@ -13,6 +14,12 @@ const COLUMNAS: { key: keyof SolicitudTelefoniaRow; label: string }[] = [
   { key: 'nombre', label: 'Nombre' },
 ];
 
+// Convierte 'YYYY-MM-DD' a 'DD/MM/YYYY' para mostrar en el resumen.
+const formatFecha = (iso: string) => {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+};
+
 export default function ResguardoTelefonia() {
   const navigate = useNavigate();
   const [solicitudes, setSolicitudes] = useState<SolicitudTelefoniaRow[]>([]);
@@ -22,6 +29,12 @@ export default function ResguardoTelefonia() {
   const [sortKey, setSortKey] = useState<keyof SolicitudTelefoniaRow | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [editando, setEditando] = useState<SolicitudTelefoniaRow | null>(null);
+
+  // Filtro de fechas (Del / Al): ahora afecta tanto la tabla como el Excel.
+  const [fechaDel, setFechaDel] = useState('');
+  const [fechaAl, setFechaAl] = useState('');
+  const [exportando, setExportando] = useState(false);
+  const [errorExport, setErrorExport] = useState<string | null>(null);
 
   const cargar = () => {
     getSolicitudesTelefonia().then(setSolicitudes);
@@ -41,6 +54,16 @@ export default function ResguardoTelefonia() {
     setPagina(1);
   };
 
+  const handleFechaDelChange = (value: string) => {
+    setFechaDel(value);
+    setPagina(1);
+  };
+
+  const handleFechaAlChange = (value: string) => {
+    setFechaAl(value);
+    setPagina(1);
+  };
+
   const handleSort = (key: keyof SolicitudTelefoniaRow) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -50,15 +73,30 @@ export default function ResguardoTelefonia() {
     }
   };
 
+  // Si no hay fechas seleccionadas, se comporta como antes (muestra todo).
+  // Si hay una o ambas fechas, filtra por fecha_activo dentro del rango.
+  const activasPorFecha = useMemo(() => {
+    if (!fechaDel && !fechaAl) return activas;
+
+    return activas.filter((s) => {
+      const fechaActivo = (s as any).fecha_activo as string | null | undefined;
+      if (!fechaActivo) return false;
+      const fecha = fechaActivo.slice(0, 10);
+      if (fechaDel && fecha < fechaDel) return false;
+      if (fechaAl && fecha > fechaAl) return false;
+      return true;
+    });
+  }, [activas, fechaDel, fechaAl]);
+
   const filtradas = useMemo(() => {
-    return activas.filter((s) =>
+    return activasPorFecha.filter((s) =>
       COLUMNAS.every(({ key }) => {
         const filtro = filtros[key];
         if (!filtro) return true;
         return String(s[key] ?? '').toLowerCase().includes(filtro.toLowerCase());
       })
     );
-  }, [activas, filtros]);
+  }, [activasPorFecha, filtros]);
 
   const ordenadas = useMemo(() => {
     if (!sortKey) return filtradas;
@@ -76,11 +114,43 @@ export default function ResguardoTelefonia() {
   const inicio = (paginaSegura - 1) * porPagina;
   const paginadas = ordenadas.slice(inicio, inicio + porPagina);
 
+  // Texto resumen del rango de fechas seleccionado.
+  const resumenFechas = useMemo(() => {
+    const cantidad = activasPorFecha.length;
+    const plural = cantidad === 1 ? 'resguardo' : 'resguardos';
+
+    if (fechaDel && fechaAl) {
+      return `Del ${formatFecha(fechaDel)} al ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (fechaDel && !fechaAl) {
+      return `Desde el ${formatFecha(fechaDel)} se registraron ${cantidad} ${plural}.`;
+    }
+    if (!fechaDel && fechaAl) {
+      return `Hasta el ${formatFecha(fechaAl)} se registraron ${cantidad} ${plural}.`;
+    }
+    return null;
+  }, [fechaDel, fechaAl, activasPorFecha]);
+
   const handleGenerarPdf = async (id: number) => {
     try {
       await imprimirResguardoTelefonia(id);
     } catch {
       alert('No se pudo generar el PDF de resguardo.');
+    }
+  };
+
+  const handleExportarExcel = async () => {
+    setErrorExport(null);
+    setExportando(true);
+    try {
+      await exportarResguardoTelefoniaExcel({
+        del: fechaDel || undefined,
+        al: fechaAl || undefined,
+      });
+    } catch {
+      setErrorExport('No se pudo generar el Excel de resguardos.');
+    } finally {
+      setExportando(false);
     }
   };
 
@@ -110,6 +180,48 @@ export default function ResguardoTelefonia() {
             <span>registros</span>
           </div>
         </div>
+
+        {/* Filtro de fechas + exportar a Excel (solo telefonía) */}
+        <div className="flex flex-wrap items-end gap-4 mb-2 p-3 bg-gray-50 border rounded">
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Del:</label>
+            <input
+              type="date"
+              value={fechaDel}
+              onChange={(e) => handleFechaDelChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Al:</label>
+            <input
+              type="date"
+              value={fechaAl}
+              onChange={(e) => handleFechaAlChange(e.target.value)}
+              className="border rounded p-2"
+            />
+          </div>
+          <button
+            onClick={handleExportarExcel}
+            disabled={exportando}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {exportando ? 'Generando...' : 'Exportar a Excel'}
+          </button>
+          {(fechaDel || fechaAl) && (
+            <button
+              onClick={() => { setFechaDel(''); setFechaAl(''); setPagina(1); }}
+              className="text-gray-500 hover:text-gray-700 text-sm underline"
+            >
+              Quitar filtro de fechas
+            </button>
+          )}
+          {errorExport && <span className="text-red-600 text-sm">{errorExport}</span>}
+        </div>
+
+        {resumenFechas && (
+          <p className="text-sm text-gray-700 mb-4 px-1">{resumenFechas}</p>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full border text-sm">

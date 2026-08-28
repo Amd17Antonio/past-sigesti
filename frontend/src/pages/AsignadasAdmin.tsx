@@ -142,22 +142,22 @@ export default function AsignadasAdmin() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-4">
-        <h1 className="text-xl font-bold">Asignadas</h1>
+        <h1 className="text-xl font-bold text-blue-950">Asignadas</h1>
         <button
           onClick={() => navigate('/solicitudes-uie')}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition"
         >
           ← Regresar
         </button>
       </div>
 
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2 text-sm">
         <div className="flex items-center gap-2">
           <span>Mostrar</span>
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="border rounded p-1"
+            className="border border-blue-200 rounded p-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
@@ -172,18 +172,18 @@ export default function AsignadasAdmin() {
           <input
             value={busquedaGlobal}
             onChange={(e) => setBusquedaGlobal(e.target.value)}
-            className="border p-1 rounded"
+            className="border border-blue-200 p-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
       </div>
 
-      <table className="w-full border text-sm">
+      <table className="w-full border-collapse border border-gray-200 text-sm">
         <thead>
           <tr className="bg-gray-100">
             {COLUMNAS.map((c) => (
               <th
                 key={c.key}
-                className="p-2 text-left cursor-pointer select-none"
+                className="p-2 text-left cursor-pointer select-none border-b border-gray-200"
                 onClick={() => handleSort(c.key)}
               >
                 <span className="inline-flex items-center">
@@ -192,28 +192,28 @@ export default function AsignadasAdmin() {
                 </span>
               </th>
             ))}
-            <th className="p-2 text-left">Asignar</th>
+            <th className="p-2 text-left border-b border-gray-200">Reasignar</th>
           </tr>
           <tr className="bg-gray-50">
             {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-1">
+              <th key={c.key} className="p-1 border-b border-gray-200">
                 <input
                   value={filtros[c.filtro]}
                   onChange={(e) => handleFiltro(c.filtro, e.target.value)}
-                  className="border p-1 w-full rounded"
+                  className="border border-blue-200 p-1 w-full rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </th>
             ))}
-            <th className="p-1"></th>
+            <th className="p-1 border-b border-gray-200"></th>
           </tr>
         </thead>
         <tbody>
           {paginadas.map((s) => (
-            <tr key={s.id} className="border-t align-top">
+            <tr key={s.id} className="border-t border-gray-200 hover:bg-gray-50 align-top">
               <td className="p-2">
                 <button
                   onClick={() => setDetalleId(s.id)}
-                  className="text-gray-600 hover:text-purple-800"
+                  className="text-gray-600 hover:text-indigo-600 transition"
                   title="Ver detalle"
                 >
                   👁 {s.id}
@@ -227,11 +227,11 @@ export default function AsignadasAdmin() {
               <td className="p-2">{s.no_inventario ?? '-'}</td>
               <td className="p-2">
                 {s.status_uie > 0 ? (
-                  <span className="text-gray-500 text-xs">Asignador por CGD</span>
+                  <span className="text-gray-400 text-xs">Asignador por CGD</span>
                 ) : (
                   <button
                     onClick={() => setReasignarId(s.id)}
-                    className="px-2 py-1 bg-purple-800 text-white rounded text-xs"
+                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition"
                     title="Reasignar"
                   >
                     ➔
@@ -243,7 +243,7 @@ export default function AsignadasAdmin() {
         </tbody>
       </table>
 
-      {filtradas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+      {filtradas.length === 0 && <p className="text-gray-500 mt-4 text-sm">Sin resultados</p>}
 
       <div className="flex justify-between items-center mt-4">
         <p className="text-sm text-gray-600">
@@ -254,13 +254,13 @@ export default function AsignadasAdmin() {
         <div className="flex gap-1">
           {getPaginas(pagina, totalPaginas).map((p, idx) =>
             p === '...' ? (
-              <span key={`dots-${idx}`} className="px-2 py-1 text-gray-400">...</span>
+              <span key={`dots-${idx}`} className="px-2 py-1 text-gray-400 text-sm">...</span>
             ) : (
               <button
                 key={p}
                 onClick={() => setPagina(p)}
-                className={`px-3 py-1 rounded text-sm ${
-                  p === pagina ? 'bg-purple-800 text-white' : 'bg-gray-100 text-gray-700'
+                className={`px-3 py-1 rounded text-sm transition ${
+                  p === pagina ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {p}

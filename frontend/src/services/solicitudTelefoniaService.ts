@@ -154,5 +154,26 @@ export const imprimirResguardoTelefonia = async (id: number) => {
     }
     throw err;
   }
+};
 
+// Descarga el Excel de resguardos de telefonía activos, filtrado por rango de fecha_activo.
+export const exportarResguardoTelefoniaExcel = async (params: { del?: string; al?: string }) => {
+  const response = await axiosClient.get('/solicitud-telefono/exportar/resguardo', {
+    params,
+    responseType: 'blob',
+    timeout: 30000,
+  });
+
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const sufijo = params.del || params.al ? `_${params.del || 'inicio'}_a_${params.al || 'hoy'}` : '';
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `resguardo_telefonia${sufijo}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
 };

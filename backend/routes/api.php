@@ -19,6 +19,9 @@ use App\Http\Controllers\Api\SolicitudUieController;
 use App\Http\Controllers\Api\EquipoBajaController;
 use App\Http\Controllers\Api\SolicitudCorreoController;
 use App\Http\Controllers\Api\SolicitudVpnController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EquipoMantenimientoCgdController;
+
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -29,6 +32,10 @@ Route::post('/login', [AuthController::class, 'login']);
 // --------------------------------------------------------------
 Route::get('/solicitud-vpn/{id}/pdf-firmado', [SolicitudVpnController::class, 'imprimirFirmado'])
     ->name('solicitud-vpn.pdf.firmado')
+    ->middleware('signed');
+
+    Route::get('/equipo-mantenimiento-cgd/{id}/pdf-firmado', [EquipoMantenimientoCgdController::class, 'imprimirFirmado'])
+    ->name('equipo-mantenimiento-cgd.pdf.firmado')
     ->middleware('signed');
 
 Route::get('/solicitud-correo/{id}/pdf-firmado', [SolicitudCorreoController::class, 'imprimirFirmado'])
@@ -64,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/reportes/poa', [ReporteController::class, 'poa']);
     Route::get('/reportes/actividades', [ReporteController::class, 'actividades']);
+    Route::get('/reportes/resguardos', [ReporteController::class, 'resguardos']);
 
     Route::get('/dictamenes', [DictamenController::class, 'index']);
     Route::get('/dictamenes/solicitudes-disponibles', [DictamenController::class, 'solicitudesDisponibles']);
@@ -109,6 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/equipos/{id}/dictamenes', [EquipoController::class, 'dictamenes'])->whereNumber('id');
 
     Route::get('/solicitudes/poa', [SolicitudController::class, 'poa']);
+    Route::get('/solicitudes/{id}/seguimiento', [SolicitudController::class, 'verSeguimiento']);
     Route::post('/solicitudes/{id}/seguimiento', [SolicitudController::class, 'seguimiento']);
     Route::post('/solicitudes/{id}/cerrar', [SolicitudController::class, 'cerrar']);
     Route::get('/solicitudes/pendientes', [SolicitudController::class, 'pendientes']);
@@ -147,6 +156,12 @@ Route::get('/dictamenes/solicitud/{idSolicitud}/ultimo', [DictamenController::cl
 Route::patch('/solicitud-telefono/{id}/estatus', [SolicitudTelefoniaController::class, 'cambiarEstatus']);
 Route::get('/solicitud-telefono/{id}/pdf', [SolicitudTelefoniaController::class, 'imprimir']);
 Route::patch('/solicitud-telefono/{id}/asignacion', [SolicitudTelefoniaController::class, 'actualizarAsignacion']);
+// ... arriba de las rutas con {id} de cada módulo:
+Route::get('/solicitud-telefono/exportar/resguardo', [SolicitudTelefoniaController::class, 'exportarResguardo']);
+
+Route::get('/equipo-mantenimiento-cgd/{idEquipoSolicitud}', [EquipoMantenimientoCgdController::class, 'show'])->whereNumber('idEquipoSolicitud');
+Route::post('/equipo-mantenimiento-cgd', [EquipoMantenimientoCgdController::class, 'store']);
+Route::get('/equipo-mantenimiento-cgd/{idEquipoSolicitud}/pdf-url', [EquipoMantenimientoCgdController::class, 'pdfUrl'])->whereNumber('idEquipoSolicitud');
 
     Route::get('/catalogo-telefonos', [CatalogoTelefoniaController::class, 'index']);
     Route::put('/catalogo-telefonos/{id}', [CatalogoTelefoniaController::class, 'update']);
@@ -176,6 +191,8 @@ Route::patch('/solicitud-internet/{id}/estatus', [SolicitudInternetController::c
 Route::patch('/solicitud-correo/{id}/estatus', [SolicitudCorreoController::class, 'cambiarEstatus']);
 Route::patch('/solicitud-correo/{id}/asignacion', [SolicitudCorreoController::class, 'actualizarAsignacion']);
 
+Route::get('/solicitud-correo/exportar/resguardo', [SolicitudCorreoController::class, 'exportarResguardo']);
+
     Route::get('/solicitud-vpn', [SolicitudVpnController::class, 'index']);
     Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
     Route::post('/solicitud-vpn', [SolicitudVpnController::class, 'store']);
@@ -186,9 +203,14 @@ Route::patch('/solicitud-correo/{id}/asignacion', [SolicitudCorreoController::cl
     //Route::get('/solicitud-vpn/{id}', [SolicitudVpnController::class, 'show']);
 Route::patch('/solicitud-vpn/{id}/estatus', [SolicitudVpnController::class, 'cambiarEstatus']);
 Route::patch('/solicitud-vpn/{id}/asignacion', [SolicitudVpnController::class, 'actualizarAsignacion']);
+Route::get('/solicitud-vpn/exportar/resguardo', [SolicitudVpnController::class, 'exportarResguardo']);
 
     Route::get('/equipos-baja', [EquipoBajaController::class, 'index']);
     Route::get('/equipos-baja/exportar', [EquipoBajaController::class, 'exportar']);
+
+    Route::get('/dashboard/tickets', [DashboardController::class, 'tickets']);
+Route::get('/dashboard/dictamenes', [DashboardController::class, 'dictamenes']);
+Route::get('/dashboard/actividades', [DashboardController::class, 'actividadesMesAnterior']);
 
     Route::prefix('solicitudes-uie')->group(function () {
         Route::get('/', [SolicitudUieController::class, 'index']);

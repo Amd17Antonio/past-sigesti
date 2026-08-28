@@ -13,7 +13,7 @@
 
         body { 
             font-family: 'Montserrat', sans-serif; 
-            font-size: 15px; 
+            font-size: 10px; 
             line-height: 1.25; 
             color: #111; 
             margin: 0;
@@ -64,7 +64,7 @@
 
         .pie-texto-gris {
             color: #666666;
-            font-size: 11px;
+            font-size: 9px;
             text-align: center;
             line-height: 1.15;
             margin-bottom: 4px;
@@ -76,10 +76,10 @@
             display: block;
         }
 
-        /* ---------- Títulos en Guinda Exacto (#9d2349) ---------- */
+        /* ---------- Títulos en Guinda Exacto (#9d2349) y Negritas ---------- */
         .subtitulo { 
             text-align: center; 
-            font-size: 18px; 
+            font-size: 17px; 
             font-weight: 700; 
             margin: 10px 0 14px 0; 
             text-transform: uppercase; 
@@ -88,7 +88,7 @@
         }
         .seccion-titulo { 
             font-weight: 700; 
-            font-size: 16.5px; 
+            font-size: 14px; 
             margin: 14px 0 6px 0; 
             text-transform: uppercase; 
             color: #9d2349;
@@ -113,7 +113,7 @@
             border-bottom: 1px solid #555; 
             padding: 5px 8px; 
             vertical-align: middle; 
-            font-size: 15px; 
+            font-size: 10px; 
         }
 
         table.formato-unificado tr:last-child td {
@@ -129,7 +129,7 @@
         /* Columna de etiquetas en negritas (Gris Oscuro) */
         table.formato-unificado .col-label { 
             font-weight: 700; 
-            font-size: 15px; 
+            font-size: 10px; 
             width: 28%; 
             color: #333333; 
         }
@@ -141,12 +141,12 @@
         }
         .link-val {
             display: block;
-            font-size: 15px;
+            font-size: 10px;
         }
         .ip-val {
             display: block; 
             margin-top: 32px; 
-            font-size: 15px;
+            font-size: 10px;
         }
 
         .tabla-ticket {
@@ -155,7 +155,7 @@
             margin-bottom: 10px;
         }
         .tabla-ticket td {
-            font-size: 15px; 
+            font-size: 10px; 
             padding: 0;
             vertical-align: middle;
         }
@@ -165,19 +165,19 @@
             border-radius: 8px;
             padding: 6px 10px;
             background-color: transparent;
-            font-size: 15px;
+            font-size: 10px;
         }
 
         /* Texto en negritas (Gris Oscuro) */
         .label-negro {
             font-weight: 700;
-            font-size: 15px;
+            font-size: 10px;
             color: #333333;
         }
 
         .texto-normal {
             font-weight: 400;
-            font-size: 15px; 
+            font-size: 10px; 
         }
 
         /* ---------- Firmas y Sello Redondeado ---------- */
@@ -209,7 +209,7 @@
 
         .sello-label {
             font-weight: 700;
-            font-size: 15px;
+            font-size: 10px;
             color: #333333;
             margin-top: 6px;
             display: block;
@@ -222,7 +222,7 @@
         /* Nombres generados sobre las líneas en letra NORMAL */
         .nombre-firmante {
             font-weight: 400;
-            font-size: 15px;
+            font-size: 10px;
             color: #111111;
             display: block;
             margin-bottom: 2px;
@@ -233,13 +233,13 @@
             border-top: 1px solid #333; 
             margin: 0 12px; 
             padding-top: 3px; 
-            font-size: 15px;
+            font-size: 10px;
             font-weight: 700;
             color: #333333;
         }
 
         .vobo-texto {
-            font-size: 15px;
+            font-size: 10px;
             font-weight: 700;
             color: #333333;
             margin-bottom: 24px;
@@ -257,41 +257,41 @@
         .politicas-titulo {
             text-align: center;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 17px;
             margin-bottom: 12px;
             line-height: 1.25;
             color: #9d2349;
         }
         .politicas-sub {
             font-weight: 700;
-            font-size: 15px; 
+            font-size: 13px; 
             color: #333333;
             margin-top: 10px;
-            margin-bottom: 0px; /* Reducido para pegarlo a su texto */
+            margin-bottom: 0px;
         }
         
         /* Clase específica para Introducción */
         .politicas-introduccion {
             text-align: justify;
-            font-size: 15.8px;
+            font-size: 13.8px;
             line-height: 1.32;
             margin-top: 2px;
             margin-bottom: 6px;
         }
 
-        /* Texto general de políticas a 15.8px */
+        /* Texto general de políticas */
         .politicas-texto {
             text-align: justify;
-            font-size: 15.8px;
+            font-size: 14px;
             line-height: 1.25;
             margin-top: 2px;
             margin-bottom: 6px;
         }
 
-        /* Texto específico de Alcance a 15px */
+        /* Texto específico de Alcance */
         .politicas-texto-alcance {
             text-align: justify;
-            font-size: 15.5px;
+            font-size: 14px;
             line-height: 1.25;
             margin-top: 2px;
             margin-bottom: 6px;
@@ -301,11 +301,11 @@
             margin: 2px 0 0 0;
             padding-left: 18px;
             text-align: justify;
-            font-size: 15.8px;
-            line-height: 1.25;
+            font-size: 13.8px;
+            line-height: 1;
         }
         .politicas-lista li {
-            margin-bottom: 4px;
+            margin-bottom: 1px;
         }
     </style>
 </head>
@@ -330,13 +330,13 @@
         <img src="{{ public_path('images/Tecnologias.png') }}" alt="Encabezado Tecnologías">
     </div>
 
-    <p class="subtitulo" style="color: #9d2349;">
+    <p class="subtitulo" style="color: #9d2349; font-weight: 700;">
         FORMATO DE SOLICITUD DE CREACIÓN DE CUENTA DE USUARIO<br>DE ACCESO REMOTO (VPN SSL).
     </p>
 
     <table class="tabla-ticket">
         <tr>
-                <td style="width: 5.5cm;">
+            <td style="width: 5.5cm;">
                 <div class="box-redondeado" style="white-space: nowrap; overflow: hidden;">
                     <span class="label-negro">Fecha:</span> <span class="texto-normal">{{ \Carbon\Carbon::parse($s->created_at)->format('d/m/Y') }}</span>
                 </div>
@@ -443,7 +443,7 @@
     <div class="page-break"></div>
 
     <div class="politicas-container">
-        <p class="politicas-titulo">
+        <p class="politicas-titulo" style="color: #9d2349; font-weight: 700;">
             POLÍTICAS DE USO DE LA CUENTA DE USUARIO DE<br>ACCESO REMOTO (VPN SSL).
         </p>
 

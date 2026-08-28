@@ -22,10 +22,10 @@ export default function CatalogoUsuarios() {
   const [filtros, setFiltros] = useState<Record<string, string>>({});
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [clavesVisibles, setClavesVisibles] = useState<Set<number>>(new Set());
 
   const [creando, setCreando] = useState(false);
   const [editando, setEditando] = useState<UsuarioRow | null>(null);
+  const [restableciendoClave, setRestableciendoClave] = useState(false); // <-- nuevo
   const [form, setForm] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -39,14 +39,6 @@ export default function CatalogoUsuarios() {
     getRoles().then(setRoles);
     getCatalogo('areas').then((r) => setAreas(r.registros as AreaOption[]));
   }, []);
-
-  const toggleClave = (id: number) => {
-    setClavesVisibles((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
 
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -82,19 +74,20 @@ export default function CatalogoUsuarios() {
   const abrirCrear = () => {
     setForm({ usuario: '', clave: '', nombre: '', rol_id: '', id_area: '' });
     setError('');
+    setRestableciendoClave(false);
     setCreando(true);
   };
 
   const abrirEditar = (u: UsuarioRow) => {
     setForm({
       usuario: u.usuario,
-      clave: '',
       nombre: u.nombre,
       rol_id: String(u.rol_id),
       id_area: u.id_area ? String(u.id_area) : '',
       status: u.status ? '1' : '0',
     });
     setError('');
+    setRestableciendoClave(false); // el campo de clave arranca oculto al editar
     setEditando(u);
   };
 
@@ -107,13 +100,18 @@ export default function CatalogoUsuarios() {
       setError('La contraseña es obligatoria y debe tener al menos 6 caracteres.');
       return;
     }
+    if (editando && restableciendoClave && (!form.clave || form.clave.length < 6)) {
+      setError('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
     setEnviando(true);
     setError('');
     try {
       if (editando) {
         await actualizarUsuario(editando.id, {
           usuario: form.usuario,
-          clave: form.clave || undefined,
+          // solo se manda 'clave' si el admin activó el restablecimiento
+          clave: restableciendoClave ? form.clave : undefined,
           nombre: form.nombre,
           rol_id: Number(form.rol_id),
           id_area: form.id_area ? Number(form.id_area) : null,
@@ -170,7 +168,6 @@ export default function CatalogoUsuarios() {
                 </span>
               </th>
             ))}
-            <th className="p-2 text-left">Contraseña</th>
             <th className="p-2 text-left">Estatus</th>
             <th className="p-2 text-left">Acciones</th>
           </tr>
@@ -184,7 +181,7 @@ export default function CatalogoUsuarios() {
                 />
               </th>
             ))}
-            <th></th><th></th><th></th>
+            <th></th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -194,12 +191,6 @@ export default function CatalogoUsuarios() {
               <td className="p-2">{u.nombre}</td>
               <td className="p-2">{u.rol ?? '-'}</td>
               <td className="p-2">{u.area ?? '-'}</td>
-              <td className="p-2 font-mono text-xs">
-                <button onClick={() => toggleClave(u.id)} className="flex items-center gap-1">
-                  {clavesVisibles.has(u.id) ? u.clave : '••••••••'}
-                  <span className="text-xs">{clavesVisibles.has(u.id) ? '🙈' : '👁'}</span>
-                </button>
-              </td>
               <td className="p-2">
                 <span className={`px-2 py-1 rounded text-xs ${u.status ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
                   {u.status ? 'Activo' : 'Inactivo'}
@@ -207,6 +198,12 @@ export default function CatalogoUsuarios() {
               </td>
               <td className="p-2 flex gap-2">
                 <button onClick={() => abrirEditar(u)} title="Editar">✏️</button>
+                <button
+                  onClick={() => { abrirEditar(u); setRestableciendoClave(true); }}
+                  title="Restablecer contraseña"
+                >
+                  🔑
+                </button>
                 <button onClick={() => handleEliminar(u)} title="Dar de baja">🗑</button>
               </td>
             </tr>
@@ -231,17 +228,49 @@ export default function CatalogoUsuarios() {
                   className="border p-2 w-full mt-1"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">
-                  Contraseña {editando ? '(dejar vacío para no cambiar)' : '* (mín. 6 caracteres)'}:
-                </label>
-                <input
-                  type="text"
-                  value={form.clave ?? ''}
-                  onChange={(e) => setForm({ ...form, clave: e.target.value })}
-                  className="border p-2 w-full mt-1"
-                />
-              </div>
+
+              {creando && (
+                <div>
+                  <label className="text-sm font-medium">Contraseña * (mín. 6 caracteres):</label>
+                  <input
+                    type="password"
+                    value={form.clave ?? ''}
+                    onChange={(e) => setForm({ ...form, clave: e.target.value })}
+                    className="border p-2 w-full mt-1"
+                  />
+                </div>
+              )}
+
+              {editando && !restableciendoClave && (
+                <button
+                  type="button"
+                  onClick={() => setRestableciendoClave(true)}
+                  className="text-sm text-blue-600 underline"
+                >
+                  ¿El usuario olvidó su contraseña? Restablecer
+                </button>
+              )}
+
+              {editando && restableciendoClave && (
+                <div>
+                  <label className="text-sm font-medium">Nueva contraseña * (mín. 6 caracteres):</label>
+                  <input
+                    type="password"
+                    value={form.clave ?? ''}
+                    onChange={(e) => setForm({ ...form, clave: e.target.value })}
+                    className="border p-2 w-full mt-1"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRestableciendoClave(false)}
+                    className="text-xs text-gray-500 underline mt-1"
+                  >
+                    Cancelar restablecimiento
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-medium">Nombre completo *:</label>
                 <input

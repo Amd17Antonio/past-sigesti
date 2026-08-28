@@ -43,9 +43,25 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const validar = (): string | null => {
+    const faltantes: string[] = [];
+    if (!form.solicitante) faltantes.push('Solicitante');
+    if (!form.id_area) faltantes.push('Área');
+    if (!form.id_soporte) faltantes.push('Técnico');
+    if (!form.descripcion) faltantes.push('Descripción del problema');
+    if (!form.prioridad) faltantes.push('Prioridad');
+    if (!form.extension) faltantes.push('Extensión');
+
+    if (faltantes.length > 0) {
+      return `Completa los siguientes campos obligatorios: ${faltantes.join(', ')}.`;
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
-    if (!form.solicitante || !form.id_area || !form.descripcion) {
-      setError('Solicitante, Área y Descripción del problema son obligatorios.');
+    const mensajeError = validar();
+    if (mensajeError) {
+      setError(mensajeError);
       return;
     }
     setEnviando(true);
@@ -60,113 +76,241 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
         fecha_memo_recibido: form.fecha_memo_recibido || undefined,
         id_area: Number(form.id_area),
         descripcion: form.descripcion,
-        prioridad: form.prioridad || undefined,
-        extension: form.extension ? Number(form.extension) : undefined,
+        prioridad: form.prioridad,
+        extension: Number(form.extension),
         edificio: form.edificio ? Number(form.edificio) : undefined,
         nivel: form.nivel || undefined,
-        id_soporte: form.id_soporte ? Number(form.id_soporte) : undefined,
+        id_soporte: Number(form.id_soporte),
       });
       onCreado();
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'No se pudo crear la solicitud.');
+      const errores = err?.response?.data?.errors;
+      if (errores) {
+        const detalle = Object.entries(errores)
+          .map(([campo, mensajes]) => `${campo}: ${(mensajes as string[]).join(', ')}`)
+          .join(' | ');
+        setError(detalle);
+      } else {
+        setError(err?.response?.data?.message ?? 'No se pudo crear la solicitud.');
+      }
     } finally {
       setEnviando(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-8">
-      <div className="bg-white rounded p-6 w-[42rem] shadow-lg space-y-4">
-        <h2 className="font-bold text-lg">Crear Solicitud</h2>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium">Solicitante:</label>
-            <input name="solicitante" placeholder="Ejemplo: C.P. Omar Pérez" value={form.solicitante} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Puesto <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <input name="puesto" placeholder="Ingresa el puesto" value={form.puesto} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Tipo documento <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <select name="tipo_documento" value={form.tipo_documento} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Seleccionar --</option>
-              {TIPOS_DOCUMENTO.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">No. Documento <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <input name="num_documento" value={form.num_documento} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Fecha de memorándum:</label>
-            <input type="date" name="fecha_memo" value={form.fecha_memo} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Fecha recibido:</label>
-            <input type="date" name="fecha_memo_recibido" value={form.fecha_memo_recibido} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Área:</label>
-            <select name="id_area" value={form.id_area} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Seleccionar --</option>
-              {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Técnico <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <select name="id_soporte" value={form.id_soporte} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Sin asignar --</option>
-              {tecnicos.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-            </select>
-          </div>
-
-          <div className="col-span-2">
-            <label className="text-sm font-medium">Descripción del problema:</label>
-            <textarea name="descripcion" rows={3} value={form.descripcion} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Prioridad:</label>
-            <select name="prioridad" value={form.prioridad} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Seleccionar --</option>
-              <option value="baja">Baja</option>
-              <option value="media">Media</option>
-              <option value="alta">Alta</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Extensión:</label>
-            <input name="extension" value={form.extension} onChange={handleChange} className="border p-2 w-full mt-1" />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Edificio <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <select name="edificio" value={form.edificio} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Seleccionar --</option>
-              {['2', '3', '4', '6'].map((e) => <option key={e} value={e}>Edificio {e}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Nivel <span className="text-red-400 text-xs">(Opcional)</span>:</label>
-            <select name="nivel" value={form.nivel} onChange={handleChange} className="border p-2 w-full mt-1">
-              <option value="">-- Seleccionar --</option>
-              {['PB', '1', '2', '3'].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
+      <div className="bg-white rounded-lg shadow-xl w-[52rem] max-w-[95vw] overflow-hidden border border-blue-100">
+        <div className="bg-blue-950 text-white px-5 py-3 font-semibold flex justify-between items-center">
+          <span className="text-base">Nueva Solicitud</span>
+          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none transition">✕</button>
         </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-sm">
+          {/* Datos del Solicitante */}
+          <div className="border border-blue-100 rounded-md overflow-hidden">
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Datos del Solicitante</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Solicitante:</label>
+                <input
+                  name="solicitante"
+                  placeholder="Ejemplo: C.P. Omar Pérez"
+                  value={form.solicitante}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Puesto <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <input
+                  name="puesto"
+                  placeholder="Ingresa el puesto"
+                  value={form.puesto}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600">Cancelar</button>
-          <button onClick={handleSubmit} disabled={enviando} className="px-4 py-2 bg-purple-800 text-white rounded disabled:opacity-50">
-            {enviando ? 'Guardando...' : 'Guardar'}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Tipo documento <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <select
+                  name="tipo_documento"
+                  value={form.tipo_documento}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {TIPOS_DOCUMENTO.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  No. Documento <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <input
+                  name="num_documento"
+                  value={form.num_documento}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Fecha de memorándum <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <input
+                  type="date"
+                  name="fecha_memo"
+                  value={form.fecha_memo}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Fecha recibido <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <input
+                  type="date"
+                  name="fecha_memo_recibido"
+                  value={form.fecha_memo_recibido}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Asignación */}
+          <div className="border border-blue-100 rounded-md overflow-hidden">
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Asignación</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Área:</label>
+                <select
+                  name="id_area"
+                  value={form.id_area}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Técnico:</label>
+                <select
+                  name="id_soporte"
+                  value={form.id_soporte}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {tecnicos.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Detalles del Problema */}
+          <div className="border border-blue-100 rounded-md overflow-hidden">
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Detalles del Problema</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600">Descripción del problema:</label>
+                <textarea
+                  name="descripcion"
+                  rows={3}
+                  value={form.descripcion}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-600">Prioridad:</label>
+                <select
+                  name="prioridad"
+                  value={form.prioridad}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Extensión:</label>
+                <input
+                  name="extension"
+                  value={form.extension}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Ubicación */}
+          <div className="border border-blue-100 rounded-md overflow-hidden">
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Ubicación</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Edificio <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <select
+                  name="edificio"
+                  value={form.edificio}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {['2', '3', '4', '6'].map((e) => <option key={e} value={e}>Edificio {e}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Nivel <span className="text-gray-400">(Opcional)</span>:
+                </label>
+                <select
+                  name="nivel"
+                  value={form.nivel}
+                  onChange={handleChange}
+                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {['PB', '1', '2', '3'].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+        </div>
+
+        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-blue-100">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition"
+          >
+            ✕ Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={enviando}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded disabled:opacity-50 transition font-medium"
+          >
+            💾 {enviando ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>

@@ -13,7 +13,7 @@
 
         body { 
             font-family: 'Montserrat', sans-serif; 
-            font-size: 13px; 
+            font-size: 13px;  /* 13 px */
             line-height: 1.25; 
             color: #111; 
         }
@@ -48,7 +48,7 @@
 
         /* Leyenda debajo del logo */
         .leyenda-logo {
-            font-size: 11px;
+            font-size: 11px;  /* 11 px */
             font-weight: bold;
             text-align: center;
             margin-top: 0px;
@@ -57,7 +57,7 @@
 
         .subtitulo { 
             text-align: center; 
-            font-size: 16px; 
+            font-size: 16px; /* 16 px */
             font-weight: bold; 
             margin: 10px 0 14px 0; 
             text-transform: uppercase; 
@@ -78,7 +78,7 @@
         .seccion-titulo-centrado { 
             text-align: center; 
             font-weight: bold; 
-            font-size: 14px; 
+            font-size: 14px;  /* 14 px */
             margin: 12px 0 6px 0;
         }
 
@@ -106,7 +106,7 @@
         }
 
         .subtexto-etiqueta {
-            font-size: 11px; 
+            font-size: 11px; /* 11 px */
             font-weight: normal;
             font-style: italic;
             display: block;
@@ -158,7 +158,7 @@
             background-color: #e0e0e0;
             font-weight: bold;
             font-style: italic;
-            font-size: 10.5px; 
+            font-size: 10.5px;  /* 10.5 px */
             height: 32px;
         }
 
@@ -316,7 +316,6 @@
         </tr>
     </table>
 
-    <br>
     <br>
 
     <!-- Área de Firmas y Sello -->
