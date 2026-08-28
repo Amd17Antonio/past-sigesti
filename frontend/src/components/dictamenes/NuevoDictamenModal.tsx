@@ -107,11 +107,21 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
   const handleElegirSolicitud = (s: SolicitudDisponible) => {
     setIdSolicitud(String(s.id));
     setSolicitudSeleccionada(s);
+    setForm({ servicio: '', dictamen: '', expediente: PREFIJO_EXPEDIENTE, copias: '', fallas: '', tipo_falla: '' });
+    setSugiereBaja(false);
+    setEquipoEncontrado(null);
+    setBuscarInventario('');
+    setError('');
   };
 
   const handleCambiarSolicitud = () => {
     setIdSolicitud('');
     setSolicitudSeleccionada(null);
+    setForm({ servicio: '', dictamen: '', expediente: PREFIJO_EXPEDIENTE, copias: '', fallas: '', tipo_falla: '' });
+    setSugiereBaja(false);
+    setEquipoEncontrado(null);
+    setBuscarInventario('');
+    setError('');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -196,40 +206,42 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 overflow-y-auto py-8 px-4">
-      <div className={`bg-white rounded shadow-lg ${solicitudSeleccionada ? 'w-[36rem]' : 'w-[64rem]'} max-w-[95vw] mx-auto overflow-hidden`}>
-        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
-          Nuevo Dictamen {folioInfo && <span className="text-sm font-normal">Folio: {folioInfo.folio}/{folioInfo.ejercicio}</span>}
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
+    <div className="fixed inset-0 bg-black/40 z-50 overflow-y-auto py-8 px-4 pl-64 flex items-center justify-center">
+      <div className={`bg-white rounded-lg shadow-xl ${solicitudSeleccionada ? 'w-[36rem]' : 'w-[64rem]'} max-w-[95vw] mx-auto overflow-hidden my-auto border border-blue-100`}>
+        {/* Encabezado principal en azul institucional */}
+        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center shadow-sm">
+          <span>Nuevo Dictamen {folioInfo && <span className="text-sm font-normal text-blue-100 ml-2">Folio: {folioInfo.folio}/{folioInfo.ejercicio}</span>}</span>
+          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none transition-colors">✕</button>
         </div>
 
         {/* --- Paso 1: elegir solicitud (tabla con filtros/orden) --- */}
         {!solicitudSeleccionada ? (
           <div className="p-5">
-            <p className="text-sm font-medium mb-2">Solicitudes aprobadas para dictamen técnico</p>
-            <div className="overflow-x-auto max-h-[26rem] overflow-y-auto border rounded">
+            <p className="text-sm font-medium text-blue-900 mb-2">Solicitudes aprobadas para dictamen técnico</p>
+            <div className="overflow-x-auto max-h-[26rem] overflow-y-auto border border-blue-100 rounded-md shadow-inner">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-gray-100">
+                <thead className="sticky top-0 bg-blue-50 text-blue-900">
                   <tr>
                     {COLUMNAS_SOLICITUD.map((c) => (
                       <th
                         key={c.key}
-                        className="p-2 text-left cursor-pointer select-none whitespace-nowrap"
+                        className="p-2 text-left cursor-pointer select-none whitespace-nowrap hover:bg-blue-100/60 transition-colors"
                         onClick={() => handleSortSolicitud(c.key)}
                       >
                          <span className="inline-flex items-center">{c.label}
-    <SortIcon active={sortKeySolicitud === c.key} direction={sortDirSolicitud} />
-  </span>
-                        </th>
+                          <SortIcon active={sortKeySolicitud === c.key} direction={sortDirSolicitud} />
+                        </span>
+                      </th>
                     ))}
                   </tr>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-white">
                     {COLUMNAS_SOLICITUD.map((c) => (
                       <th key={c.key} className="p-1">
                         <input
                           value={filtrosSolicitud[c.key] ?? ''}
                           onChange={(e) => setFiltrosSolicitud({ ...filtrosSolicitud, [c.key]: e.target.value })}
-                          className="border p-1 w-full text-xs font-normal"
+                          className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-1 rounded w-full text-xs font-normal"
+                          placeholder="Filtrar..."
                         />
                       </th>
                     ))}
@@ -240,9 +252,9 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
                     <tr
                       key={s.id}
                       onClick={() => handleElegirSolicitud(s)}
-                      className="border-t cursor-pointer hover:bg-blue-50"
+                      className="border-t border-blue-50 cursor-pointer hover:bg-blue-50/80 transition-colors"
                     >
-                      <td className="p-2">{s.id}</td>
+                      <td className="p-2 font-medium text-blue-900">{s.id}</td>
                       <td className="p-2">{s.area}</td>
                       <td className="p-2">{s.num_documento ?? '-'}</td>
                       <td className="p-2">{s.tecnico ?? '-'}</td>
@@ -253,31 +265,31 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
                 </tbody>
               </table>
               {solicitudesFiltradas.length === 0 && (
-                <p className="text-gray-500 text-sm p-4 text-center">Ningún dato disponible en esta tabla</p>
+                <p className="text-gray-500 text-sm p-6 text-center">Ningún dato disponible en esta tabla</p>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-blue-700 mt-2 font-medium">
               Mostrando {solicitudesFiltradas.length} de {solicitudes.length} solicitudes
             </p>
           </div>
         ) : (
           <div className="p-5 space-y-3">
             {/* --- Resumen de la solicitud elegida + botón para cambiar --- */}
-            <div className="bg-blue-50 border border-blue-200 rounded p-3 flex justify-between items-start">
-              <div className="text-sm">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 flex justify-between items-start shadow-sm">
+              <div className="text-sm text-blue-950">
                 <p><strong>Folio:</strong> #{solicitudSeleccionada.id} — {solicitudSeleccionada.area}</p>
                 <p><strong>Técnico:</strong> {solicitudSeleccionada.tecnico ?? '-'}</p>
                 <p><strong>Equipos:</strong> {solicitudSeleccionada.equipos || '-'}</p>
               </div>
-              <button onClick={handleCambiarSolicitud} className="text-xs text-blue-700 hover:underline whitespace-nowrap">
+              <button onClick={handleCambiarSolicitud} className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap bg-white px-2.5 py-1 rounded border border-blue-200 shadow-sm transition-all">
                 Cambiar solicitud
               </button>
             </div>
 
             {equipos.length > 0 && (
               <div>
-                <label className="text-sm font-medium">Equipo:</label>
-                <select value={idEquipo} onChange={(e) => setIdEquipo(e.target.value)} className="border p-2 w-full mt-1">
+                <label className="text-sm font-medium text-blue-900">Equipo:</label>
+                <select value={idEquipo} onChange={(e) => setIdEquipo(e.target.value)} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm bg-white">
                   <option value="">--Sin equipo específico--</option>
                   {equipos.map((e) => (
                     <option key={e.id_equipo} value={e.id_equipo}>{e.tipo} {e.marca} {e.modelo} — Inv. {e.no_inventario}</option>
@@ -287,147 +299,147 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
             )}
 
             <div>
-              <label className="text-sm font-medium">Servicio realizado:</label>
-              <textarea name="servicio" value={form.servicio} onChange={handleChange} rows={2} className="border p-2 w-full mt-1" />
+              <label className="text-sm font-medium text-blue-900">Servicio realizado:</label>
+              <textarea name="servicio" value={form.servicio} onChange={handleChange} rows={2} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm" />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Dictamen:</label>
-              <textarea name="dictamen" value={form.dictamen} onChange={handleChange} rows={4} className="border p-2 w-full mt-1" />
+              <label className="text-sm font-medium text-blue-900">Dictamen:</label>
+              <textarea name="dictamen" value={form.dictamen} onChange={handleChange} rows={4} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Expediente:</label>
-                <div className="flex items-center border rounded mt-1 overflow-hidden">
-                  <span className="bg-gray-100 text-gray-500 px-2 py-2 text-sm select-none border-r whitespace-nowrap">
+                <label className="text-sm font-medium text-blue-900">Expediente:</label>
+                <div className="flex items-center border border-blue-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 rounded mt-1 overflow-hidden bg-white">
+                  <span className="bg-blue-50 text-blue-700 px-2.5 py-2 text-sm select-none border-r border-blue-200 whitespace-nowrap font-medium">
                     {PREFIJO_EXPEDIENTE}
                   </span>
                   <input
                     value={sufijoExpediente}
                     onChange={handleChangeExpediente}
-                    className="p-2 flex-1 outline-none min-w-0"
+                    className="p-2 flex-1 outline-none min-w-0 text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium">Copias:</label>
-                <input name="copias" value={form.copias} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <label className="text-sm font-medium text-blue-900">Copias:</label>
+                <input name="copias" value={form.copias} onChange={handleChange} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 items-center">
               <div>
-                <label className="text-sm font-medium">Tipo de falla:</label>
-                <input name="tipo_falla" value={form.tipo_falla} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <label className="text-sm font-medium text-blue-900">Tipo de falla:</label>
+                <input name="tipo_falla" value={form.tipo_falla} onChange={handleChange} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm" />
               </div>
-              <label className="flex items-center gap-2 mt-6 text-sm">
-                <input type="checkbox" checked={sugiereBaja} onChange={(e) => setSugiereBaja(e.target.checked)} />
+              <label className="flex items-center gap-2 mt-6 text-sm text-blue-900 cursor-pointer select-none">
+                <input type="checkbox" checked={sugiereBaja} onChange={(e) => setSugiereBaja(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" />
                 Sugiere baja del equipo
               </label>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Fallas reportadas:</label>
-              <textarea name="fallas" value={form.fallas} onChange={handleChange} rows={2} className="border p-2 w-full mt-1" />
+              <label className="text-sm font-medium text-blue-900">Fallas reportadas:</label>
+              <textarea name="fallas" value={form.fallas} onChange={handleChange} rows={2} className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded w-full mt-1 text-sm" />
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-sm font-medium bg-red-50 p-2 rounded border border-red-200">{error}</p>}
 
             {/* ---- Sección: Mantenimiento de equipo (buscar por No. Inventario) ---- */}
-            <div className="border-t pt-4 mt-2">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Mantenimiento de equipo</p>
+            <div className="border-t border-blue-100 pt-4 mt-2">
+              <p className="text-sm font-semibold text-blue-900 mb-2">Mantenimiento de equipo</p>
               <div className="flex gap-2">
                 <input
                   value={buscarInventario}
                   onChange={(e) => setBuscarInventario(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleBuscarEquipo()}
                   placeholder="Buscar por no. de inventario..."
-                  className="border p-2 flex-1 text-sm"
+                  className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-2 rounded flex-1 text-sm"
                 />
                 <button
                   onClick={handleBuscarEquipo}
                   disabled={buscandoEquipo}
-                  className="px-3 py-2 bg-gray-700 text-white rounded text-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors shadow-sm"
                 >
                   {buscandoEquipo ? 'Buscando...' : 'Buscar'}
                 </button>
               </div>
 
               {errorBusquedaEquipo && (
-                <p className="text-red-500 text-xs mt-2">{errorBusquedaEquipo}</p>
+                <p className="text-red-500 text-xs mt-2 bg-red-50 p-2 rounded border border-red-200">{errorBusquedaEquipo}</p>
               )}
 
               {equipoEncontrado && (
-                <div className="mt-3 border rounded p-3 bg-gray-50 text-sm">
-                  <p><span className="font-medium">Inventario:</span> {equipoEncontrado.no_inventario}</p>
-                  <p><span className="font-medium">Tipo:</span> {equipoEncontrado.tipo ?? '-'} &nbsp;
-                     <span className="font-medium">Marca:</span> {equipoEncontrado.marca ?? '-'} &nbsp;
-                     <span className="font-medium">Modelo:</span> {equipoEncontrado.modelo ?? '-'}</p>
+                <div className="mt-3 border border-blue-200 rounded-md p-3 bg-blue-50/50 text-sm shadow-sm">
+                  <p><span className="font-medium text-blue-900">Inventario:</span> {equipoEncontrado.no_inventario}</p>
+                  <p className="mt-1"><span className="font-medium text-blue-900">Tipo:</span> {equipoEncontrado.tipo ?? '-'} &nbsp;
+                     <span className="font-medium text-blue-900">Marca:</span> {equipoEncontrado.marca ?? '-'} &nbsp;
+                     <span className="font-medium text-blue-900">Modelo:</span> {equipoEncontrado.modelo ?? '-'}</p>
 
                   {mantGuardado ? (
-                    <p className="text-green-600 text-xs mt-2">✓ Mantenimiento registrado correctamente.</p>
+                    <p className="text-emerald-700 text-xs font-medium mt-2 bg-emerald-50 border border-emerald-200 p-2 rounded">✓ Mantenimiento registrado correctamente.</p>
                   ) : !mostrarFormMantenimiento ? (
                     <button
                       onClick={() => setMostrarFormMantenimiento(true)}
-                      className="mt-2 text-purple-800 hover:underline text-xs"
+                      className="mt-2 text-blue-700 hover:text-blue-900 hover:underline text-xs font-semibold inline-block"
                     >
                       + Registrar mantenimiento para este equipo
                     </button>
                   ) : (
-                    <div className="mt-3 space-y-2 border-t pt-3">
+                    <div className="mt-3 space-y-2.5 border-t border-blue-200 pt-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-xs font-medium">Fecha de servicio</label>
+                          <label className="text-xs font-medium text-blue-900">Fecha de servicio</label>
                           <input
                             type="date"
                             value={mantForm.fecha_mantenimiento}
                             onChange={(e) => setMantForm({ ...mantForm, fecha_mantenimiento: e.target.value })}
-                            className="border rounded p-1.5 w-full text-xs"
+                            className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none rounded p-1.5 w-full text-xs bg-white"
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-medium">Próximo mantenimiento</label>
+                          <label className="text-xs font-medium text-blue-900">Próximo mantenimiento</label>
                           <input
                             type="date"
                             value={mantForm.proxima_fecha}
                             onChange={(e) => setMantForm({ ...mantForm, proxima_fecha: e.target.value })}
                             placeholder="Default: +6 meses"
-                            className="border rounded p-1.5 w-full text-xs"
+                            className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none rounded p-1.5 w-full text-xs bg-white"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-medium">Tipo</label>
+                        <label className="text-xs font-medium text-blue-900">Tipo</label>
                         <select
                           value={mantForm.tipo}
                           onChange={(e) => setMantForm({ ...mantForm, tipo: e.target.value })}
-                          className="border rounded p-1.5 w-full text-xs"
+                          className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none rounded p-1.5 w-full text-xs bg-white"
                         >
                           <option value="preventivo">Preventivo</option>
                           <option value="correctivo">Correctivo</option>
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-medium">Descripción</label>
+                        <label className="text-xs font-medium text-blue-900">Descripción</label>
                         <textarea
                           value={mantForm.descripcion}
                           onChange={(e) => setMantForm({ ...mantForm, descripcion: e.target.value })}
                           rows={2}
-                          className="border rounded p-1.5 w-full text-xs"
+                          className="border border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none rounded p-1.5 w-full text-xs bg-white"
                         />
                       </div>
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2 pt-1">
                         <button
                           onClick={() => setMostrarFormMantenimiento(false)}
-                          className="px-3 py-1 text-xs border rounded"
+                          className="px-3 py-1 text-xs border border-blue-300 rounded text-blue-900 hover:bg-blue-100 transition-colors bg-white"
                         >
                           Cancelar
                         </button>
                         <button
                           onClick={handleGuardarMantenimiento}
                           disabled={guardandoMant}
-                          className="px-3 py-1 text-xs bg-purple-800 text-white rounded disabled:opacity-50"
+                          className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded font-medium disabled:opacity-50 transition-colors shadow-sm"
                         >
                           {guardandoMant ? 'Guardando...' : 'Registrar mantenimiento'}
                         </button>
@@ -440,10 +452,10 @@ export default function NuevoDictamenModal({ onClose, onCreado }: Props) {
           </div>
         )}
 
-        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
+        <div className="flex justify-end gap-2 px-5 py-3 bg-blue-50/60 border-t border-blue-100">
+          <button onClick={onClose} className="px-4 py-2 border border-blue-300 rounded text-blue-900 hover:bg-blue-100 transition-colors text-sm font-medium bg-white">Cancelar</button>
           {solicitudSeleccionada && (
-            <button onClick={handleGuardar} disabled={enviando} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
+            <button onClick={handleGuardar} disabled={enviando} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium disabled:opacity-50 transition-colors shadow-sm">
               {enviando ? 'Guardando...' : 'Guardar'}
             </button>
           )}

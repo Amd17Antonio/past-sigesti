@@ -3,10 +3,10 @@ import { getPreguntas, yaEvaluada, enviarEvaluacion } from '../../services/encue
 
 interface Pregunta { id: number; pregunta: string }
 
-const OPCIONES: { valor: 'B' | 'R' | 'M'; label: string; color: string }[] = [
-  { valor: 'B', label: 'Bueno', color: 'bg-green-600' },
-  { valor: 'R', label: 'Regular', color: 'bg-yellow-500' },
-  { valor: 'M', label: 'Malo', color: 'bg-red-600' },
+const OPCIONES: { valor: 'B' | 'R' | 'M'; label: string; activeBg: string }[] = [
+  { valor: 'B', label: 'Bueno', activeBg: '#16a34a' }, // Verde (Se mantiene semántico para calificación)
+  { valor: 'R', label: 'Regular', activeBg: '#eab308' }, // Amarillo (Se mantiene semántico para calificación)
+  { valor: 'M', label: 'Malo', activeBg: '#dc2626' }, // Rojo (Se mantiene semántico para calificación)
 ];
 
 export default function EvaluarModal({
@@ -56,63 +56,78 @@ export default function EvaluarModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-8">
-      <div className="bg-white rounded shadow-lg w-full max-w-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Evaluar servicio — Folio {solicitudId}</h2>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 overflow-y-auto p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 border border-blue-100 my-8">
+        <h2 className="text-lg font-bold text-blue-950 mb-4 border-b border-blue-100 pb-2">
+          Evaluar servicio — Folio {solicitudId}
+        </h2>
 
-        {cargando && <p className="text-sm text-gray-500">Cargando...</p>}
+        {cargando && <p className="text-sm text-gray-500 py-4 text-center">Cargando...</p>}
 
         {!cargando && yaFueEvaluada && !enviado && (
-          <p className="text-sm text-gray-600">Ya evaluaste esta solicitud. ¡Gracias!</p>
+          <p className="text-sm text-gray-700 py-4 text-center font-medium">Ya evaluaste esta solicitud. ¡Gracias!</p>
         )}
 
         {!cargando && enviado && (
-          <p className="text-sm text-green-600">¡Gracias por tu evaluación!</p>
+          <p className="text-sm text-green-700 py-4 text-center font-medium">¡Gracias por tu evaluación!</p>
         )}
 
         {!cargando && !yaFueEvaluada && !enviado && (
           <>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
               {preguntas.map((p) => (
-                <div key={p.id}>
-                  <p className="text-sm font-medium mb-2">{p.pregunta}</p>
+                <div key={p.id} className="bg-blue-50/30 p-3.5 rounded-lg border border-blue-100 shadow-sm">
+                  <p className="text-sm font-semibold text-gray-900 mb-2.5">{p.pregunta}</p>
                   <div className="flex gap-2">
-                    {OPCIONES.map((op) => (
-                      <button
-                        key={op.valor}
-                        type="button"
-                        onClick={() => seleccionar(p.id, op.valor)}
-                        className={`px-3 py-1.5 rounded text-xs text-white transition ${
-                          respuestas[p.id] === op.valor ? op.color : 'bg-gray-300'
-                        }`}
-                      >
-                        {op.label}
-                      </button>
-                    ))}
+                    {OPCIONES.map((op) => {
+                      const seleccionado = respuestas[p.id] === op.valor;
+                      return (
+                        <button
+                          key={op.valor}
+                          type="button"
+                          onClick={() => seleccionar(p.id, op.valor)}
+                          style={{
+                            backgroundColor: seleccionado ? op.activeBg : '#f3f4f6',
+                            color: seleccionado ? '#ffffff' : '#1f2937',
+                            borderColor: seleccionado ? op.activeBg : '#d1d5db',
+                          }}
+                          className={`px-4 py-1.5 rounded-md text-xs font-bold transition shadow-xs border ${
+                            seleccionado ? 'ring-2 ring-offset-1 ring-blue-400 scale-105' : 'hover:bg-gray-200'
+                          }`}
+                        >
+                          {op.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
 
               <div>
-                <label className="text-sm font-medium">Observaciones (opcional):</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Observaciones (opcional):</label>
                 <textarea
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
                   rows={3}
-                  className="border rounded p-2 w-full mt-1 text-sm"
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   placeholder="Cuéntanos más sobre el servicio recibido..."
                 />
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+            {error && <p className="text-red-600 text-sm mt-3 font-semibold bg-red-50 p-2 rounded border border-red-100">{error}</p>}
 
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
+            <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-blue-100">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 font-medium transition shadow-sm"
+              >
+                Cancelar
+              </button>
               <button
                 onClick={handleEnviar}
                 disabled={enviando}
-                className="px-4 py-2 bg-purple-800 text-white rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium rounded-lg shadow-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition"
               >
                 {enviando ? 'Enviando...' : 'Enviar evaluación'}
               </button>
@@ -121,8 +136,13 @@ export default function EvaluarModal({
         )}
 
         {(yaFueEvaluada || enviado) && (
-          <div className="flex justify-end mt-6">
-            <button onClick={onClose} className="px-4 py-2 border rounded">Cerrar</button>
+          <div className="flex justify-end pt-4 mt-4 border-t border-blue-100">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium rounded-lg shadow-md bg-blue-600 hover:bg-blue-700 text-white transition"
+            >
+              Cerrar
+            </button>
           </div>
         )}
       </div>

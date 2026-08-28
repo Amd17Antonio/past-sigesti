@@ -24,14 +24,14 @@ import AsignarModal from '../components/tickets/AsignarModal';
 const BACKEND_ORIGIN = (import.meta.env.VITE_API_URL ?? '').replace(/\/api\/?$/, '');
 
 const navBtnClass =
-  'bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap transition';
+  'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap transition shadow-sm';
 
 export default function SolicitudesUie() {
   const { user } = useAuth();
   const rolActual = user?.rol?.nombre ?? '';
   const esAdmin = rolActual === 'Administrador';
   const esSoporte = rolActual === 'Soporte Técnico';
-  const puedeAgregarEquipo = ['Administrador', 'Capturista'].includes(rolActual); // NUEVO
+  const puedeAgregarEquipo = ['Administrador', 'Capturista'].includes(rolActual);
 
   const [registros, setRegistros] = useState<SolicitudUieRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -58,7 +58,8 @@ export default function SolicitudesUie() {
     setTotal(data.total);
   };
 
-  useEffect(() => { cargar(); }, [pagina, porPagina, filtros, sortBy, sortDir]);
+  useEffect(() => { cargar(); // eslint-disable-next-line
+  }, [pagina, porPagina, filtros, sortBy, sortDir]);
 
   const handleFiltro = (campo: string, valor: string) => {
     setPagina(1);
@@ -144,7 +145,6 @@ export default function SolicitudesUie() {
   const handleVerMemorandum = (id: number) => abrirArchivo(id, 'memoSolicitud');
   const handleVerAcuseDictamen = (id: number) => abrirArchivo(id, 'acuseDictamen');
 
-  // NUEVO: abrir PDF del checklist de mantenimiento
   const handleVerChecklist = async (idEquipoSolicitud: number) => {
     try {
       await abrirPdfEquipoMantenimiento(idEquipoSolicitud);
@@ -171,178 +171,201 @@ export default function SolicitudesUie() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h1 className="text-xl font-semibold text-blue-950">Solicitudes</h1>
+    <div className="p-6">
+      {/* Cabecera Azul Institucional */}
+      <div className="bg-blue-600 text-white font-bold px-4 py-2 rounded-t mb-0 flex justify-between items-center flex-wrap gap-2">
+        <span>SOLICITUDES UIE / DICTÁMENES TÉCNICOS</span>
         <div className="flex items-center gap-2 flex-wrap">
           {rolActual !== 'Capturista' && (
-            <NavLink to="/mis-asignadas" className={navBtnClass}>Mis Asignadas</NavLink>
+            <NavLink to="/mis-asignadas" className="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded text-xs transition shadow-sm">
+              Mis Asignadas
+            </NavLink>
           )}
-          <NavLink
-            to="/asignadas"
-            className={`${navBtnClass} bg-blue-600 hover:bg-blue-700`}
-          >
+          <NavLink to="/asignadas" className="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded text-xs transition shadow-sm">
             Asignadas
           </NavLink>
+        </div>
+      </div>
 
+      <div className="border border-t-0 rounded-b p-4 border-blue-100 bg-white shadow-sm">
+        {/* Barra de Acciones Superiores */}
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <button
             onClick={() => setModalCrear(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap transition"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors shadow-sm"
           >
             + Agregar solicitud
           </button>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>Mostrar</span>
+            <select
+              value={porPagina}
+              onChange={(e) => { setPagina(1); setPorPagina(Number(e.target.value)); }}
+              className="border border-blue-200 rounded p-1 text-xs bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            >
+              {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span>registros</span>
+          </div>
+        </div>
+
+        {/* Tabla */}
+        <div className="overflow-x-auto">
+          <table className="w-full border border-blue-100 text-sm">
+            <thead>
+              <tr className="bg-blue-50/70 text-blue-900">
+                <th className="p-2 text-left w-20">Acciones</th>
+                {columnas.map((c) => (
+                  <th
+                    key={c.campo}
+                    className="p-2 text-left cursor-pointer select-none transition-colors hover:bg-blue-100/50"
+                    onClick={() => toggleSort(c.campo)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {c.label} {sortBy === c.campo ? (sortDir === 'asc' ? '▲' : '▼') : ''}
+                    </span>
+                  </th>
+                ))}
+                <th className="p-2 text-left">No. Dictamen</th>
+                <th className="p-2 text-left">Archivos</th>
+                <th className="p-2 text-left">Asignar</th>
+              </tr>
+              <tr className="bg-gray-50">
+                <th className="p-1"></th>
+                {columnas.map((c) => (
+                  <td key={c.campo} className="p-1">
+                    <input
+                      className="border border-blue-200 rounded w-full px-1.5 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Filtrar..."
+                      onChange={(e) => handleFiltro(c.campo, e.target.value)}
+                    />
+                  </td>
+                ))}
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              {registros.map((r) => (
+                <tr key={r.id} className="border-t border-blue-100 hover:bg-blue-50/40 transition-colors align-top">
+                  <td className="p-2">
+                    <ActionsDropdown
+                      color={getColorSemaforo(r)}
+                      actions={[
+                        { label: 'Detalle', onClick: () => setModalDetalle(r.id) },
+                        {
+                          label: 'Agregar Equipo',
+                          onClick: () => setModalEquipo(r.id),
+                          hidden: !puedeAgregarEquipo || !!r.no_inventario,
+                        },
+                        {
+                          label: 'Ver Checklist Mantenimiento',
+                          onClick: () => handleVerChecklist(r.id_equipo_solicitud!),
+                          hidden: !r.tiene_checklist || !r.id_equipo_solicitud,
+                        },
+                        {
+                          label: 'Autorizar Dictamen',
+                          onClick: () => handleAutorizarDictamen(r.id),
+                          hidden: !(esAdmin || esSoporte) || !r.fecha_cierre || !!r.fecha_autoriza_tecnico,
+                        },
+                        {
+                          label: 'Cerrar Dictamen',
+                          onClick: () => handleCerrarDictamen(r.id),
+                          hidden: !esAdmin || !r.fecha_autoriza_tecnico || !!r.fecha_autoriza_dictamen,
+                        },
+                        {
+                          label: 'Desautorizar Dictamen Técnico',
+                          onClick: () => handleDesautorizar(r.id),
+                          hidden: !esAdmin || !r.fecha_autoriza_dictamen,
+                          danger: true,
+                        },
+                        { label: 'Duplicar Solicitud', onClick: () => handleDuplicar(r.id) },
+                        { label: 'Editar', onClick: () => setModalEditar(r.id) },
+                        { label: 'Baja', onClick: () => handleBaja(r.id), danger: true },
+                      ]}
+                    />
+                  </td>
+                  <td className="p-2 text-gray-800">{r.id}</td>
+                  <td className="p-2 text-gray-600">{r.ejercicio}</td>
+                  <td className="p-2 text-gray-800">{r.solicitante}</td>
+                  <td className="p-2 text-gray-600">{r.area}</td>
+                  <td className="p-2 text-gray-600">{r.num_documento}</td>
+                  <td className="p-2 text-gray-600">{r.tecnico}</td>
+                  <td className="p-2 text-gray-600">{r.no_inventario}</td>
+                  <td className="p-2 text-gray-600">{r.fecha_asignacion}</td>
+                  <td className="p-2 text-gray-600">{r.NoDictamen ?? '-'}</td>
+                  <td className="p-2 space-y-1">
+                    {r.memoSolicitud > 0 && (
+                      <button
+                        onClick={() => handleVerMemorandum(r.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block w-full transition shadow-sm"
+                      >
+                        Memorándum
+                      </button>
+                    )}
+                    {r.acuseDictamen > 0 && (
+                      <button
+                        onClick={() => handleVerAcuseDictamen(r.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block w-full transition shadow-sm"
+                      >
+                        Acuse Dictamen
+                      </button>
+                    )}
+                    {r.tiene_checklist && r.id_equipo_solicitud && (
+                      <button
+                        onClick={() => handleVerChecklist(r.id_equipo_solicitud!)}
+                        className="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2 py-1 rounded block w-full transition shadow-sm"
+                        title="Ver / imprimir checklist de mantenimiento"
+                      >
+                        🖨 Mantenimiento
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {r.fecha_cierre ? (
+                      <span className="text-xs text-gray-400 font-medium">Cerrada</span>
+                    ) : (
+                      <button
+                        onClick={() => setAsignarId(r.id)}
+                        disabled={!!r.tecnico}
+                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                      >
+                        Asignar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {registros.length === 0 && <p className="text-gray-500 mt-4 text-sm text-center py-4">Sin solicitudes registradas.</p>}
+
+        {/* Paginación Inferior */}
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+          <span>Se han encontrado {total} registros</span>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina <= 1}
+              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 transition-colors"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1 bg-blue-600 text-white rounded font-medium shadow-sm">{pagina}</span>
+            <button
+              onClick={() => setPagina((p) => p + 1)}
+              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </div>
 
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 text-left">Acciones</th>
-            {columnas.map((c) => (
-              <th
-                key={c.campo}
-                className="p-2 text-left cursor-pointer select-none"
-                onClick={() => toggleSort(c.campo)}
-              >
-                {c.label} {sortBy === c.campo ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-              </th>
-            ))}
-            <th className="p-2 text-left">No. Dictamen</th>
-            <th className="p-2 text-left">Archivos</th>
-            <th className="p-2 text-left">Asignar</th>
-          </tr>
-          <tr>
-            <td></td>
-            {columnas.map((c) => (
-              <td key={c.campo} className="p-1">
-                <input
-                  className="border border-blue-200 rounded w-full px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  onChange={(e) => handleFiltro(c.campo, e.target.value)}
-                />
-              </td>
-            ))}
-            <td></td>
-            <td></td>
-            <td></td>
-          </tr>
-        </thead>
-        <tbody>
-          {registros.map((r) => (
-            <tr key={r.id} className="border-b hover:bg-gray-50">
-              <td className="p-2">
-                <ActionsDropdown
-                  color={getColorSemaforo(r)}
-                  actions={[
-                    { label: 'Detalle', onClick: () => setModalDetalle(r.id) },
-                    {
-                      label: 'Agregar Equipo',
-                      onClick: () => setModalEquipo(r.id),
-                      hidden: !puedeAgregarEquipo || !!r.no_inventario, // NUEVO: rol + solo 1 equipo
-                    },
-                    {
-                      // NUEVO: ver checklist de mantenimiento (PDF) desde el dropdown de Acciones
-                      label: 'Ver Checklist Mantenimiento',
-                      onClick: () => handleVerChecklist(r.id_equipo_solicitud!),
-                      hidden: !r.tiene_checklist || !r.id_equipo_solicitud,
-                    },
-                    {
-                      label: 'Autorizar Dictamen',
-                      onClick: () => handleAutorizarDictamen(r.id),
-                      hidden: !(esAdmin || esSoporte) || !r.fecha_cierre || !!r.fecha_autoriza_tecnico,
-                    },
-                    {
-                      label: 'Cerrar Dictamen',
-                      onClick: () => handleCerrarDictamen(r.id),
-                      hidden: !esAdmin || !r.fecha_autoriza_tecnico || !!r.fecha_autoriza_dictamen,
-                    },
-                    {
-                      label: 'Desautorizar Dictamen Técnico',
-                      onClick: () => handleDesautorizar(r.id),
-                      hidden: !esAdmin || !r.fecha_autoriza_dictamen,
-                      danger: true,
-                    },
-                    { label: 'Duplicar Solicitud', onClick: () => handleDuplicar(r.id) },
-                    { label: 'Editar', onClick: () => setModalEditar(r.id) },
-                    { label: 'Baja', onClick: () => handleBaja(r.id), danger: true },
-                  ]}
-                />
-              </td>
-              <td className="p-2">{r.id}</td>
-              <td className="p-2">{r.ejercicio}</td>
-              <td className="p-2">{r.solicitante}</td>
-              <td className="p-2">{r.area}</td>
-              <td className="p-2">{r.num_documento}</td>
-              <td className="p-2">{r.tecnico}</td>
-              <td className="p-2">{r.no_inventario}</td>
-              <td className="p-2">{r.fecha_asignacion}</td>
-              <td className="p-2">{r.NoDictamen ?? '-'}</td>
-              <td className="p-2">
-                {r.memoSolicitud > 0 && (
-                  <button
-                    onClick={() => handleVerMemorandum(r.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block mb-1 w-full transition"
-                  >
-                    Memorándum
-                  </button>
-                )}
-                {r.acuseDictamen > 0 && (
-                  <button
-                    onClick={() => handleVerAcuseDictamen(r.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded block mb-1 w-full transition"
-                  >
-                    Acuse Dictamen
-                  </button>
-                )}
-                {/* NUEVO: checklist de mantenimiento, solo si ya se capturó */}
-                {r.tiene_checklist && r.id_equipo_solicitud && (
-                  <button
-                    onClick={() => handleVerChecklist(r.id_equipo_solicitud!)}
-                    className="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2 py-1 rounded block w-full transition"
-                    title="Ver / imprimir checklist de mantenimiento"
-                  >
-                    🖨 Mantenimiento
-                  </button>
-                )}
-              </td>
-              <td className="p-2">
-                {r.fecha_cierre ? (
-                  <span className="text-xs text-gray-400">Cerrada</span>
-                ) : (
-                  <button
-                    onClick={() => setAsignarId(r.id)}
-                    disabled={!!r.tecnico}
-                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed transition"
-                  >
-                    Asignar
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex justify-between items-center mt-4 text-sm">
-        <div>
-          Por página:
-          <select
-            className="border border-blue-200 rounded ml-2 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            value={porPagina}
-            onChange={(e) => { setPagina(1); setPorPagina(Number(e.target.value)); }}
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-        <div className="flex gap-2 items-center">
-          <button disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)} className="disabled:opacity-40">◀</button>
-          <span>Página {pagina}</span>
-          <button onClick={() => setPagina((p) => p + 1)}>▶</button>
-        </div>
-        <div>Se han encontrado {total} registros</div>
-      </div>
-
+      {/* Modales */}
       {modalEquipo && (
         <AgregarEquipoModal
           idSolicitud={modalEquipo}

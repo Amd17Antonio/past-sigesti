@@ -155,28 +155,28 @@ export default function SolicitudTelefono() {
         SOLICITUDES DE TELEFONÍA
       </div>
 
-      <div className="border border-t-0 rounded-b p-4">
+      <div className="border border-t-0 rounded-b p-4 border-blue-100 bg-white">
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
-            <button onClick={() => setMostrarModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+            <button onClick={() => setMostrarModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition">
               + Nueva Solicitud
             </button>
             {user?.rol?.nombre === 'Administrador' && (
               <button
                 onClick={() => navigate('/resguardo/telefonia')}
-                className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition"
               >
                 Resguardo Telefonía
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>Mostrar</span>
             <select
               value={porPagina}
               onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }}
-              className="border rounded p-1"
+              className="border border-blue-200 rounded p-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -185,9 +185,9 @@ export default function SolicitudTelefono() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border text-sm">
+          <table className="w-full border border-blue-100 text-sm">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-blue-50/70 text-blue-900">
                 {COLUMNAS.map((c) => (
                   <th
                     key={c.key}
@@ -210,7 +210,7 @@ export default function SolicitudTelefono() {
                       <select
                         value={filtroTramite}
                         onChange={(e) => { setFiltroTramite(e.target.value); setPagina(1); }}
-                        className="border p-1 w-full text-xs font-normal"
+                        className="border border-blue-200 p-1 w-full text-xs font-normal bg-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="todos">Todos</option>
                         {TRAMITES_TELEFONIA.map((t) => (
@@ -221,7 +221,7 @@ export default function SolicitudTelefono() {
                       <input
                         value={filtros[c.key] ?? ''}
                         onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
-                        className="border p-1 w-full text-xs font-normal"
+                        className="border border-blue-200 p-1 w-full text-xs font-normal bg-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     )}
                   </th>
@@ -230,7 +230,7 @@ export default function SolicitudTelefono() {
                   <select
                     value={filtroEstatus}
                     onChange={(e) => { setFiltroEstatus(e.target.value); setPagina(1); }}
-                    className="border p-1 w-full text-xs font-normal"
+                    className="border border-blue-200 p-1 w-full text-xs font-normal bg-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="todos">Todos</option>
                     {Object.entries(ESTATUS_TELEFONIA_LABEL).map(([k, v]) => (
@@ -243,7 +243,7 @@ export default function SolicitudTelefono() {
             </thead>
             <tbody>
               {paginadas.map((s) => (
-                <tr key={s.id} className="border-t">
+                <tr key={s.id} className="border-t border-blue-100 hover:bg-blue-50/40 transition-colors">
                   <td className="p-2 w-14">
                     {user?.rol?.nombre === 'Administrador' ? (
                       <button
@@ -272,7 +272,7 @@ export default function SolicitudTelefono() {
                       <button
                         onClick={() => handleGenerarPdf(s.id)}
                         title="Generar PDF"
-                        className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors"
+                        className="p-1.5 rounded hover:bg-blue-100 hover:ring-1 hover:ring-blue-300 transition-colors"
                       >
                         📄
                       </button>
@@ -302,25 +302,25 @@ export default function SolicitudTelefono() {
           </table>
         </div>
 
-        {paginadas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+        {paginadas.length === 0 && <p className="text-gray-500 mt-4 text-center py-4">Sin resultados</p>}
 
-        <div className="flex justify-between items-center mt-4 text-sm">
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
           <span>
             Mostrando registros del {ordenadas.length === 0 ? 0 : inicio + 1} al {Math.min(inicio + porPagina, ordenadas.length)} de un total de {ordenadas.length} registros
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button
               onClick={() => setPagina((p) => Math.max(1, p - 1))}
               disabled={paginaSegura === 1}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Anterior
             </button>
-            <span className="px-3 py-1 bg-purple-800 text-white rounded">{paginaSegura}</span>
+            <span className="px-3 py-1 bg-blue-600 text-white rounded font-medium shadow-sm">{paginaSegura}</span>
             <button
               onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
               disabled={paginaSegura === totalPaginas}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Siguiente
             </button>

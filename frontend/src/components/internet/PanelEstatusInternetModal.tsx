@@ -68,8 +68,8 @@ export default function PanelEstatusInternetModal({
 
   if (cargando || !solicitud) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded shadow-lg p-6">Cargando...</div>
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-xl p-6 text-sm text-slate-600 font-medium">Cargando...</div>
       </div>
     );
   }
@@ -81,124 +81,225 @@ export default function PanelEstatusInternetModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto relative">
-        <button onClick={onClose} className="absolute top-4 right-5 text-gray-400 hover:text-gray-600">×</button>
-        <h2 className="text-2xl mb-4">Folio: {solicitud.id}</h2>
-
-        <div className="flex gap-6 border-b mb-6 text-sm">
-          <button
-            onClick={() => setTab('estatus')}
-            className={`pb-2 -mb-px ${tab === 'estatus' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 overflow-y-auto py-6">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[52rem] max-w-[95vw] overflow-hidden">
+        
+        {/* Cabecera Principal */}
+        <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-6 py-4 font-semibold flex justify-between items-center shadow-sm">
+          <span className="text-base tracking-wide flex items-center gap-2">
+            ⚙️ Control de Estatus — Folio: <span className="underline decoration-blue-300">{solicitud.id}</span>
+          </span>
+          <button 
+            onClick={onClose} 
+            className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors text-base cursor-pointer"
           >
-            CAMBIAR EL ESTATUS
-          </button>
-          <button
-            onClick={() => setTab('info')}
-            className={`pb-2 -mb-px ${tab === 'info' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}
-          >
-            INFORMACIÓN GENERAL
+            ✕
           </button>
         </div>
 
-        {tab === 'estatus' ? (
-          <div className="space-y-4">
-            <p className="text-2xl">
-              Estado actual:{' '}
-              <span className="uppercase text-gray-500 font-light">
-                {OPCIONES.find((o) => o.value === solicitud.estatus)?.label}
-              </span>
-            </p>
+        {/* Pestañas de Navegación */}
+        <div className="flex gap-6 px-6 pt-4 border-b border-slate-200 bg-slate-50 text-sm font-medium">
+          <button
+            onClick={() => setTab('estatus')}
+            className={`pb-3 -mb-px transition-colors cursor-pointer flex items-center gap-2 ${
+              tab === 'estatus' 
+                ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' 
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🔄 Cambiar Estatus
+          </button>
+          <button
+            onClick={() => setTab('info')}
+            className={`pb-3 -mb-px transition-colors cursor-pointer flex items-center gap-2 ${
+              tab === 'info' 
+                ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' 
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            📋 Información General
+          </button>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <span className="bg-gray-100 px-3 py-2 text-sm text-gray-600 rounded-l">NUEVO ESTATUS</span>
-              <select
-                value={nuevoEstatus}
-                onChange={(e) => setNuevoEstatus(e.target.value as EstatusInternet)}
-                className="border p-2 flex-1"
-                disabled={solicitud.estatus === 'baja'}
-              >
-                {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-
-            {nuevoEstatus === 'atendiendo_dt' && (
-              <>
+        {/* Contenido del Modal */}
+        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto bg-slate-50/50">
+          {tab === 'estatus' ? (
+            <div className="space-y-5">
+              
+              {/* Estado actual banner */}
+              <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Folio GLPI:</label>
-                  <input className="border p-2 w-full" value={folioGlpi} onChange={(e) => setFolioGlpi(e.target.value)} />
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado actual</p>
+                  <p className="text-lg font-bold text-slate-800 uppercase mt-0.5">
+                    {OPCIONES.find((o) => o.value === solicitud.estatus)?.label}
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Observaciones del sistema GLPI:</label>
-                  <textarea className="border p-2 w-full" rows={3} value={observacionGlpi} onChange={(e) => setObservacionGlpi(e.target.value)} />
+                  <span 
+                    className="text-xs px-3 py-1.5 rounded-full text-white font-semibold shadow-xs"
+                    style={{ backgroundColor: colorPorEstatus(solicitud.estatus) }}
+                  >
+                    {solicitud.estatus}
+                  </span>
                 </div>
-              </>
-            )}
-
-            {nuevoEstatus === 'baja' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Motivo de baja:</label>
-                <textarea className="border p-2 w-full" rows={3} value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} />
               </div>
-            )}
 
-            {nuevoEstatus === 'activo' && solicitud.estatus === 'activo' && (
-              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
-                Esta solicitud ya está activa.
-              </p>
-            )}
+              {/* Selector de nuevo estatus */}
+              <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
+                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+                  Seleccionar Nuevo Estatus:
+                </label>
+                <div className="flex items-center">
+                  <span className="bg-slate-100 border border-r-0 border-slate-300 px-3.5 py-2.5 text-xs font-semibold text-slate-600 rounded-l-lg select-none">
+                    NUEVO
+                  </span>
+                  <select
+                    value={nuevoEstatus}
+                    onChange={(e) => setNuevoEstatus(e.target.value as EstatusInternet)}
+                    className="border border-slate-300 rounded-r-lg p-2.5 flex-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    disabled={solicitud.estatus === 'baja'}
+                  >
+                    {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </div>
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+              {/* Campos condicionales para ATENDIENDO DT */}
+              {nuevoEstatus === 'atendiendo_dt' && (
+                <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-4">
+                  <div className="font-semibold text-xs text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                    🛠️ Detalles de Atención DGTI
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Folio GLPI:</label>
+                    <input 
+                      className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      value={folioGlpi} 
+                      onChange={(e) => setFolioGlpi(e.target.value)} 
+                      placeholder="Ej. GLPI-2026-0001"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Observaciones del sistema GLPI:</label>
+                    <textarea 
+                      className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      rows={3} 
+                      value={observacionGlpi} 
+                      onChange={(e) => setObservacionGlpi(e.target.value)} 
+                      placeholder="Detalles adicionales sobre la atención técnica..."
+                    />
+                  </div>
+                </div>
+              )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={aplicar}
-                disabled={enviando || yaActiva}
-                className="px-6 py-2 rounded text-white disabled:opacity-50"
-                style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
-              >
-                {enviando ? 'Aplicando...' : 'Aplicar ⤴'}
-              </button>
+              {/* Campos condicionales para BAJA */}
+              {nuevoEstatus === 'baja' && (
+                <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
+                  <div className="font-semibold text-xs text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
+                    ⚠️ Motivo de Baja del Servicio
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Especifique el motivo:</label>
+                    <textarea 
+                      className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                      rows={3} 
+                      value={motivoBaja} 
+                      onChange={(e) => setMotivoBaja(e.target.value)} 
+                      placeholder="Razón por la cual se da de baja el servicio..."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Aviso si ya está activa */}
+              {nuevoEstatus === 'activo' && solicitud.estatus === 'activo' && (
+                <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center gap-2">
+                  ⚠️ Esta solicitud ya se encuentra activa actualmente.
+                </div>
+              )}
+
+              {/* Mensaje de error general */}
+              {error && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                  ❌ {error}
+                </div>
+              )}
+
+              {/* Botón de Aplicar */}
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={aplicar}
+                  disabled={enviando || yaActiva}
+                  className="px-6 py-2.5 rounded-lg text-white font-medium text-sm transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
+                >
+                  🚀 {enviando ? 'Aplicando...' : 'Aplicar Estatus'}
+                </button>
+              </div>
+
             </div>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <tbody>
-              <Fila label="Folio (ID)" valor={solicitud.id} />
-              <Fila label="Tipo Solicitud" valor={solicitud.tipo_solicitud?.toUpperCase()} />
-              <Fila label="Usuario" valor={solicitud.usuario_internet} />
-              <Fila label="Correo" valor={solicitud.correo} />
-              <Fila label="Cargo" valor={solicitud.cargo} />
-              <Fila label="Área de Adscripción" valor={solicitud.area} />
-              <Fila label="Extensión" valor={solicitud.tel_ext} />
-              <Fila label="Tipo Conexión" valor={solicitud.tipo_conexion?.toUpperCase()} />
-              <Fila label="Puerto" valor={`ED:${solicitud.edificio} N:${solicitud.nivel} PTO:${solicitud.puerto ?? '-'}`} />
-              <Fila
-                label="Equipo"
-                valor={
-                  <>
-                    TIPO: {solicitud.tipo_equipo}<br />
-                    MARCA: {solicitud.marca}<br />
-                    No. INVENTARIO: {solicitud.no_inventario}<br />
-                    MAC ETHERNET: {solicitud.mac_ethernet}<br />
-                    MAC WIFI: {solicitud.mac_wifi}
-                  </>
-                }
-              />
-              <Fila
-                label="Estatus"
-                valor={
-                  <>
-                    GENERADO POR UIE: {formatoFecha(solicitud.fecha_generado_uie)}
-                    {solicitud.fecha_atendiendo_dt && <><br /><br />ATENDIENDO POR DGTID: {formatoFecha(solicitud.fecha_atendiendo_dt)}<br />FOLIO GLPI: {solicitud.folio_glpi}</>}
-                    {solicitud.fecha_activo && <><br /><br />SERVICIO ACTIVO: {formatoFecha(solicitud.fecha_activo)}</>}
-                    {solicitud.fecha_baja && <><br /><br />BAJA DEL SERVICIO: {formatoFecha(solicitud.fecha_baja)}<br />MOTIVO: {solicitud.motivo_baja}</>}
-                  </>
-                }
-              />
-            </tbody>
-          </table>
-        )}
+          ) : (
+            
+            /* Tab de Información General con diseño limpio */
+            <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
+              <table className="w-full text-sm divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200/60">
+                  <Fila label="Folio (ID)" valor={solicitud.id} />
+                  <Fila label="Tipo Solicitud" valor={solicitud.tipo_solicitud?.toUpperCase()} />
+                  <Fila label="Usuario" valor={solicitud.usuario_internet} />
+                  <Fila label="Correo" valor={solicitud.correo} />
+                  <Fila label="Cargo" valor={solicitud.cargo} />
+                  <Fila label="Área de Adscripción" valor={solicitud.area} />
+                  <Fila label="Extensión" valor={solicitud.tel_ext} />
+                  <Fila label="Tipo Conexión" valor={solicitud.tipo_conexion?.toUpperCase()} />
+                  <Fila label="Puerto" valor={`Edificio: ${solicitud.edificio} | Nivel: ${solicitud.nivel} | Puerto: ${solicitud.puerto ?? '-'}`} />
+                  <Fila
+                    label="Equipo"
+                    valor={
+                      <div className="space-y-0.5 text-xs text-slate-600">
+                        <p><strong>Tipo:</strong> {solicitud.tipo_equipo}</p>
+                        <p><strong>Marca:</strong> {solicitud.marca}</p>
+                        <p><strong>No. Inventario:</strong> {solicitud.no_inventario}</p>
+                        <p><strong>MAC Ethernet:</strong> <span className="font-mono">{solicitud.mac_ethernet || '-'}</span></p>
+                        <p><strong>MAC Wi-Fi:</strong> <span className="font-mono">{solicitud.mac_wifi || '-'}</span></p>
+                      </div>
+                    }
+                  />
+                  <Fila
+                    label="Historial de Estatus"
+                    valor={
+                      <div className="space-y-2 text-xs text-slate-700">
+                        <p>🔵 <strong>GENERADO POR UIE:</strong> {formatoFecha(solicitud.fecha_generado_uie)}</p>
+                        {solicitud.fecha_atendiendo_dt && (
+                          <p>🟡 <strong>ATENDIENDO POR DGTI:</strong> {formatoFecha(solicitud.fecha_atendiendo_dt)} <br/>
+                          <span className="text-slate-500">Folio GLPI: {solicitud.folio_glpi || '-'}</span></p>
+                        )}
+                        {solicitud.fecha_activo && (
+                          <p>🟢 <strong>SERVICIO ACTIVO:</strong> {formatoFecha(solicitud.fecha_activo)}</p>
+                        )}
+                        {solicitud.fecha_baja && (
+                          <p>🔴 <strong>BAJA DEL SERVICIO:</strong> {formatoFecha(solicitud.fecha_baja)} <br/>
+                          <span className="text-slate-500">Motivo: {solicitud.motivo_baja || '-'}</span></p>
+                        )}
+                      </div>
+                    }
+                  />
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Footer del Modal */}
+        <div className="flex justify-end gap-2 px-6 py-4 bg-slate-100/80 border-t border-slate-200/80">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 text-slate-700 hover:text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors shadow-xs cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
+
       </div>
     </div>
   );
@@ -206,14 +307,20 @@ export default function PanelEstatusInternetModal({
 
 function Fila({ label, valor }: { label: string; valor: any }) {
   return (
-    <tr className="odd:bg-gray-50">
-      <td className="p-3 font-semibold text-right w-1/3 align-top">{label}:</td>
-      <td className="p-3 align-top">{valor}</td>
+    <tr className="hover:bg-slate-50/60 transition-colors">
+      <td className="p-3 font-semibold text-right w-1/3 text-xs uppercase tracking-wider text-slate-500 align-top bg-slate-50/40 border-r border-slate-200/60">{label}:</td>
+      <td className="p-3 align-top text-slate-800 text-sm">{valor}</td>
     </tr>
   );
 }
 
 function formatoFecha(fecha?: string | null) {
   if (!fecha) return '-';
-  return new Date(fecha).toLocaleDateString('es-MX');
+  return new Date(fecha).toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }

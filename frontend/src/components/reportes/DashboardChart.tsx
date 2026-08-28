@@ -1,12 +1,12 @@
 interface Props {
-  labels: string[];
+  labels?: string[];
   values: number[];
   color?: string;
 }
 
-const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
-export default function DashboardChart({ labels = MESES, values, color = '#6b21a8' }: Props) {
+export default function DashboardChart({ labels = MESES, values, color = '#2563eb' }: Props) {
   const width = 560;
   const height = 220;
   const padding = 30;
@@ -30,24 +30,24 @@ export default function DashboardChart({ labels = MESES, values, color = '#6b21a
         const valor = Math.round(max - (i * max) / stepsY);
         return (
           <g key={i}>
-            <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e5e7eb" strokeWidth={1} />
-            <text x={4} y={y + 4} fontSize={10} fill="#9ca3af">{valor}</text>
+            <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e2e8f0" strokeWidth={1} />
+            <text x={4} y={y + 4} fontSize={10} fill="#64748b">{valor}</text>
           </g>
         );
       })}
 
-      <path d={areaPath} fill={color} opacity={0.15} />
-      <path d={linePath} fill="none" stroke={color} strokeWidth={2} />
+      <path d={areaPath} fill={color} opacity={0.12} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
       {puntos.map((p, i) => {
         const [x, y] = p.split(',').map(Number);
-        return <circle key={i} cx={x} cy={y} r={3} fill={color} />;
+        return <circle key={i} cx={x} cy={y} r={3.5} fill={color} stroke="#ffffff" strokeWidth={1.5} />;
       })}
 
       {labels.map((l, i) => {
         const x = padding + (i * (width - padding * 2)) / (labels.length - 1);
         return (
-          <text key={l} x={x} y={height - 6} fontSize={9} fill="#6b7280" textAnchor="middle">
+          <text key={l} x={x} y={height - 6} fontSize={9} fill="#475569" textAnchor="middle">
             {l}
           </text>
         );

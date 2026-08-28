@@ -58,10 +58,12 @@ export default function PanelEstatusVpnModal({
     }
   };
 
+  const campoEditable = 'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+
   if (cargando || !solicitud) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded shadow-lg p-6">Cargando...</div>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-6 text-gray-500 text-sm">Cargando información...</div>
       </div>
     );
   }
@@ -73,103 +75,167 @@ export default function PanelEstatusVpnModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto relative">
-        <button onClick={onClose} className="absolute top-4 right-5 text-gray-400 hover:text-gray-600">×</button>
-        <h2 className="text-2xl mb-4">Folio: {solicitud.id}</h2>
-
-        <div className="flex gap-6 border-b mb-6 text-sm">
-          <button onClick={() => setTab('estatus')} className={`pb-2 -mb-px ${tab === 'estatus' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}>CAMBIAR EL ESTATUS</button>
-          <button onClick={() => setTab('info')} className={`pb-2 -mb-px ${tab === 'info' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}>INFORMACIÓN GENERAL</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl border border-gray-100 w-[42rem] max-w-[95vw] my-6 overflow-hidden">
+        <div className="flex justify-between items-center px-5 py-4 border-b bg-blue-600">
+          <h2 className="text-lg font-bold text-white">
+            Folio: {solicitud.id}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white text-xl leading-none transition-colors"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
         </div>
 
-        {tab === 'estatus' ? (
-          <div className="space-y-4">
-            <p className="text-2xl">
-              Estado actual: <span className="uppercase text-gray-500 font-light">
-                {OPCIONES_ESTATUS.find((o) => o.value === solicitud.estatus)?.label}
-              </span>
-            </p>
+        <div className="flex gap-6 px-5 border-b border-gray-200 bg-gray-50 text-sm">
+          <button
+            onClick={() => setTab('estatus')}
+            className={`py-3 font-medium transition-colors border-b-2 -mb-px ${
+              tab === 'estatus'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            CAMBIAR EL ESTATUS
+          </button>
+          <button
+            onClick={() => setTab('info')}
+            className={`py-3 font-medium transition-colors border-b-2 -mb-px ${
+              tab === 'info'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            INFORMACIÓN GENERAL
+          </button>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <span className="bg-gray-100 px-3 py-2 text-sm text-gray-600 rounded-l">NUEVO ESTATUS</span>
-              <select
-                value={nuevoEstatus}
-                onChange={(e) => setNuevoEstatus(e.target.value as EstatusVpn)}
-                className="border p-2 flex-1"
-                disabled={solicitud.estatus === 'baja'}
-              >
-                {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-
-            {nuevoEstatus === 'atendiendo_dgti' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Folio GLPI:</label>
-                  <input className="border p-2 w-full" value={folioGlpi} onChange={(e) => setFolioGlpi(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Observaciones del sistema GLPI:</label>
-                  <textarea className="border p-2 w-full" rows={3} value={observacionGlpi} onChange={(e) => setObservacionGlpi(e.target.value)} />
-                </div>
-              </>
-            )}
-
-            {nuevoEstatus === 'baja' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Motivo de baja:</label>
-                <textarea className="border p-2 w-full" rows={3} value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} />
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {tab === 'estatus' ? (
+            <div className="space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm flex items-center justify-between">
+                <span className="text-gray-600 font-medium">Estado actual:</span>
+                <span className="uppercase font-semibold text-gray-800">
+                  {OPCIONES_ESTATUS.find((o) => o.value === solicitud.estatus)?.label}
+                </span>
               </div>
-            )}
 
-            {yaActiva && (
-              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
-                Esta solicitud ya está activa.
-              </p>
-            )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">NUEVO ESTATUS</label>
+                <select
+                  value={nuevoEstatus}
+                  onChange={(e) => setNuevoEstatus(e.target.value as EstatusVpn)}
+                  className={campoEditable}
+                  disabled={solicitud.estatus === 'baja'}
+                >
+                  {opcionesDisponibles.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+              {nuevoEstatus === 'atendiendo_dgti' && (
+                <div className="space-y-3 pt-2 border-t border-gray-100">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Folio GLPI <span className="text-red-500">*</span></label>
+                    <input
+                      className={campoEditable}
+                      value={folioGlpi}
+                      onChange={(e) => setFolioGlpi(e.target.value)}
+                      placeholder="Número de ticket o folio GLPI"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Observaciones del sistema GLPI</label>
+                    <textarea
+                      className={`${campoEditable} resize-none`}
+                      rows={3}
+                      value={observacionGlpi}
+                      onChange={(e) => setObservacionGlpi(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={aplicar}
-                disabled={enviando || yaActiva}
-                className="px-6 py-2 rounded text-white disabled:opacity-50"
-                style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
-              >
-                {enviando ? 'Aplicando...' : 'Aplicar ⤴'}
-              </button>
+              {nuevoEstatus === 'baja' && (
+                <div className="pt-2 border-t border-gray-100">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Motivo de baja <span className="text-red-500">*</span></label>
+                  <textarea
+                    className={`${campoEditable} resize-none`}
+                    rows={3}
+                    value={motivoBaja}
+                    onChange={(e) => setMotivoBaja(e.target.value)}
+                    placeholder="Describa el motivo de la baja..."
+                  />
+                </div>
+              )}
+
+              {yaActiva && (
+                <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  Esta solicitud ya está activa.
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={aplicar}
+                  disabled={enviando || yaActiva}
+                  className="px-5 py-2 rounded text-white text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
+                  style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
+                >
+                  {enviando ? 'Aplicando...' : 'Aplicar ⤴'}
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <tbody>
-              <Fila label="Folio (ID)" valor={solicitud.id} />
-              <Fila label="Usuario" valor={solicitud.nombre_usuario} />
-              <Fila label="Puesto" valor={solicitud.puesto} />
-              <Fila label="Área" valor={solicitud.area} />
-              <Fila label="Dependencia" valor={solicitud.dependencia} />
-              <Fila label="Correo institucional" valor={solicitud.correo_institucional} />
-              <Fila label="Teléfono / Ext." valor={`${solicitud.telefono ?? '-'} / ${solicitud.extension ?? '-'}`} />
-              <Fila label="Tipo de acceso" valor={solicitud.tipo_acceso === 'link' ? solicitud.link_sistema : solicitud.ip_puerto} />
-              <Fila label="Vigencia" valor={`${formatoFecha(solicitud.fecha_inicio)} — ${formatoFecha(solicitud.fecha_fin)}`} />
-              <Fila label="Justificación" valor={solicitud.justificacion_uso} />
-              <Fila label="Núm. Ticket" valor={solicitud.num_ticket ?? '-'} />
-              <Fila
-                label="Estatus"
-                valor={
-                  <>
-                    CREADO EN CGD: {formatoFecha(solicitud.fecha_creado_cgd ?? solicitud.created_at)}
-                    {solicitud.fecha_atendiendo_dgti && <><br /><br />ATENDIENDO DGTI: {formatoFecha(solicitud.fecha_atendiendo_dgti)}<br />FOLIO GLPI: {solicitud.folio_glpi}</>}
-                    {solicitud.fecha_activo && <><br /><br />SERVICIO ACTIVO: {formatoFecha(solicitud.fecha_activo)}</>}
-                    {solicitud.fecha_baja && <><br /><br />BAJA: {formatoFecha(solicitud.fecha_baja)}<br />MOTIVO: {solicitud.motivo_baja}</>}
-                  </>
-                }
-              />
-            </tbody>
-          </table>
-        )}
+          ) : (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <tbody>
+                  <Fila label="Folio (ID)" valor={solicitud.id} />
+                  <Fila label="Usuario" valor={solicitud.nombre_usuario} />
+                  <Fila label="Puesto" valor={solicitud.puesto} />
+                  <Fila label="Área" valor={solicitud.area} />
+                  <Fila label="Dependencia" valor={solicitud.dependencia} />
+                  <Fila label="Correo institucional" valor={solicitud.correo_institucional} />
+                  <Fila label="Teléfono / Ext." valor={`${solicitud.telefono ?? '-'} / ${solicitud.extension ?? '-'}`} />
+                  <Fila label="Tipo de acceso" valor={solicitud.tipo_acceso === 'link' ? solicitud.link_sistema : solicitud.ip_puerto} />
+                  <Fila label="Vigencia" valor={`${formatoFecha(solicitud.fecha_inicio)} — ${formatoFecha(solicitud.fecha_fin)}`} />
+                  <Fila label="Justificación" valor={solicitud.justificacion_uso} />
+                  <Fila label="Núm. Ticket" valor={solicitud.num_ticket ?? '-'} />
+                  <Fila
+                    label="Estatus"
+                    valor={
+                      <div className="space-y-1 text-xs">
+                        <div><span className="font-medium text-gray-700">CREADO EN CGD:</span> {formatoFecha(solicitud.fecha_creado_cgd ?? solicitud.created_at)}</div>
+                        {solicitud.fecha_atendiendo_dgti && <div><span className="font-medium text-gray-700">ATENDIENDO DGTI:</span> {formatoFecha(solicitud.fecha_atendiendo_dgti)} | <span className="font-medium text-gray-700">FOLIO GLPI:</span> {solicitud.folio_glpi}</div>}
+                        {solicitud.fecha_activo && <div><span className="font-medium text-gray-700">SERVICIO ACTIVO:</span> {formatoFecha(solicitud.fecha_activo)}</div>}
+                        {solicitud.fecha_baja && <div><span className="font-medium text-gray-700">BAJA:</span> {formatoFecha(solicitud.fecha_baja)} | <span className="font-medium text-gray-700">MOTIVO:</span> {solicitud.motivo_baja}</div>}
+                      </div>
+                    }
+                  />
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end px-5 py-3 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -177,9 +243,9 @@ export default function PanelEstatusVpnModal({
 
 function Fila({ label, valor }: { label: string; valor: any }) {
   return (
-    <tr className="odd:bg-gray-50">
-      <td className="p-3 font-semibold text-right w-1/3 align-top">{label}:</td>
-      <td className="p-3 align-top">{valor}</td>
+    <tr className="border-b border-gray-100 odd:bg-gray-50/50">
+      <td className="p-3 font-medium text-gray-600 text-right w-1/3 align-top text-xs uppercase tracking-wider">{label}:</td>
+      <td className="p-3 align-top text-gray-800">{valor}</td>
     </tr>
   );
 }

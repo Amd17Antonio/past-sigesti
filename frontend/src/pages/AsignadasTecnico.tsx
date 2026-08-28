@@ -37,71 +37,79 @@ export default function AsignadasTecnico() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h1 className="text-xl font-bold">Solicitudes Asignadas</h1>
-        <input
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="border p-2 rounded"
-        />
+        <h1 className="text-xl font-bold text-gray-800">Solicitudes Asignadas</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Buscar:</span>
+          <input
+            placeholder="Buscar en registros..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="border border-blue-200 p-1.5 rounded-md text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          />
+        </div>
       </div>
 
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 text-left">Folio Detalle</th>
-            <th className="p-2 text-left">Solicitante</th>
-            <th className="p-2 text-left">Extensión</th>
-            <th className="p-2 text-left">Área</th>
-            <th className="p-2 text-left">Desc. Problema</th>
-            <th className="p-2 text-left">Prioridad</th>
-            <th className="p-2 text-left">Fecha Hora Solicitud</th>
-            <th className="p-2 text-left">Fecha Hora Asignación</th>
-            <th className="p-2 text-left">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtradas.map((s) => (
-            <tr key={s.id} className="border-t align-top">
-              <td className="p-2">
-                <button
-                  onClick={() => setDetalleId(s.id)}
-                  className="mr-1 hover:opacity-70"
-                  title="Ver detalle"
-                >
-                  👁
-                </button>
-                {s.id}
-              </td>
-              <td className="p-2">{s.solicitante}</td>
-              <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.area}</td>
-              <td className="p-2">{s.descripcion}</td>
-              <td className="p-2">{s.prioridad}</td>
-              <td className="p-2">{s.fecha_solicitud}</td>
-              <td className="p-2">{s.fecha_asignacion ?? '-'}</td>
-              <td className="p-2">
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => setSeguimientoId(s.id)}
-                    className="px-2 py-1 bg-blue-700 text-white rounded text-xs"
-                  >
-                    Seguimiento
-                  </button>
-                  <button
-                    onClick={() => setCerrarId(s.id)}
-                    className="px-2 py-1 bg-purple-800 text-white rounded text-xs"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </td>
+      <div className="overflow-x-auto border border-blue-100 rounded-lg shadow-sm bg-white">
+        <table className="w-full border-collapse text-sm text-left">
+          <thead className="bg-blue-900 text-white uppercase text-xs">
+            <tr>
+              <th className="p-3 font-semibold">Folio Detalle</th>
+              <th className="p-3 font-semibold">Solicitante</th>
+              <th className="p-3 font-semibold">Extensión</th>
+              <th className="p-3 font-semibold">Área</th>
+              <th className="p-3 font-semibold">Desc. Problema</th>
+              <th className="p-3 font-semibold">Prioridad</th>
+              <th className="p-3 font-semibold">Fecha Solicitud</th>
+              <th className="p-3 font-semibold">Fecha Asignación</th>
+              <th className="p-3 text-center font-semibold">Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {filtradas.map((s) => (
+              <tr key={s.id} className="hover:bg-blue-50/30 transition-colors align-top">
+                <td className="p-3 font-medium">
+                  <button
+                    onClick={() => setDetalleId(s.id)}
+                    className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 font-semibold"
+                    title="Ver detalle"
+                  >
+                    👁 {s.id}
+                  </button>
+                </td>
+                <td className="p-3 text-gray-800">{s.solicitante}</td>
+                <td className="p-3 text-gray-600">{s.extension ?? '-'}</td>
+                <td className="p-3 text-gray-800">{s.area}</td>
+                <td className="p-3 text-gray-700">{s.descripcion}</td>
+                <td className="p-3">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 shadow-sm">
+                    {s.prioridad}
+                  </span>
+                </td>
+                <td className="p-3 text-gray-600 text-xs">{s.fecha_solicitud}</td>
+                <td className="p-3 text-gray-600 text-xs">{s.fecha_asignacion ?? '-'}</td>
+                <td className="p-3">
+                  <div className="flex flex-col gap-1.5 items-center">
+                    <button
+                      onClick={() => setSeguimientoId(s.id)}
+                      className="w-full px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors shadow-sm"
+                    >
+                      Seguimiento
+                    </button>
+                    <button
+                      onClick={() => setCerrarId(s.id)}
+                      className="w-full px-3 py-1 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-medium transition-colors shadow-sm"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {filtradas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+      {filtradas.length === 0 && <p className="text-gray-500 mt-4 text-sm text-center py-4 bg-white border border-blue-100 rounded-lg shadow-sm">Sin resultados</p>}
 
       {seguimientoId !== null && (
         <SeguimientoModal

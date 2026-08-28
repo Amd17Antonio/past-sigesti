@@ -113,31 +113,31 @@ export default function EquipoFormModal({ equipo, onClose, onGuardado }: Props) 
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg w-[26rem] max-h-[90vh] overflow-y-auto">
-        <div className="bg-blue-600 text-white px-4 py-3 font-semibold">
-          {equipo ? `Editar equipo #${equipo.id}` : 'Nuevo Equipo'}
+      <div className="bg-white rounded-lg shadow-xl w-[26rem] max-h-[90vh] overflow-y-auto border border-blue-100">
+        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
+          <span>{equipo ? `Editar equipo #${equipo.id}` : 'Nuevo Equipo'}</span>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-4">
           <div>
-            <label className="text-sm font-medium">Tipo Equipo:</label>
-            <select name="id_tipo" value={form.id_tipo} onChange={handleChange} className="border p-2 w-full mt-1">
+            <label className="text-sm font-medium text-slate-700">Tipo Equipo:</label>
+            <select name="id_tipo" value={form.id_tipo} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
               <option value="">--Seleccionar--</option>
               {tipos.map((t) => <option key={t.id} value={t.id}>{t.TipoEquipo}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Marca:</label>
-            <select name="id_marca" value={form.id_marca} onChange={handleChange} className="border p-2 w-full mt-1">
+            <label className="text-sm font-medium text-slate-700">Marca:</label>
+            <select name="id_marca" value={form.id_marca} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
               <option value="">--Seleccionar--</option>
               {marcas.map((m) => <option key={m.id} value={m.id}>{m.marca}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Modelo:</label>
-            <select name="id_modelo" value={form.id_modelo} onChange={handleChange} className="border p-2 w-full mt-1">
+            <label className="text-sm font-medium text-slate-700">Modelo:</label>
+            <select name="id_modelo" value={form.id_modelo} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
               <option value="">--Seleccionar--</option>
               {modelos
                 .filter((m) => !form.id_marca || m.id_marca === Number(form.id_marca))
@@ -146,18 +146,18 @@ export default function EquipoFormModal({ equipo, onClose, onGuardado }: Props) 
           </div>
 
           <div>
-            <label className="text-sm font-medium">No. Serie:</label>
+            <label className="text-sm font-medium text-slate-700">No. Serie:</label>
             <div className="flex gap-2 mt-1">
               <input
                 name="no_serie" value={form.no_serie}
                 onChange={(e) => { handleChange(e); setSerieDisponible(null); }}
                 onBlur={handleSerieBlur}
-                className="border p-2 flex-1"
+                className="border border-slate-300 rounded p-2 flex-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setForm({ ...form, no_serie: 'S/N' })}
-                className="text-blue-600 border border-blue-600 rounded px-2 text-sm"
+                className="text-blue-600 border border-blue-600 hover:bg-blue-50 rounded px-3 text-sm transition-colors"
               >
                 S/N
               </button>
@@ -166,13 +166,13 @@ export default function EquipoFormModal({ equipo, onClose, onGuardado }: Props) 
           </div>
 
           <div>
-            <label className="text-sm font-medium">No. Inventario:</label>
-            <input name="no_inventario" value={form.no_inventario} onChange={handleChange} className="border p-2 w-full mt-1" />
+            <label className="text-sm font-medium text-slate-700">No. Inventario:</label>
+            <input name="no_inventario" value={form.no_inventario} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
           </div>
 
           <div>
-            <label className="text-sm font-medium">Sistema Operativo:</label>
-            <select name="id_so" value={form.id_so} onChange={handleChange} className="border p-2 w-full mt-1">
+            <label className="text-sm font-medium text-slate-700">Sistema Operativo:</label>
+            <select name="id_so" value={form.id_so} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none">
               <option value="">--Seleccionar--</option>
               {sos.map((s) => <option key={s.id} value={s.id}>{s.sistema}</option>)}
             </select>
@@ -181,37 +181,37 @@ export default function EquipoFormModal({ equipo, onClose, onGuardado }: Props) 
           {equipo && (
             <>
               <div>
-                <label className="text-sm font-medium">MAC Ethernet:</label>
+                <label className="text-sm font-medium text-slate-700">MAC Ethernet:</label>
                 <input
                   value={macEthernet}
                   onChange={(e) => setMacEthernet(formatMac(e.target.value))}
                   maxLength={17}
-                  className="border p-2 w-full mt-1 font-mono"
+                  className="border border-slate-300 rounded p-2 w-full mt-1 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">MAC Wi-Fi:</label>
+                <label className="text-sm font-medium text-slate-700">MAC Wi-Fi:</label>
                 <input
                   value={macWifi}
                   onChange={(e) => setMacWifi(formatMac(e.target.value))}
                   maxLength={17}
-                  className="border p-2 w-full mt-1 font-mono"
+                  className="border border-slate-300 rounded p-2 w-full mt-1 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
             </>
           )}
 
           <div>
-            <label className="text-sm font-medium">Observaciones:</label>
-            <input name="observacion" value={form.observacion} onChange={handleChange} className="border p-2 w-full mt-1" />
+            <label className="text-sm font-medium text-slate-700">Observaciones:</label>
+            <input name="observacion" value={form.observacion} onChange={handleChange} className="border border-slate-300 rounded p-2 w-full mt-1 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-600 bg-red-50 p-2 rounded text-sm border border-red-200">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50 sticky bottom-0">
-          <button onClick={onClose} className="px-4 py-2 border rounded text-sm">Cancelar</button>
-          <button onClick={handleGuardar} disabled={enviando} className="px-4 py-2 bg-green-600 text-white rounded text-sm disabled:opacity-50">
+        <div className="flex justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-100 sticky bottom-0">
+          <button onClick={onClose} className="px-4 py-2 border border-slate-300 hover:bg-slate-100 rounded text-sm text-slate-700 transition-colors">Cancelar</button>
+          <button onClick={handleGuardar} disabled={enviando} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50 transition-colors shadow-sm">
             {enviando ? 'Guardando...' : 'Guardar'}
           </button>
         </div>

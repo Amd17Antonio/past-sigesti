@@ -51,39 +51,42 @@ export default function SolicitudNueva() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex justify-center items-start py-10 px-4">
-      <div className="w-full max-w-xl bg-white rounded-lg shadow-md border p-8">
-        <h1 className="text-2xl font-semibold mb-6 text-center">Solicitud</h1>
+      <div className="w-full max-w-xl bg-white rounded-lg shadow-sm border border-blue-100 p-8">
+        <h1 className="text-2xl font-semibold mb-6 text-center text-gray-800">Solicitud de Soporte</h1>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block mb-1 text-sm font-medium">Nombre:</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Nombre:</label>
             <input
               name="solicitante" placeholder="Ingrese su nombre"
               value={form.solicitante} onChange={handleChange}
-              className="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-700"
+              className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
             />
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">Extensión de quien necesita el soporte o servicio:</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Extensión de quien necesita el soporte o servicio:</label>
             <input
               name="extension" placeholder="Ingresa la Extensión"
               value={form.extension} onChange={handleChange}
-              className="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-700"
+              className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
             />
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">Descripción del problema:</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Descripción del problema:</label>
             <textarea
               name="descripcion" placeholder="Anote sus observaciones y declaraciones"
               value={form.descripcion} onChange={handleChange}
-              rows={6} className="border rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-700"
+              rows={6} className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
             />
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium">¿Prioridad?:</label>
-            <select name="prioridad" value={form.prioridad} onChange={handleChange} className="border rounded p-2 w-full">
+            <label className="block mb-1 text-sm font-medium text-gray-700">¿Prioridad?:</label>
+            <select 
+              name="prioridad" value={form.prioridad} onChange={handleChange} 
+              className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+            >
               <option value="normal">Normal</option>
               <option value="alta">Alta</option>
               <option value="baja">Baja</option>
@@ -92,19 +95,25 @@ export default function SolicitudNueva() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1 text-sm font-medium">
+              <label className="block mb-1 text-sm font-medium text-gray-700">
                 Edificio <span className="text-red-400 text-xs">(Opcional)</span>:
               </label>
-              <select name="edificio" value={form.edificio} onChange={handleChange} className="border rounded p-2 w-full">
+              <select 
+                name="edificio" value={form.edificio} onChange={handleChange} 
+                className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+              >
                 <option value="">--Seleccionar--</option>
                 {['2', '3', '4', '6'].map((e) => <option key={e} value={e}>Edificio {e}</option>)}
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">
+              <label className="block mb-1 text-sm font-medium text-gray-700">
                 Nivel <span className="text-red-400 text-xs">(Opcional)</span>:
               </label>
-              <select name="nivel" value={form.nivel} onChange={handleChange} className="border rounded p-2 w-full">
+              <select 
+                name="nivel" value={form.nivel} onChange={handleChange} 
+                className="border border-blue-200 rounded p-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+              >
                 <option value="">--Seleccionar--</option>
                 {['PB', '1', '2', '3'].map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -117,7 +126,7 @@ export default function SolicitudNueva() {
           <div className="text-center pt-2">
             <button
               type="submit" disabled={enviando}
-              className="bg-purple-800 hover:bg-purple-900 text-white px-10 py-2.5 rounded disabled:opacity-50 transition"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2.5 rounded text-sm font-medium disabled:opacity-50 transition shadow-sm"
             >
               {enviando ? 'Enviando...' : 'Solicitar'}
             </button>

@@ -56,7 +56,9 @@ export default function SolicitudesCorreo() {
     });
   };
 
-  useEffect(() => { cargar(); // eslint-disable-next-line
+  useEffect(() => {
+    cargar();
+    // eslint-disable-next-line
   }, [pagina, porPagina]);
 
   useEffect(() => {
@@ -106,143 +108,205 @@ export default function SolicitudesCorreo() {
 
   return (
     <div className="p-6">
-      <div className="bg-blue-600 text-white font-bold px-4 py-3 rounded-t mb-0">
+      {/* Cabecera Principal */}
+      <div className="bg-blue-600 text-white font-semibold px-4 py-3 rounded-t-lg shadow-sm text-base">
         SOLICITUDES DE CORREO INSTITUCIONAL
       </div>
 
-      <div className="border border-t-0 rounded-b p-4">
-        <div className="flex justify-between items-center mb-3">
+      <div className="border border-t-0 border-blue-100 rounded-b-lg p-4 bg-white shadow-sm">
+        {/* Barra superior de acciones y paginación */}
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMostrarModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
             >
               + Nueva Solicitud
             </button>
             {user?.rol?.nombre === 'Administrador' && (
               <button
                 onClick={() => navigate('/resguardo/correo')}
-                className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
               >
                 Resguardo Correo
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
             <span>Mostrar</span>
-            <select value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }} className="border rounded p-1">
+            <select
+              value={porPagina}
+              onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }}
+              className="border border-blue-200 rounded p-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
               {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
             <span>registros</span>
           </div>
         </div>
 
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              {COLUMNAS.map((c) => (
-                <th
-                  key={c.key}
-                  className={`p-2 text-left cursor-pointer ${c.key === 'id' ? 'w-14' : ''}`}
-                  onClick={() => handleSort(c.key)}
-                >
-                  <span className="inline-flex items-center">{c.label}<SortIcon active={sortBy === c.key} direction={sortDir} /></span>
+        {/* Tabla principal */}
+        <div className="overflow-x-auto border border-blue-100 rounded-lg bg-white shadow-sm">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-blue-50/70 text-blue-900 uppercase text-xs">
+              <tr>
+                {COLUMNAS.map((c) => (
+                  <th
+                    key={c.key}
+                    className={`p-3 cursor-pointer select-none hover:bg-blue-100/50 ${c.key === 'id' ? 'w-16' : ''}`}
+                    onClick={() => handleSort(c.key)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {c.label}
+                      <SortIcon active={sortBy === c.key} direction={sortDir} />
+                    </span>
+                  </th>
+                ))}
+                <th className="p-3 w-[120px] text-center">Acciones</th>
+              </tr>
+              <tr className="bg-gray-50 border-t border-blue-100">
+                <th className="p-1.5 w-16"></th>
+                <th className="p-1.5">
+                  <select
+                    value={filtros.tipo_solicitud ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, tipo_solicitud: e.target.value })}
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Todos</option>
+                    <option value="alta">Alta</option>
+                    <option value="baja">Baja</option>
+                  </select>
                 </th>
-              ))}
-              <th className="p-2 text-left w-[120px]">Acciones</th>
-            </tr>
-            <tr className="bg-gray-50">
-              <th className="p-1 w-14"></th>
-              <th className="p-1">
-                <select value={filtros.tipo_solicitud ?? ''} onChange={(e) => setFiltros({ ...filtros, tipo_solicitud: e.target.value })} className="border p-1 w-full text-xs">
-                  <option value="">Todos</option>
-                  <option value="alta">Alta</option>
-                  <option value="baja">Baja</option>
-                </select>
-              </th>
-              <th className="p-1"><input value={filtros.nombre ?? ''} onChange={(e) => setFiltros({ ...filtros, nombre: e.target.value })} className="border p-1 w-full text-xs" /></th>
-              <th className="p-1"><input value={filtros.area ?? ''} onChange={(e) => setFiltros({ ...filtros, area: e.target.value })} className="border p-1 w-full text-xs" /></th>
-              <th className="p-1"><input value={filtros.correo_institucional ?? ''} onChange={(e) => setFiltros({ ...filtros, correo_institucional: e.target.value })} className="border p-1 w-full text-xs" /></th>
-              <th className="p-1">
-                <select value={filtros.estatus ?? ''} onChange={(e) => setFiltros({ ...filtros, estatus: e.target.value })} className="border p-1 w-full text-xs">
-                  <option value="">Todos</option>
-                  {Object.entries(ESTATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </th>
-              <th className="p-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {ordenados.map((s) => (
-              <tr key={s.id} className="border-t align-top">
-                <td className="p-2 w-14">
-                  {user?.rol?.nombre === 'Administrador' ? (
-                    <button
-                      onClick={() => setVerEstatus(s)}
-                      className="text-blue-600 font-medium hover:underline"
-                    >
-                      {s.id}
-                    </button>
-                  ) : (
-                    s.id
-                  )}
-                </td>
-                <td className="p-2 uppercase">{s.tipo_solicitud}</td>
-                <td className="p-2">{s.nombre}</td>
-                <td className="p-2">{s.area ?? '-'}</td>
-                <td className="p-2">{s.correo_institucional ?? '-'}</td>
-                <td className="p-2">
-                  <div className="flex items-center gap-2">
-                    <SenalEstatus tipo="correo" estatus={s.estatus} />
-                    {ESTATUS_LABEL[s.estatus] ?? s.estatus}
-                  </div>
-                </td>
-                <td className="p-2 whitespace-nowrap w-[120px]">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleImprimir(s)}
-                      disabled={generandoId === s.id}
-                      title="Generar PDF"
-                      className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors disabled:opacity-40"
-                    >
-                      {generandoId === s.id ? '⏳' : '📄'}
-                    </button>
-                    {s.estatus === 'creado_cgd' ? (
+                <th className="p-1.5">
+                  <input
+                    value={filtros.nombre ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, nombre: e.target.value })}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </th>
+                <th className="p-1.5">
+                  <input
+                    value={filtros.area ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, area: e.target.value })}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </th>
+                <th className="p-1.5">
+                  <input
+                    value={filtros.correo_institucional ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, correo_institucional: e.target.value })}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </th>
+                <th className="p-1.5">
+                  <select
+                    value={filtros.estatus ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, estatus: e.target.value })}
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Todos</option>
+                    {Object.entries(ESTATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </th>
+                <th className="p-1.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-blue-100">
+              {ordenados.map((s) => (
+                <tr key={s.id} className="hover:bg-blue-50/40 transition-colors align-middle">
+                  <td className="p-3 w-16 font-medium">
+                    {user?.rol?.nombre === 'Administrador' ? (
                       <button
-                        onClick={() => setEditarId(s.id)}
-                        title="Editar"
-                        className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
+                        onClick={() => setVerEstatus(s)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
                       >
-                        ✏️
+                        {s.id}
                       </button>
                     ) : (
-                      <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">
-                        ✏️
-                      </span>
+                      <span className="text-gray-800">{s.id}</span>
                     )}
-                    <button
-                      onClick={() => handleEliminar(s.id)}
-                      disabled={eliminandoId === s.id}
-                      title="Eliminar"
-                      className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors disabled:opacity-40"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td className="p-3 uppercase text-gray-700 font-medium">{s.tipo_solicitud}</td>
+                  <td className="p-3 text-gray-800 font-medium">{s.nombre}</td>
+                  <td className="p-3 text-gray-700">{s.area ?? '-'}</td>
+                  <td className="p-3 text-gray-700">{s.correo_institucional ?? '-'}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <SenalEstatus tipo="correo" estatus={s.estatus} />
+                      <span className="text-xs font-semibold text-gray-700">
+                        {ESTATUS_LABEL[s.estatus] ?? s.estatus}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-3 whitespace-nowrap w-[120px]">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => handleImprimir(s)}
+                        disabled={generandoId === s.id}
+                        title="Generar PDF"
+                        className="p-1.5 rounded hover:bg-blue-100 hover:ring-1 hover:ring-blue-300 transition-colors disabled:opacity-40"
+                      >
+                        {generandoId === s.id ? '⏳' : '📄'}
+                      </button>
+                      {s.estatus === 'creado_cgd' ? (
+                        <button
+                          onClick={() => setEditarId(s.id)}
+                          title="Editar"
+                          className="p-1.5 rounded hover:bg-amber-100 hover:ring-1 hover:ring-amber-300 transition-colors"
+                        >
+                          ✏️
+                        </button>
+                      ) : (
+                        <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">
+                          ✏️
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleEliminar(s.id)}
+                        disabled={eliminandoId === s.id}
+                        title="Eliminar"
+                        className="p-1.5 rounded hover:bg-red-100 hover:ring-1 hover:ring-red-300 transition-colors disabled:opacity-40"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {data.length === 0 && <p className="text-gray-500 mt-4">Sin solicitudes de correo.</p>}
+        {data.length === 0 && (
+          <div className="text-center py-8 text-gray-500 text-sm bg-white border border-blue-100 rounded-lg mt-2 shadow-sm">
+            Sin solicitudes de correo encontradas.
+          </div>
+        )}
 
-        <div className="flex justify-between items-center mt-4 text-sm">
+        {/* Paginación */}
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-700 flex-wrap gap-2">
           <span>Mostrando registros del {inicio} al {fin} de un total de {total} registros</span>
-          <div className="flex gap-1">
-            <button onClick={() => setPagina((p) => Math.max(1, p - 1))} disabled={pagina === 1} className="px-3 py-1 border rounded disabled:opacity-40">Anterior</button>
-            <span className="px-3 py-1 bg-purple-800 text-white rounded">{pagina}</span>
-            <button onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas} className="px-3 py-1 border rounded disabled:opacity-40">Siguiente</button>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium shadow-sm">
+              {pagina}
+            </span>
+            <button
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+              disabled={pagina === totalPaginas}
+              className="px-3 py-1.5 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>

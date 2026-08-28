@@ -9,7 +9,7 @@ const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV'
 
 function Tarjeta({ label, valor, color }: { label: string; valor: number; color: string }) {
   return (
-    <div className={`${color} text-white rounded-md px-3 py-2 flex-1 min-w-[120px]`}>
+    <div className={`${color} text-white rounded-md px-3 py-2 flex-1 min-w-[120px] shadow-sm`}>
       <p className="text-[11px] font-medium opacity-90 leading-tight">{label}</p>
       <p className="text-lg font-bold leading-tight">{valor}</p>
     </div>
@@ -38,16 +38,16 @@ export default function Dashboard() {
   return (
     <div className="p-4 space-y-4 text-xs max-w-6xl mx-auto">
       <div>
-        <h1 className="text-lg font-bold text-blue-950">Dashboard</h1>
+        <h1 className="text-lg font-bold text-gray-800">Dashboard</h1>
         <p className="text-[11px] text-gray-500">Tickets y dictámenes del período</p>
       </div>
 
       <div className="flex items-center gap-2">
-        <span>Período:</span>
-        <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-        <span>a</span>
-        <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border border-blue-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-        <button onClick={cargar} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs transition">Consultar</button>
+        <span className="text-gray-700">Período:</span>
+        <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border border-blue-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" />
+        <span className="text-gray-700">a</span>
+        <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border border-blue-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" />
+        <button onClick={cargar} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition shadow-sm font-medium">Consultar</button>
       </div>
 
       {/* ---- Tarjetas de resumen de Tickets ---- */}
@@ -62,19 +62,19 @@ export default function Dashboard() {
 
         {/* ---- Gráfica Tickets | Gráfica Dictámenes | Técnico top: mismas dimensiones, misma fila ---- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="bg-white border border-blue-100 rounded-md p-2">
+          <div className="bg-white border border-blue-100 rounded-md p-2 shadow-sm">
             <p className="font-medium mb-1 text-gray-700">Tickets resueltos en el ejercicio {tickets?.anio}</p>
-            {tickets && <DashboardChart values={tickets.serie_mensual} labels={MESES} color="#4f46e5" />}
+            {tickets && <DashboardChart values={tickets.serie_mensual} labels={MESES} color="#2563eb" />}
           </div>
 
-          <div className="bg-white border border-blue-100 rounded-md p-2">
+          <div className="bg-white border border-blue-100 rounded-md p-2 shadow-sm">
             <p className="font-medium mb-1 text-gray-700">Dictámenes generados en el ejercicio {dictamenes?.anio}</p>
             {dictamenes && <DashboardChart values={dictamenes.serie_mensual} labels={MESES} color="#059669" />}
           </div>
 
-          <div className="bg-white border border-blue-100 rounded-md p-2 flex flex-col items-center justify-center text-center">
+          <div className="bg-white border border-blue-100 rounded-md p-2 shadow-sm flex flex-col items-center justify-center text-center">
             <p className="font-medium mb-1 text-gray-700">Técnico con más tickets concluidos</p>
-            <p className="text-sm font-semibold text-blue-950">{tickets?.top_tecnico?.nombre ?? 'Sin datos'}</p>
+            <p className="text-sm font-semibold text-gray-800">{tickets?.top_tecnico?.nombre ?? 'Sin datos'}</p>
             {tickets?.top_tecnico && <p className="text-[11px] text-gray-500">{tickets.top_tecnico.total} tickets concluidos</p>}
           </div>
         </div>
@@ -90,10 +90,10 @@ export default function Dashboard() {
             {actividades.registros.map((r) => (
               <div
                 key={r.poa}
-                className="snap-start shrink-0 basis-[180px] bg-white border border-blue-100 rounded-md px-2 py-1 text-center"
+                className="snap-start shrink-0 basis-[180px] bg-white border border-blue-100 rounded-md px-2 py-1 text-center shadow-sm"
               >
                 <p className="text-[9px] text-gray-600 leading-tight">{r.poa}</p>
-                <p className="text-sm font-bold text-indigo-600 mt-0.5">{r.total}</p>
+                <p className="text-sm font-bold text-blue-600 mt-0.5">{r.total}</p>
               </div>
             ))}
           </div>

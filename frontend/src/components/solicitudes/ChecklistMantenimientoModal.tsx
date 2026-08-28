@@ -102,73 +102,133 @@ export default function ChecklistMantenimientoModal({
 
   if (cargando || !form || !base) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded p-6">Cargando...</div>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 shadow-xl border border-blue-100 flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span className="text-slate-700 font-medium text-sm">Cargando mantenimiento...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-lg font-bold mb-4">Mantenimiento de Equipo</h2>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-blue-100 flex flex-col">
+        {/* Cabecera del modal */}
+        <div className="bg-blue-600 text-white px-6 py-4 font-semibold flex justify-between items-center sticky top-0 z-10 shadow-sm">
+          <span>Mantenimiento de Equipo</span>
+          <button onClick={onClose} className="text-blue-100 hover:text-white text-xl leading-none transition-colors">×</button>
+        </div>
 
-        {yaSugeridoBaja && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
-            ⚠ Este equipo ya cuenta con un dictamen que sugiere baja.
-          </div>
-        )}
+        <div className="p-6 space-y-6">
+          {yaSugeridoBaja && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              ⚠ Este equipo ya cuenta con un dictamen que sugiere baja.
+            </div>
+          )}
 
-        <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-          <div><span className="font-semibold">Equipo:</span> {base.tipo_equipo} {base.marca} {base.modelo}</div>
-          <div><span className="font-semibold">No. Inventario:</span> {base.no_inventario}</div>
-          <div><span className="font-semibold">Área:</span> {base.area}</div>
-          <div>
-            <label className="font-semibold block">Responsable</label>
-            <input value={form.responsable ?? ''} onChange={(e) => setForm({ ...form, responsable: e.target.value })} className="border rounded p-1 w-full" />
+          {/* Tarjeta de información general del equipo */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-700 shadow-inner">
+            <div><span className="font-semibold text-slate-900">Equipo:</span> {base.tipo_equipo} {base.marca} {base.modelo}</div>
+            <div><span className="font-semibold text-slate-900">No. Inventario:</span> {base.no_inventario}</div>
+            <div className="sm:col-span-2"><span className="font-semibold text-slate-900">Área:</span> {base.area}</div>
           </div>
-          <div>
-            <label className="font-semibold block">No. Extensión</label>
-            <input value={form.no_extension ?? ''} onChange={(e) => setForm({ ...form, no_extension: e.target.value })} className="border rounded p-1 w-full" />
+
+          {/* Campos de captura (Responsable, Extensión, Contraseña) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <label className="font-medium text-slate-700 block mb-1">Responsable</label>
+              <input 
+                value={form.responsable ?? ''} 
+                onChange={(e) => setForm({ ...form, responsable: e.target.value })} 
+                className="border border-slate-300 rounded p-2 w-full text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder="Nombre del responsable"
+              />
+            </div>
+            <div>
+              <label className="font-medium text-slate-700 block mb-1">No. Extensión</label>
+              <input 
+                value={form.no_extension ?? ''} 
+                onChange={(e) => setForm({ ...form, no_extension: e.target.value })} 
+                className="border border-slate-300 rounded p-2 w-full text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder="Ej. 104"
+              />
+            </div>
+            <div>
+              <label className="font-medium text-slate-700 block mb-1">Contraseña</label>
+              <input 
+                value={form.contrasena ?? ''} 
+                onChange={(e) => setForm({ ...form, contrasena: e.target.value })} 
+                className="border border-slate-300 rounded p-2 w-full text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder="Contraseña de equipo"
+              />
+            </div>
           </div>
-          <div>
-            <label className="font-semibold block">Contraseña</label>
-            <input value={form.contrasena ?? ''} onChange={(e) => setForm({ ...form, contrasena: e.target.value })} className="border rounded p-1 w-full" />
+
+          {/* Secciones de checklists */}
+          <div className="space-y-4">
+            <Seccion titulo="Equipo de Cómputo">
+              <Checks items={CHECKS_EQUIPO} form={form} toggle={toggle} />
+              <Obs value={form.eq_observaciones ?? ''} onChange={(v) => setForm({ ...form, eq_observaciones: v })} />
+            </Seccion>
+
+            <Seccion titulo="Mouse y Teclado">
+              <Checks items={CHECKS_MOUSE_TECLADO} form={form} toggle={toggle} />
+              <Obs value={form.mt_observaciones ?? ''} onChange={(v) => setForm({ ...form, mt_observaciones: v })} />
+            </Seccion>
+
+            <Seccion titulo="Impresoras">
+              <Checks items={CHECKS_IMPRESORAS} form={form} toggle={toggle} />
+              <Obs value={form.imp_observaciones ?? ''} onChange={(v) => setForm({ ...form, imp_observaciones: v })} />
+            </Seccion>
+          </div>
+
+          {/* Firmas / Recibió y Entregó */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-200">
+            <div>
+              <label className="font-medium text-slate-700 block mb-1">Recibió</label>
+              <input 
+                value={form.recibio_nombre ?? ''} 
+                onChange={(e) => setForm({ ...form, recibio_nombre: e.target.value })} 
+                className="border border-slate-300 rounded p-2 w-full text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder="Nombre de quien recibe"
+              />
+            </div>
+            <div>
+              <label className="font-medium text-slate-700 block mb-1">Entregó</label>
+              <input 
+                value={form.entrego_nombre ?? ''} 
+                onChange={(e) => setForm({ ...form, entrego_nombre: e.target.value })} 
+                className="border border-slate-300 rounded p-2 w-full text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder="Nombre de quien entrega"
+              />
+            </div>
           </div>
         </div>
 
-        <Seccion titulo="Equipo de Cómputo">
-          <Checks items={CHECKS_EQUIPO} form={form} toggle={toggle} />
-          <Obs value={form.eq_observaciones ?? ''} onChange={(v) => setForm({ ...form, eq_observaciones: v })} />
-        </Seccion>
-
-        <Seccion titulo="Mouse y Teclado">
-          <Checks items={CHECKS_MOUSE_TECLADO} form={form} toggle={toggle} />
-          <Obs value={form.mt_observaciones ?? ''} onChange={(v) => setForm({ ...form, mt_observaciones: v })} />
-        </Seccion>
-
-        <Seccion titulo="Impresoras">
-          <Checks items={CHECKS_IMPRESORAS} form={form} toggle={toggle} />
-          <Obs value={form.imp_observaciones ?? ''} onChange={(v) => setForm({ ...form, imp_observaciones: v })} />
-        </Seccion>
-
-        <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
-          <div>
-            <label className="font-semibold block">Recibió</label>
-            <input value={form.recibio_nombre ?? ''} onChange={(e) => setForm({ ...form, recibio_nombre: e.target.value })} className="border rounded p-1 w-full" />
-          </div>
-          <div>
-            <label className="font-semibold block">Entregó</label>
-            <input value={form.entrego_nombre ?? ''} onChange={(e) => setForm({ ...form, entrego_nombre: e.target.value })} className="border rounded p-1 w-full" />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
-          <button onClick={() => abrirPdfEquipoMantenimiento(idEquipoSolicitud)} className="bg-gray-600 text-white px-4 py-2 rounded text-sm">🖨 Imprimir</button>
-          <button onClick={onClose} className="border px-4 py-2 rounded text-sm">Cancelar</button>
-          <button onClick={guardar} disabled={guardando} className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50">
-            {guardando ? 'Guardando...' : 'Guardar'}
+        {/* Pie del modal / Acciones */}
+        <div className="flex flex-wrap justify-between items-center gap-2 px-6 py-4 bg-slate-50 border-t border-slate-200 mt-auto">
+          <button 
+            onClick={() => abrirPdfEquipoMantenimiento(idEquipoSolicitud)} 
+            className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded text-sm transition-colors shadow-sm flex items-center gap-2"
+          >
+            🖨 Imprimir
           </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={onClose} 
+              className="border border-slate-300 hover:bg-slate-100 text-slate-700 px-4 py-2 rounded text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={guardar} 
+              disabled={guardando} 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm disabled:opacity-50 transition-colors shadow-sm font-medium"
+            >
+              {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -177,20 +237,25 @@ export default function ChecklistMantenimientoModal({
 
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4">
-      <div className="bg-gray-800 text-white text-sm font-semibold px-2 py-1">{titulo}</div>
-      <div className="border border-t-0 p-3">{children}</div>
+    <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-blue-600/90 text-white text-sm font-semibold px-4 py-2">{titulo}</div>
+      <div className="p-4 bg-white">{children}</div>
     </div>
   );
 }
 
 function Checks({ items, form, toggle }: { items: { key: CheckKey; label: string }[]; form: EquipoMantenimientoCgd; toggle: (key: CheckKey) => void }) {
   return (
-    <div className="grid grid-cols-2 gap-2 text-sm">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
       {items.map((it) => (
-        <label key={it.key} className="flex items-center gap-2">
-          <input type="checkbox" checked={Boolean(form[it.key])} onChange={() => toggle(it.key)} />
-          {it.label}
+        <label key={it.key} className="flex items-center gap-2.5 p-1.5 rounded hover:bg-slate-50 cursor-pointer transition-colors">
+          <input 
+            type="checkbox" 
+            checked={Boolean(form[it.key])} 
+            onChange={() => toggle(it.key)} 
+            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+          />
+          <span className="select-none">{it.label}</span>
         </label>
       ))}
     </div>
@@ -199,9 +264,15 @@ function Checks({ items, form, toggle }: { items: { key: CheckKey; label: string
 
 function Obs({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="mt-2">
-      <label className="text-xs font-semibold block mb-1">Observaciones</label>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} className="border rounded p-1 w-full text-sm" rows={2} />
+    <div className="mt-3 pt-3 border-t border-slate-100">
+      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Observaciones</label>
+      <textarea 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)} 
+        className="border border-slate-300 rounded p-2 w-full text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+        rows={2} 
+        placeholder="Observaciones adicionales..."
+      />
     </div>
   );
 }

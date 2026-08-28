@@ -48,22 +48,22 @@ export default function AsignarModal({ solicitudId, onClose, onAsignado, titulo 
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded p-6 w-96 shadow-lg">
-        <h2 className="font-bold text-lg mb-4">
+      <div className="bg-white rounded-lg p-6 w-96 shadow-xl border border-gray-100">
+        <h2 className="font-bold text-lg text-gray-800 mb-4">
           {tituloFinal} solicitud #{solicitudId}
         </h2>
 
-        {cargando && <p className="text-gray-500">Cargando...</p>}
+        {cargando && <p className="text-gray-500 text-sm">Cargando...</p>}
 
         {!cargando && opciones.length === 0 && !error && (
-          <p className="text-gray-500">No tienes personal disponible para asignar.</p>
+          <p className="text-gray-500 text-sm">No tienes personal disponible para asignar.</p>
         )}
 
         {opciones.length > 0 && !esAutoasignacion && (
           <select
             value={seleccionado ?? ''}
             onChange={(e) => setSeleccionado(Number(e.target.value))}
-            className="border p-2 w-full mb-4"
+            className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
           >
             <option value="" disabled>Selecciona una persona</option>
             {opciones.map((op) => (
@@ -73,19 +73,26 @@ export default function AsignarModal({ solicitudId, onClose, onAsignado, titulo 
         )}
 
         {opciones.length > 0 && esAutoasignacion && (
-          <p className="mb-4 text-gray-700">
-            Se te asignará esta solicitud: <strong>{opciones[0].nombre}</strong>
+          <p className="mb-4 text-sm text-gray-700">
+            Se te asignará esta solicitud: <strong className="text-gray-900">{opciones[0].nombre}</strong>
           </p>
         )}
 
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600">Cancelar</button>
+        <div className="flex justify-end gap-2 mt-6">
           <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
             onClick={handleAsignar}
             disabled={!seleccionado || enviando}
-            className="px-4 py-2 bg-purple-800 text-white rounded disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm disabled:opacity-50 transition-colors"
           >
             {enviando ? 'Guardando...' : tituloFinal}
           </button>

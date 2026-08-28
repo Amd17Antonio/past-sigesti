@@ -3,10 +3,10 @@ import { getPreguntas, yaEvaluada, enviarEvaluacion } from '../../services/encue
 
 interface Pregunta { id: number; pregunta: string }
 
-const OPCIONES: { valor: 'B' | 'R' | 'M'; label: string; color: string }[] = [
-  { valor: 'B', label: 'Bueno', color: 'bg-green-600' },
-  { valor: 'R', label: 'Regular', color: 'bg-yellow-500' },
-  { valor: 'M', label: 'Malo', color: 'bg-red-600' },
+const OPCIONES: { valor: 'B' | 'R' | 'M'; label: string; colorActivo: string }[] = [
+  { valor: 'B', label: 'Bueno', colorActivo: 'bg-green-600 text-white shadow-sm' },
+  { valor: 'R', label: 'Regular', colorActivo: 'bg-amber-500 text-white shadow-sm' },
+  { valor: 'M', label: 'Malo', colorActivo: 'bg-red-600 text-white shadow-sm' },
 ];
 
 export default function EvaluarModal({
@@ -25,6 +25,8 @@ export default function EvaluarModal({
     Promise.all([getPreguntas(), yaEvaluada(solicitudId)]).then(([p, evaluada]) => {
       setPreguntas(p);
       setYaFueEvaluada(evaluada);
+      setCargando(false);
+    }).catch(() => {
       setCargando(false);
     });
   }, [solicitudId]);
@@ -57,49 +59,54 @@ export default function EvaluarModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-8">
-      <div className="bg-white rounded shadow-lg w-full max-w-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Evaluar servicio — Folio {solicitudId}</h2>
+      <div className="bg-white rounded-lg shadow-xl border border-gray-100 w-full max-w-lg p-6">
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Evaluar servicio — Folio {solicitudId}</h2>
 
         {cargando && <p className="text-sm text-gray-500">Cargando...</p>}
 
         {!cargando && yaFueEvaluada && !enviado && (
-          <p className="text-sm text-gray-600">Ya evaluaste esta solicitud. ¡Gracias!</p>
+          <p className="text-sm text-gray-600 mb-4">Ya evaluaste esta solicitud. ¡Gracias!</p>
         )}
 
         {!cargando && enviado && (
-          <p className="text-sm text-green-600">¡Gracias por tu evaluación!</p>
+          <p className="text-sm text-green-600 font-medium mb-4">¡Gracias por tu evaluación!</p>
         )}
 
         {!cargando && !yaFueEvaluada && !enviado && (
           <>
             <div className="space-y-4">
               {preguntas.map((p) => (
-                <div key={p.id}>
-                  <p className="text-sm font-medium mb-2">{p.pregunta}</p>
+                <div key={p.id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                  <p className="text-sm font-medium text-gray-800 mb-2">{p.pregunta}</p>
                   <div className="flex gap-2">
-                    {OPCIONES.map((op) => (
-                      <button
-                        key={op.valor}
-                        type="button"
-                        onClick={() => seleccionar(p.id, op.valor)}
-                        className={`px-3 py-1.5 rounded text-xs text-white transition ${
-                          respuestas[p.id] === op.valor ? op.color : 'bg-gray-300'
-                        }`}
-                      >
-                        {op.label}
-                      </button>
-                    ))}
+                    {OPCIONES.map((op) => {
+                      const seleccionado = respuestas[p.id] === op.valor;
+                      return (
+                        <button
+                          key={op.valor}
+                          type="button"
+                          onClick={() => seleccionar(p.id, op.valor)}
+                          className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                            seleccionado
+                              ? op.colorActivo
+                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          {op.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
 
               <div>
-                <label className="text-sm font-medium">Observaciones (opcional):</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones (opcional):</label>
                 <textarea
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
                   rows={3}
-                  className="border rounded p-2 w-full mt-1 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   placeholder="Cuéntanos más sobre el servicio recibido..."
                 />
               </div>
@@ -108,11 +115,18 @@ export default function EvaluarModal({
             {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
 
             <div className="flex justify-end gap-2 mt-6">
-              <button onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
               <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
                 onClick={handleEnviar}
                 disabled={enviando}
-                className="px-4 py-2 bg-purple-800 text-white rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm disabled:opacity-50 transition-colors"
               >
                 {enviando ? 'Enviando...' : 'Enviar evaluación'}
               </button>
@@ -122,7 +136,13 @@ export default function EvaluarModal({
 
         {(yaFueEvaluada || enviado) && (
           <div className="flex justify-end mt-6">
-            <button onClick={onClose} className="px-4 py-2 border rounded">Cerrar</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm transition-colors"
+            >
+              Cerrar
+            </button>
           </div>
         )}
       </div>

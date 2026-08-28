@@ -28,11 +28,10 @@ export default function Dictamenes() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [mostrarNuevo, setMostrarNuevo] = useState(false);
 
-  // Editar: ahora se identifica por folio_sistema (id_solicitud), no por el id del registro dictamen,
-  // porque una solicitud puede tener varias capturas y siempre debe editarse la más reciente.
+  // Editar: se identifica por folio_sistema (id_solicitud)
   const [editandoIdSolicitud, setEditandoIdSolicitud] = useState<number | null>(null);
 
-  // Descarga del PDF (badge azul del Folio Dictamen)
+  // Descarga del PDF
   const [descargando, setDescargando] = useState<number | null>(null);
 
   const cargar = () => {
@@ -79,18 +78,23 @@ export default function Dictamenes() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-3">
-        {esAdmin && (
-          <button onClick={() => setMostrarNuevo(true)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+      {/* Cabecera de controles */}
+      <div className="flex justify-between items-center mb-4">
+        {esAdmin ? (
+          <button 
+            onClick={() => setMostrarNuevo(true)} 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+          >
             + Nuevo Dictamen
           </button>
-        )}
-        <div className="flex items-center gap-2 text-sm ml-auto">
+        ) : <div />}
+        
+        <div className="flex items-center gap-2 text-sm text-gray-700">
           <span>Mostrar</span>
           <select
             value={porPagina}
             onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }}
-            className="border rounded p-1"
+            className="border border-blue-200 rounded-md p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
           >
             {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -98,70 +102,98 @@ export default function Dictamenes() {
         </div>
       </div>
 
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
-                <span className="inline-flex items-center">{c.label}<SortIcon active={sortBy === c.key} direction={sortDir} /></span>
-              </th>
-            ))}
-            {esAdmin && <th className="p-2 text-left">Acciones</th>}
-          </tr>
-          <tr className="bg-gray-50">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-1">
-                <input
-                  value={filtros[c.key] ?? ''}
-                  onChange={(e) => setFiltros({ ...filtros, [c.key]: e.target.value })}
-                  className="border p-1 w-full text-xs font-normal"
-                />
-              </th>
-            ))}
-            {esAdmin && <th></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.id} className="border-t align-top">
-              <td className="p-2">{d.folio_sistema}</td>
-              <td className="p-2">
-                <button
-                  onClick={() => handleAbrirPdf(d.id)}
-                  disabled={descargando === d.id}
-                  className="bg-blue-600 text-white px-2 py-1 rounded text-xs disabled:opacity-50"
-                  title="Descargar / ver dictamen en PDF"
-                >
-                  {descargando === d.id ? '...' : `⬇ ${d.folio_dictamen}`}
-                </button>
-              </td>
-              <td className="p-2">{d.fecha_dictamen ?? '-'}</td>
-              <td className="p-2">{d.expediente ?? '-'}</td>
-              <td className="p-2">{d.area}</td>
-              <td className="p-2">{d.no_inventario ?? '-'}</td>
-              {esAdmin && (
-                <td className="p-2">
-                  <button onClick={() => setEditandoIdSolicitud(d.folio_sistema)} className="bg-orange-400 text-white px-3 py-1 rounded text-xs">
-                    ✏ Editar
+      {/* Contenedor de la Tabla */}
+      <div className="overflow-x-auto border border-blue-100 rounded-lg bg-white shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-blue-50/70 text-blue-900 uppercase text-xs">
+            <tr>
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-3 cursor-pointer select-none hover:bg-blue-100/50 transition-colors" onClick={() => handleSort(c.key)}>
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <SortIcon active={sortBy === c.key} direction={sortDir} />
+                  </span>
+                </th>
+              ))}
+              {esAdmin && <th className="p-3">Acciones</th>}
+            </tr>
+            <tr className="bg-gray-50 border-t border-blue-100">
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-2">
+                  <input
+                    value={filtros[c.key] ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, [c.key]: e.target.value })}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </th>
+              ))}
+              {esAdmin && <th className="p-2"></th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-blue-100">
+            {data.map((d) => (
+              <tr key={d.id} className="hover:bg-blue-50/40 transition-colors align-top">
+                <td className="p-3 font-medium text-gray-800">{d.folio_sistema}</td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleAbrirPdf(d.id)}
+                    disabled={descargando === d.id}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-xs disabled:opacity-50 transition-colors shadow-sm inline-flex items-center gap-1"
+                    title="Descargar / ver dictamen en PDF"
+                  >
+                    {descargando === d.id ? '...' : `⬇ ${d.folio_dictamen}`}
                   </button>
                 </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <td className="p-3 text-gray-700">{d.fecha_dictamen ?? '-'}</td>
+                <td className="p-3 text-gray-700">{d.expediente ?? '-'}</td>
+                <td className="p-3 text-gray-700">{d.area}</td>
+                <td className="p-3 text-gray-700">{d.no_inventario ?? '-'}</td>
+                {esAdmin && (
+                  <td className="p-3">
+                    <button 
+                      onClick={() => setEditandoIdSolicitud(d.folio_sistema)} 
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded text-xs transition-colors font-medium shadow-sm"
+                    >
+                      ✏ Editar
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {data.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+      {data.length === 0 && (
+        <div className="text-center py-8 text-gray-500 text-sm bg-white border border-blue-100 rounded-lg mt-2 shadow-sm">
+          Sin resultados encontrados.
+        </div>
+      )}
 
-      <div className="flex justify-between items-center mt-4 text-sm">
+      {/* Paginación */}
+      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <span>Mostrando registros del {inicio} al {fin} de un total de {total.toLocaleString()} registros</span>
         <div className="flex gap-2">
-          <button onClick={() => setPagina((p) => Math.max(1, p - 1))} disabled={pagina === 1} className="px-3 py-1 border rounded disabled:opacity-40">Anterior</button>
-          <span className="px-3 py-1 bg-purple-800 text-white rounded">{pagina}</span>
-          <button onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas} className="px-3 py-1 border rounded disabled:opacity-40">Siguiente</button>
+          <button 
+            onClick={() => setPagina((p) => Math.max(1, p - 1))} 
+            disabled={pagina === 1} 
+            className="px-3 py-1 border border-blue-200 rounded bg-white hover:bg-blue-50 disabled:opacity-40 transition-colors shadow-sm"
+          >
+            Anterior
+          </button>
+          <span className="px-3 py-1 bg-blue-600 text-white font-medium rounded shadow-sm">{pagina}</span>
+          <button 
+            onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} 
+            disabled={pagina === totalPaginas} 
+            className="px-3 py-1 border border-blue-200 rounded bg-white hover:bg-blue-50 disabled:opacity-40 transition-colors shadow-sm"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 
+      {/* Modales */}
       {mostrarNuevo && (
         <NuevoDictamenModal onClose={() => setMostrarNuevo(false)} onCreado={cargar} />
       )}

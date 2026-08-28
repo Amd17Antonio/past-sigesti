@@ -142,138 +142,217 @@ export default function NuevaSolicitudVpnModal({
     form.justificacion_uso && form.fecha_inicio && form.fecha_fin
   );
 
+  const campoEditable = 'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
-      <div className="bg-white rounded shadow-lg w-[42rem] max-w-[95vw] overflow-hidden">
-        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
-          Nueva Solicitud de Acceso Remoto (VPN)
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl border border-gray-100 w-[42rem] max-w-[95vw] my-6 overflow-hidden">
+        <div className="flex justify-between items-center px-5 py-4 border-b bg-blue-600">
+          <h2 className="text-lg font-bold text-white">
+            Nueva Solicitud de Acceso Remoto (VPN)
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white text-xl leading-none transition-colors"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+          {errores.length > 0 && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+              <ul className="list-disc pl-4 space-y-0.5">
+                {errores.map((msg, i) => (
+                  <li key={i}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Datos del usuario */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Datos del Usuario</div>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-3 py-2 font-semibold text-xs uppercase tracking-wider text-gray-600 border-b border-gray-200">
+              Datos del Usuario
+            </div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Nombre del usuario *</label>
-                <input className="border p-2 w-full mt-1" value={form.nombre_usuario}
-                  onChange={(e) => handleChange('nombre_usuario', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre del usuario <span className="text-red-500">*</span></label>
+                <input
+                  className={campoEditable}
+                  value={form.nombre_usuario}
+                  onChange={(e) => handleChange('nombre_usuario', e.target.value)}
+                />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Puesto *</label>
-                <select className="border p-2 w-full mt-1" value={form.puesto}
-                  onChange={(e) => handleChange('puesto', e.target.value)}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Puesto <span className="text-red-500">*</span></label>
+                <select
+                  className={campoEditable}
+                  value={form.puesto}
+                  onChange={(e) => handleChange('puesto', e.target.value)}
+                >
                   <option value="">--Seleccionar--</option>
-                  {cargos.map((c) => <option key={c.id} value={c.cargo}>{c.cargo}</option>)}
+                  {cargos.map((c) => (
+                    <option key={c.id} value={c.cargo}>{c.cargo}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Área de adscripción *</label>
-                <select className="border p-2 w-full mt-1" value={form.id_area}
-                  onChange={(e) => handleChange('id_area', e.target.value)}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Área de adscripción <span className="text-red-500">*</span></label>
+                <select
+                  className={campoEditable}
+                  value={form.id_area}
+                  onChange={(e) => handleChange('id_area', e.target.value)}
+                >
                   <option value="">--Seleccionar--</option>
-                  {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
+                  {areas.map((a) => (
+                    <option key={a.id} value={a.id}>{a.area}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Dependencia o Entidad *</label>
-                <input className="border p-2 w-full mt-1" value={form.dependencia}
-                  onChange={(e) => handleChange('dependencia', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Dependencia o Entidad <span className="text-red-500">*</span></label>
+                <input
+                  className={campoEditable}
+                  value={form.dependencia}
+                  onChange={(e) => handleChange('dependencia', e.target.value)}
+                />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Correo institucional *</label>
-                <input type="email" className="border p-2 w-full mt-1" value={form.correo_institucional}
-                  onChange={(e) => handleChange('correo_institucional', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Correo institucional <span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  className={campoEditable}
+                  value={form.correo_institucional}
+                  onChange={(e) => handleChange('correo_institucional', e.target.value)}
+                />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Teléfono / Extensión *</label>
-                <div className="flex gap-2 mt-1">
-                  <input className="border p-2 w-1/2" placeholder="Teléfono" value={form.telefono}
-                    onChange={(e) => handleChange('telefono', e.target.value)} />
-                  <input className="border p-2 w-1/2" placeholder="Ext." value={form.extension}
-                    onChange={(e) => handleChange('extension', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Teléfono / Extensión <span className="text-red-500">*</span></label>
+                <div className="flex gap-2">
+                  <input
+                    className={campoEditable}
+                    placeholder="Teléfono"
+                    value={form.telefono}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
+                  />
+                  <input
+                    className={campoEditable}
+                    placeholder="Ext."
+                    value={form.extension}
+                    onChange={(e) => handleChange('extension', e.target.value)}
+                  />
                 </div>
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
-                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
-                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Persona que autoriza <span className="text-red-500">*</span></label>
+                <select
+                  className={campoEditable}
+                  value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}
+                >
                   <option value="">--Seleccionar--</option>
-                  {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  {autorizantes.map((a) => (
+                    <option key={a.id} value={a.id}>{a.nombre}</option>
+                  ))}
                 </select>
               </div>
 
               {autorizaSeleccionado && (
-                <p className="text-xs text-gray-500 col-span-2">
-                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
-                </p>
+                <div className="col-span-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200">
+                  <span className="font-medium text-gray-700">Cargo:</span> {autorizaSeleccionado.cargo || '-'} &nbsp;|&nbsp; <span className="font-medium text-gray-700">Correo:</span> {autorizaSeleccionado.correo || '-'}
+                </div>
               )}
             </div>
           </div>
 
           {/* Datos del acceso remoto */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Datos del Acceso Remoto</div>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-3 py-2 font-semibold text-xs uppercase tracking-wider text-gray-600 border-b border-gray-200">
+              Datos del Acceso Remoto
+            </div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Link del sistema *</label>
-                <input className="border p-2 w-full mt-1" placeholder="https://sistema.oaxaca.gob.mx/"
-                  value={form.link_sistema} onChange={(e) => handleChange('link_sistema', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Link del sistema <span className="text-red-500">*</span></label>
+                <input
+                  className={campoEditable}
+                  placeholder="https://sistema.oaxaca.gob.mx/"
+                  value={form.link_sistema}
+                  onChange={(e) => handleChange('link_sistema', e.target.value)}
+                />
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">IP y puerto del servidor *</label>
-                <input className="border p-2 w-full mt-1" placeholder="192.168.1.100:8080,443"
-                  value={form.ip_puerto} onChange={(e) => handleChange('ip_puerto', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">IP y puerto del servidor <span className="text-red-500">*</span></label>
+                <input
+                  className={campoEditable}
+                  placeholder="192.168.1.100:8080,443"
+                  value={form.ip_puerto}
+                  onChange={(e) => handleChange('ip_puerto', e.target.value)}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Formato: IP:puerto (sin espacios). Ejemplo: 172.15.15.15:445
                 </p>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Fecha inicial *</label>
-                <input type="date" className="border p-2 w-full mt-1" value={form.fecha_inicio}
-                  onChange={(e) => handleChange('fecha_inicio', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Fecha inicial <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  className={campoEditable}
+                  value={form.fecha_inicio}
+                  onChange={(e) => handleChange('fecha_inicio', e.target.value)}
+                />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Fecha final *</label>
-                <input type="date" className="border p-2 w-full mt-1" value={form.fecha_fin}
-                  onChange={(e) => handleChange('fecha_fin', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Fecha final <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  className={campoEditable}
+                  value={form.fecha_fin}
+                  onChange={(e) => handleChange('fecha_fin', e.target.value)}
+                />
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Justificación de uso * (mínimo 10 caracteres)</label>
-                <textarea className="border p-2 w-full mt-1" rows={3} value={form.justificacion_uso}
-                  onChange={(e) => handleChange('justificacion_uso', e.target.value)} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Justificación de uso <span className="text-red-500">*</span> (mínimo 10 caracteres)
+                </label>
+                <textarea
+                  className={`${campoEditable} resize-none`}
+                  rows={3}
+                  value={form.justificacion_uso}
+                  onChange={(e) => handleChange('justificacion_uso', e.target.value)}
+                />
               </div>
             </div>
           </div>
-
-          {errores.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <ul className="text-red-600 text-sm list-disc pl-4 space-y-0.5">
-                {errores.map((msg, i) => <li key={i}>{msg}</li>)}
-              </ul>
-            </div>
-          )}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 border rounded">✕ Cancelar</button>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50">
           <button
+            type="button"
+            onClick={onClose}
+            disabled={guardando}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
             onClick={guardar}
             disabled={guardando || !formCompleto}
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm disabled:opacity-50 transition-colors"
           >
-            💾 {guardando ? 'Guardando...' : 'Guardar'}
+            {guardando ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
       </div>

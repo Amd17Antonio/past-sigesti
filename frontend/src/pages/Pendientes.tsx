@@ -74,80 +74,93 @@ export default function Pendientes() {
 
   return (
     <div className="p-6">
+      {/* Cabecera, botones de navegación, buscador y creación */}
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold">Solicitudes Pendientes</h1>
+          <h1 className="text-xl font-bold text-gray-800">Solicitudes Pendientes</h1>
           {puedeRegresar && (
             <button
               onClick={() => navigate('/solicitudes-uie')}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+              className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md text-sm font-medium transition-colors shadow-sm inline-flex items-center gap-1"
             >
               ← Regresar
             </button>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
           <input
-            placeholder="Buscar..."
+            placeholder="Buscar de forma general..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="border p-2 rounded"
+            className="border border-blue-200 rounded-md p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none w-72"
           />
           {puedeCrear && (
-            <button onClick={() => setMostrarCrear(true)} className="bg-blue-600 text-white px-4 py-2 rounded">
+            <button
+              onClick={() => setMostrarCrear(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors shadow-sm"
+            >
               + Crear Solicitud
             </button>
           )}
         </div>
       </div>
 
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
-                <span className="inline-flex items-center">
-                  {c.label}
-                  <SortIcon active={sortKey === c.key} direction={sortDir} />
-                </span>
-              </th>
-            ))}
-            {puedeAsignar && <th className="p-2 text-left">Asignar</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {ordenadas.map((s) => (
-            <tr key={s.id} className="border-t">
-              <td className="p-2">
-                <button
-                  onClick={() => setDetalleId(s.id)}
-                  className="mr-1 hover:opacity-70"
-                  title="Ver detalle"
-                >
-                  👁
-                </button>
-                {s.id}
-              </td>
-              <td className="p-2">{s.solicitante}</td>
-              <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.descripcion}</td>
-              <td className="p-2">{s.area}</td>
-              {puedeAsignar && (
-                <td className="p-2">
-                  <button
-                    onClick={() => setModalId(s.id)}
-                    className="px-3 py-1 bg-purple-800 text-white rounded text-xs"
-                  >
-                    {rol === 'Soporte Técnico' ? 'Autoasignar' : 'Asignar'}
-                  </button>
-                </td>
-              )}
+      {/* Contenedor de la Tabla */}
+      <div className="overflow-x-auto border border-blue-100 rounded-lg bg-white shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-blue-50/70 text-blue-900 uppercase text-xs">
+            <tr>
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-3 cursor-pointer select-none hover:bg-blue-100/50 transition-colors" onClick={() => handleSort(c.key)}>
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <SortIcon active={sortKey === c.key} direction={sortDir} />
+                  </span>
+                </th>
+              ))}
+              {puedeAsignar && <th className="p-3 text-left">Asignar</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-blue-100">
+            {ordenadas.map((s) => (
+              <tr key={s.id} className="hover:bg-blue-50/40 transition-colors align-top">
+                <td className="p-3 font-medium text-gray-800">
+                  <span className="inline-flex items-center gap-1.5">
+                    <button
+                      onClick={() => setDetalleId(s.id)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 p-1 rounded text-xs transition-colors shadow-sm"
+                      title="Ver detalle"
+                    >
+                      👁
+                    </button>
+                    {s.id}
+                  </span>
+                </td>
+                <td className="p-3 text-gray-700">{s.solicitante}</td>
+                <td className="p-3 text-gray-700">{s.extension ?? '-'}</td>
+                <td className="p-3 text-gray-700 max-w-xs">{s.descripcion}</td>
+                <td className="p-3 text-gray-700">{s.area}</td>
+                {puedeAsignar && (
+                  <td className="p-3">
+                    <button
+                      onClick={() => setModalId(s.id)}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors shadow-sm"
+                    >
+                      {rol === 'Soporte Técnico' ? 'Autoasignar' : 'Asignar'}
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {ordenadas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+      {ordenadas.length === 0 && (
+        <div className="text-center py-8 text-gray-500 text-sm bg-white border border-blue-100 rounded-lg mt-2 shadow-sm">
+          Sin resultados encontrados.
+        </div>
+      )}
 
       {modalId !== null && (
         <AsignarModal solicitudId={modalId} onClose={() => setModalId(null)} onAsignado={cargar} />

@@ -9,6 +9,8 @@ import { OPCIONES_ESTATUS } from '../../utils/opcionesEstatus';
 import { opcionesEstatusDisponibles } from '../../utils/estatusFlujo';
 
 const ORDEN_ESTATUS_TELEFONIA = ['creado_cgd', 'atendiendo_dgti', 'activo'];
+const inputClass = 'border border-slate-300 rounded px-3 py-2 text-sm w-full text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500';
+const labelClass = 'text-xs font-semibold uppercase text-slate-600 mb-1 block';
 
 export default function PanelEstatusTelefoniaModal({
   idSolicitud, onClose, onActualizado,
@@ -24,18 +26,23 @@ export default function PanelEstatusTelefoniaModal({
   const [error, setError] = useState('');
 
   const cargar = () => {
+    let activo = true;
     setCargando(true);
-    getSolicitudTelefoniaDetalle(idSolicitud).then(({ solicitud }) => {
-      setSolicitud(solicitud);
-      setNuevoEstatus(solicitud.estatus);
-      setFolioGlpi(solicitud.folio_glpi ?? '');
-      setObservacionGlpi(solicitud.observacion_glpi ?? '');
-      setMotivoBaja(solicitud.motivo_baja ?? '');
+    getSolicitudTelefoniaDetalle(idSolicitud).then(({ solicitud: s }) => {
+      if (!activo) return;
+      setSolicitud(s);
+      setNuevoEstatus(s.estatus);
+      setFolioGlpi(s.folio_glpi ?? '');
+      setObservacionGlpi(s.observacion_glpi ?? '');
+      setMotivoBaja(s.motivo_baja ?? '');
       setCargando(false);
     });
+    return () => { activo = false; };
   };
 
-  useEffect(cargar, [idSolicitud]);
+  useEffect(() => {
+    cargar();
+  }, [idSolicitud]);
 
   const yaActiva = solicitud?.estatus === 'activo' && nuevoEstatus === 'activo';
 
@@ -60,8 +67,11 @@ export default function PanelEstatusTelefoniaModal({
 
   if (cargando || !solicitud) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded shadow-lg p-6">Cargando...</div>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999] p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center text-slate-500 text-sm flex items-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span>Cargando información...</span>
+        </div>
       </div>
     );
   }
@@ -73,102 +83,138 @@ export default function PanelEstatusTelefoniaModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded shadow-lg w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto relative">
-        <button onClick={onClose} className="absolute top-4 right-5 text-gray-400 hover:text-gray-600">×</button>
-        <h2 className="text-2xl mb-4">Folio: {solicitud.id}</h2>
-
-        <div className="flex gap-6 border-b mb-6 text-sm">
-          <button onClick={() => setTab('estatus')} className={`pb-2 -mb-px ${tab === 'estatus' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}>CAMBIAR EL ESTATUS</button>
-          <button onClick={() => setTab('info')} className={`pb-2 -mb-px ${tab === 'info' ? 'border-b-2 border-blue-600 font-semibold' : 'text-gray-500'}`}>INFORMACIÓN GENERAL</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-blue-100 flex flex-col relative">
+        {/* Cabecera */}
+        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center shrink-0">
+          <span className="text-base">Folio: #{solicitud.id}</span>
+          <button onClick={onClose} className="text-blue-100 hover:text-white text-xl leading-none transition">✕</button>
         </div>
 
-        {tab === 'estatus' ? (
-          <div className="space-y-4">
-            <p className="text-2xl">
-              Estado actual: <span className="uppercase text-gray-500 font-light">
-                {OPCIONES_ESTATUS.find((o) => o.value === solicitud.estatus)?.label}
-              </span>
-            </p>
+        {/* Pestañas de Navegación */}
+        <div className="flex gap-6 border-b border-slate-200 px-5 pt-3 text-sm shrink-0 bg-slate-50">
+          <button
+            onClick={() => setTab('estatus')}
+            className={`pb-2 -mb-px transition font-medium ${tab === 'estatus' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            CAMBIAR EL ESTATUS
+          </button>
+          <button
+            onClick={() => setTab('info')}
+            className={`pb-2 -mb-px transition font-medium ${tab === 'info' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            INFORMACIÓN GENERAL
+          </button>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <span className="bg-gray-100 px-3 py-2 text-sm text-gray-600 rounded-l">NUEVO ESTATUS</span>
-              <select
-                value={nuevoEstatus}
-                onChange={(e) => setNuevoEstatus(e.target.value as EstatusTelefonia)}
-                className="border p-2 flex-1"
-                disabled={solicitud.estatus === 'baja'}
-              >
-                {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-
-            {nuevoEstatus === 'atendiendo_dgti' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Folio GLPI:</label>
-                  <input className="border p-2 w-full" value={folioGlpi} onChange={(e) => setFolioGlpi(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Observaciones del sistema GLPI:</label>
-                  <textarea className="border p-2 w-full" rows={3} value={observacionGlpi} onChange={(e) => setObservacionGlpi(e.target.value)} />
-                </div>
-              </>
-            )}
-
-            {nuevoEstatus === 'baja' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Motivo de baja:</label>
-                <textarea className="border p-2 w-full" rows={3} value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} />
+        {/* Contenido */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 text-sm">
+          {tab === 'estatus' ? (
+            <div className="space-y-4">
+              <div className="text-lg text-slate-800 font-medium">
+                Estado actual:{' '}
+                <span className="uppercase text-slate-500 font-normal">
+                  {OPCIONES_ESTATUS.find((o) => o.value === solicitud.estatus)?.label}
+                </span>
               </div>
-            )}
 
-            {yaActiva && (
-              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
-                Esta solicitud ya está activa.
-              </p>
-            )}
+              <div className="flex items-center shadow-sm rounded">
+                <span className="bg-slate-100 border border-r-0 border-slate-300 px-3 py-2 text-xs font-semibold uppercase text-slate-600 rounded-l flex items-center">
+                  Nuevo estatus
+                </span>
+                <select
+                  value={nuevoEstatus}
+                  onChange={(e) => setNuevoEstatus(e.target.value as EstatusTelefonia)}
+                  className="border border-slate-300 rounded-r px-3 py-2 text-sm flex-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  disabled={solicitud.estatus === 'baja'}
+                >
+                  {opcionesDisponibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+              {nuevoEstatus === 'atendiendo_dgti' && (
+                <>
+                  <div>
+                    <label className={labelClass}>Folio GLPI:</label>
+                    <input className={inputClass} value={folioGlpi} onChange={(e) => setFolioGlpi(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Observaciones del sistema GLPI:</label>
+                    <textarea className={inputClass} rows={3} value={observacionGlpi} onChange={(e) => setObservacionGlpi(e.target.value)} />
+                  </div>
+                </>
+              )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={aplicar}
-                disabled={enviando || yaActiva}
-                className="px-6 py-2 rounded text-white disabled:opacity-50"
-                style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
-              >
-                {enviando ? 'Aplicando...' : 'Aplicar ⤴'}
-              </button>
+              {nuevoEstatus === 'baja' && (
+                <div>
+                  <label className={labelClass}>Motivo de baja:</label>
+                  <textarea className={inputClass} rows={3} value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} />
+                </div>
+              )}
+
+              {yaActiva && (
+                <div className="text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 text-sm font-medium">
+                  Esta solicitud ya está activa.
+                </div>
+              )}
+
+              {error && (
+                <div className="text-red-600 bg-red-50 border border-red-200 rounded p-3 text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={aplicar}
+                  disabled={enviando || yaActiva}
+                  className="px-5 py-2 rounded text-white disabled:opacity-50 font-medium text-sm shadow-sm transition hover:opacity-90"
+                  style={{ backgroundColor: colorPorEstatus(nuevoEstatus) }}
+                >
+                  {enviando ? 'Aplicando...' : 'Aplicar ⤴'}
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <tbody>
-              <Fila label="Folio (ID)" valor={solicitud.id} />
-              <Fila label="Trámite" valor={solicitud.tipo_tramite?.replace(/_/g, ' ')} />
-              <Fila label="Nombre" valor={`${solicitud.nombre ?? ''} ${solicitud.apellido_paterno ?? ''} ${solicitud.apellido_materno ?? ''}`} />
-              <Fila label="Puesto" valor={solicitud.puesto} />
-              <Fila label="Extensión" valor={solicitud.extension} />
-              <Fila label="DID" valor={solicitud.did} />
-              <Fila label="Correo institucional" valor={solicitud.correo_institucional} />
-              <Fila label="Categoría" valor={solicitud.categoria} />
-              <Fila label="Ubicación" valor={`Ed:${solicitud.edificio ?? '-'} Nivel:${solicitud.nivel ?? '-'}`} />
-              <Fila label="Equipo" valor={<>MODELO: {solicitud.modelo}<br />MAC: {solicitud.mac}<br />No. SERIE: {solicitud.numero_serie}</>} />
-              <Fila
-                label="Estatus"
-                valor={
-                  <>
-                    CREADO EN CGD: {formatoFecha(solicitud.fecha_creado_cgd ?? solicitud.created_at)}
-                    {solicitud.fecha_atendiendo_dgti && <><br /><br />ATENDIENDO DGTI: {formatoFecha(solicitud.fecha_atendiendo_dgti)}<br />FOLIO GLPI: {solicitud.folio_glpi}</>}
-                    {solicitud.fecha_activo && <><br /><br />SERVICIO ACTIVO: {formatoFecha(solicitud.fecha_activo)}</>}
-                    {solicitud.fecha_baja && <><br /><br />BAJA: {formatoFecha(solicitud.fecha_baja)}<br />MOTIVO: {solicitud.motivo_baja}</>}
-                  </>
-                }
-              />
-            </tbody>
-          </table>
-        )}
+          ) : (
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <tbody>
+                  <Fila label="Folio (ID)" valor={solicitud.id} />
+                  <Fila label="Trámite" valor={solicitud.tipo_tramite?.replace(/_/g, ' ')} />
+                  <Fila label="Nombre" valor={`${solicitud.nombre ?? ''} ${solicitud.apellido_paterno ?? ''} ${solicitud.apellido_materno ?? ''}`} />
+                  <Fila label="Puesto" valor={solicitud.puesto} />
+                  <Fila label="Extensión" valor={solicitud.extension} />
+                  <Fila label="DID" valor={solicitud.did} />
+                  <Fila label="Correo institucional" valor={solicitud.correo_institucional} />
+                  <Fila label="Categoría" valor={solicitud.categoria} />
+                  <Fila label="Ubicación" valor={`Ed: ${solicitud.edificio ?? '-'} | Nivel: ${solicitud.nivel ?? '-'}`} />
+                  <Fila label="Equipo" valor={<span className="space-y-0.5 block"><strong>MODELO:</strong> {solicitud.modelo}<br /><strong>MAC:</strong> {solicitud.mac}<br /><strong>No. SERIE:</strong> {solicitud.numero_serie}</span>} />
+                  <Fila
+                    label="Estatus"
+                    valor={
+                      <div className="space-y-2">
+                        <div><strong>CREADO EN CGD:</strong> {formatoFecha(solicitud.fecha_creado_cgd ?? solicitud.created_at)}</div>
+                        {solicitud.fecha_atendiendo_dgti && <div className="text-slate-600"><strong>ATENDIENDO DGTI:</strong> {formatoFecha(solicitud.fecha_atendiendo_dgti)}<br /><strong>FOLIO GLPI:</strong> {solicitud.folio_glpi}</div>}
+                        {solicitud.fecha_activo && <div className="text-slate-600"><strong>SERVICIO ACTIVO:</strong> {formatoFecha(solicitud.fecha_activo)}</div>}
+                        {solicitud.fecha_baja && <div className="text-red-600"><strong>BAJA:</strong> {formatoFecha(solicitud.fecha_baja)}<br /><strong>MOTIVO:</strong> {solicitud.motivo_baja}</div>}
+                      </div>
+                    }
+                  />
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Pie */}
+        <div className="flex justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-200 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 transition text-sm font-medium"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -176,9 +222,9 @@ export default function PanelEstatusTelefoniaModal({
 
 function Fila({ label, valor }: { label: string; valor: any }) {
   return (
-    <tr className="odd:bg-gray-50">
-      <td className="p-3 font-semibold text-right w-1/3 align-top">{label}:</td>
-      <td className="p-3 align-top">{valor}</td>
+    <tr className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
+      <td className="p-3 font-semibold text-right w-1/3 align-top text-slate-600">{label}:</td>
+      <td className="p-3 align-top text-slate-700">{valor ?? '-'}</td>
     </tr>
   );
 }

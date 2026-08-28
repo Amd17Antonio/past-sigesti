@@ -21,7 +21,7 @@ export default function CerrarModal({ solicitudId, onClose, onCerrado }: Props) 
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    getPoas().then(setPoas);
+    getPoas().then(setPoas).catch(() => {});
   }, []);
 
   const handleAceptar = async () => {
@@ -50,16 +50,18 @@ export default function CerrarModal({ solicitudId, onClose, onCerrado }: Props) 
     }
   };
 
+  const inputClass = "w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4";
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded p-6 w-[420px] shadow-lg">
-        <h2 className="font-bold text-lg mb-4">Cerrar servicio</h2>
+      <div className="bg-white rounded-lg p-6 w-[420px] shadow-xl border border-gray-100">
+        <h2 className="font-bold text-lg text-gray-800 mb-4">Cerrar servicio</h2>
 
-        <label className="block text-sm font-medium mb-1">POA :</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">POA:</label>
         <select
           value={idPoa}
           onChange={(e) => setIdPoa(e.target.value ? Number(e.target.value) : '')}
-          className="border p-2 w-full mb-4 rounded"
+          className={inputClass}
         >
           <option value="">Seleccionar</option>
           {poas.map((p) => (
@@ -67,32 +69,39 @@ export default function CerrarModal({ solicitudId, onClose, onCerrado }: Props) 
           ))}
         </select>
 
-        <label className="block text-sm font-medium mb-1">Número de Equipos o Servicios:</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Número de Equipos o Servicios:</label>
         <input
           type="number"
           min={0}
           value={numServicios}
           onChange={(e) => setNumServicios(Math.max(0, Number(e.target.value)))}
-          className="border p-2 w-full mb-4 rounded"
+          className={inputClass}
         />
 
-        <label className="block text-sm font-medium mb-1">Observaciones</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
         <textarea
           value={observaciones}
           onChange={(e) => setObservaciones(e.target.value)}
           placeholder="Observaciones"
           rows={3}
-          className="border p-2 w-full mb-2 rounded"
+          className={`${inputClass} mb-2 resize-none`}
         />
 
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
-        <div className="flex justify-end gap-2 mt-2">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600">Cancelar</button>
+        <div className="flex justify-end gap-2 mt-4">
           <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
             onClick={handleAceptar}
             disabled={enviando}
-            className="px-4 py-2 bg-purple-800 text-white rounded disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm disabled:opacity-50 transition-colors"
           >
             {enviando ? 'Cerrando...' : 'Aceptar'}
           </button>

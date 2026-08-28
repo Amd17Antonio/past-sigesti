@@ -127,25 +127,28 @@ export default function NuevaSolicitudCorreoModal({
     : !!(form.nombre && form.id_area && form.correo_institucional && form.motivo_baja.length >= 10 && form.id_autoriza);
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
-      <div className="bg-white rounded shadow-lg w-[42rem] max-w-[95vw] overflow-hidden">
-        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
-          Nueva Solicitud de Correo Institucional
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl w-[42rem] max-w-[95vw] border border-blue-100 overflow-hidden flex flex-col my-6">
+        <div className="bg-blue-900 border-b border-blue-800 text-white px-6 py-4 font-bold flex justify-between items-center">
+          <span>Nueva Solicitud de Correo Institucional</span>
+          <button onClick={onClose} className="text-white/80 hover:text-white text-xl leading-none transition-colors">✕</button>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-5 max-h-[72vh] overflow-y-auto bg-white">
           {/* Tipo de solicitud */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Tipo de Solicitud</div>
-            <div className="p-3">
-              <label className="text-xs font-medium text-gray-600">Tipo de solicitud *</label>
-              <select className="border p-2 w-full mt-1" value={form.tipo_solicitud}
-                onChange={(e) => handleChange('tipo_solicitud', e.target.value)}>
+          <div className="border border-blue-200 rounded-lg overflow-hidden">
+            <div className="bg-blue-50/70 px-4 py-2.5 font-semibold text-xs uppercase tracking-wider text-blue-950 border-b border-blue-200">Tipo de Solicitud</div>
+            <div className="p-4 bg-blue-50/10">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Tipo de solicitud *</label>
+              <select 
+                className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                value={form.tipo_solicitud}
+                onChange={(e) => handleChange('tipo_solicitud', e.target.value)}
+              >
                 <option value="alta">Alta de correo — Solicitud de cuenta de correo electrónico oficial</option>
                 <option value="baja">Baja de correo — Formato de baja de correo institucional</option>
               </select>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-blue-900/80 mt-2 font-medium">
                 {esAlta
                   ? 'Se generará el formato "Solicitud de cuenta de correo electrónico oficial".'
                   : 'Se generará el "Formato de baja de correo institucional".'}
@@ -154,102 +157,140 @@ export default function NuevaSolicitudCorreoModal({
           </div>
 
           {/* Datos del usuario */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Datos del Usuario</div>
-            <div className="p-3 grid grid-cols-2 gap-3">
+          <div className="border border-blue-200 rounded-lg overflow-hidden">
+            <div className="bg-blue-50/70 px-4 py-2.5 font-semibold text-xs uppercase tracking-wider text-blue-950 border-b border-blue-200">Datos del Usuario</div>
+            <div className="p-4 grid grid-cols-2 gap-3.5 bg-blue-50/10">
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Nombre *</label>
-                <input className="border p-2 w-full mt-1" value={form.nombre}
-                  onChange={(e) => handleChange('nombre', e.target.value)} />
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre *</label>
+                <input 
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  value={form.nombre}
+                  onChange={(e) => handleChange('nombre', e.target.value)} 
+                />
               </div>
 
               {esAlta && (
                 <>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Puesto *</label>
-                    <select className="border p-2 w-full mt-1" value={form.puesto}
-                      onChange={(e) => handleChange('puesto', e.target.value)}>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Puesto *</label>
+                    <select 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      value={form.puesto}
+                      onChange={(e) => handleChange('puesto', e.target.value)}
+                    >
                       <option value="">--Seleccionar--</option>
                       {cargos.map((c) => <option key={c.id} value={c.cargo}>{c.cargo}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Área interna *</label>
-                    <input className="border p-2 w-full mt-1" value={form.area_interna}
-                      onChange={(e) => handleChange('area_interna', e.target.value)} />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Área interna *</label>
+                    <input 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      value={form.area_interna}
+                      onChange={(e) => handleChange('area_interna', e.target.value)} 
+                    />
                   </div>
                 </>
               )}
 
               <div className={esAlta ? '' : 'col-span-2'}>
-                <label className="text-xs font-medium text-gray-600">Dependencia / Área *</label>
-                <select className="border p-2 w-full mt-1" value={form.id_area}
-                  onChange={(e) => handleChange('id_area', e.target.value)}>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Dependencia / Área *</label>
+                <select 
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  value={form.id_area}
+                  onChange={(e) => handleChange('id_area', e.target.value)}
+                >
                   <option value="">--Seleccionar--</option>
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
                 </select>
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Persona que autoriza *</label>
-                <select className="border p-2 w-full mt-1" value={form.id_autoriza}
-                  onChange={(e) => handleChange('id_autoriza', e.target.value)}>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Persona que autoriza *</label>
+                <select 
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  value={form.id_autoriza}
+                  onChange={(e) => handleChange('id_autoriza', e.target.value)}
+                >
                   <option value="">--Seleccionar--</option>
                   {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
               </div>
 
               {autorizaSeleccionado && (
-                <p className="text-xs text-gray-500 col-span-2">
-                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
-                </p>
+                <div className="col-span-2 bg-blue-50/50 p-2.5 rounded-lg border border-blue-100">
+                  <p className="text-xs text-blue-900 font-medium">
+                    Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
+                  </p>
+                </div>
               )}
             </div>
           </div>
 
           {/* Contacto / cuenta */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">
+          <div className="border border-blue-200 rounded-lg overflow-hidden">
+            <div className="bg-blue-50/70 px-4 py-2.5 font-semibold text-xs uppercase tracking-wider text-blue-950 border-b border-blue-200">
               {esAlta ? 'Datos de Contacto y Cuenta' : 'Datos de la Cuenta a Dar de Baja'}
             </div>
-            <div className="p-3 grid grid-cols-2 gap-3">
+            <div className="p-4 grid grid-cols-2 gap-3.5 bg-blue-50/10">
               {esAlta ? (
                 <>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Correo secundario *</label>
-                    <input type="email" className="border p-2 w-full mt-1" value={form.correo_secundario}
-                      onChange={(e) => handleChange('correo_secundario', e.target.value)} />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Correo secundario *</label>
+                    <input 
+                      type="email" 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      value={form.correo_secundario}
+                      onChange={(e) => handleChange('correo_secundario', e.target.value)} 
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Teléfono de contacto *</label>
-                    <input className="border p-2 w-full mt-1" placeholder="Solo dígitos"
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Teléfono de contacto *</label>
+                    <input 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
+                      placeholder="Solo dígitos"
                       value={form.telefono_contacto}
-                      onChange={(e) => handleChange('telefono_contacto', e.target.value)} />
+                      onChange={(e) => handleChange('telefono_contacto', e.target.value)} 
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Extensión *</label>
-                    <input className="border p-2 w-full mt-1" placeholder="Solo dígitos"
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Extensión *</label>
+                    <input 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
+                      placeholder="Solo dígitos"
                       value={form.extension}
-                      onChange={(e) => handleChange('extension', e.target.value)} />
+                      onChange={(e) => handleChange('extension', e.target.value)} 
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600">Correo solicitado *</label>
-                    <input className="border p-2 w-full mt-1" placeholder="ale.lopez@oaxaca.gob.mx"
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Correo solicitado *</label>
+                    <input 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
+                      placeholder="ale.lopez@oaxaca.gob.mx"
                       value={form.correo_institucional}
-                      onChange={(e) => handleChange('correo_institucional', e.target.value)} />
+                      onChange={(e) => handleChange('correo_institucional', e.target.value)} 
+                    />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="col-span-2">
-                    <label className="text-xs font-medium text-gray-600">Correo institucional a dar de baja *</label>
-                    <input type="email" className="border p-2 w-full mt-1" value={form.correo_institucional}
-                      onChange={(e) => handleChange('correo_institucional', e.target.value)} />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Correo institucional a dar de baja *</label>
+                    <input 
+                      type="email" 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      value={form.correo_institucional}
+                      onChange={(e) => handleChange('correo_institucional', e.target.value)} 
+                    />
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs font-medium text-gray-600">Motivo de baja * (mínimo 10 caracteres)</label>
-                    <textarea className="border p-2 w-full mt-1" rows={3} value={form.motivo_baja}
-                      onChange={(e) => handleChange('motivo_baja', e.target.value)} />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Motivo de baja * (mínimo 10 caracteres)</label>
+                    <textarea 
+                      className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
+                      rows={3} 
+                      value={form.motivo_baja}
+                      onChange={(e) => handleChange('motivo_baja', e.target.value)} 
+                    />
                   </div>
                 </>
               )}
@@ -257,20 +298,25 @@ export default function NuevaSolicitudCorreoModal({
           </div>
 
           {errores.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded p-3">
-              <ul className="text-red-600 text-sm list-disc pl-4 space-y-0.5">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 shadow-xs">
+              <ul className="text-red-700 text-sm list-disc pl-4 space-y-1 font-medium">
                 {errores.map((msg, i) => <li key={i}>{msg}</li>)}
               </ul>
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 border rounded">✕ Cancelar</button>
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-blue-100 bg-blue-50/20">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 font-medium transition shadow-sm"
+          >
+            ✕ Cancelar
+          </button>
           <button
             onClick={guardar}
             disabled={guardando || !formCompleto}
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition shadow-sm"
           >
             💾 {guardando ? 'Guardando...' : 'Guardar'}
           </button>

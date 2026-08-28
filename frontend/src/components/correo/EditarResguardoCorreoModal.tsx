@@ -98,18 +98,18 @@ export default function EditarResguardoCorreoModal({
     }
   };
 
-  const campoGris = 'w-full border rounded p-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed';
+  const campoGris = 'w-full border border-blue-200 rounded-lg p-2.5 text-sm bg-gray-50 text-gray-500 cursor-not-allowed shadow-xs';
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-6">
-        <div className="flex justify-between items-center px-5 py-4 border-b bg-blue-600 rounded-t-lg">
-          <h2 className="text-lg font-semibold text-white">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-6 border border-blue-100 overflow-hidden flex flex-col">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-blue-800 bg-blue-900">
+          <h2 className="text-base font-bold text-white">
             Editar correo institucional asignado — Folio: {folio}
           </h2>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white text-xl leading-none"
+            className="text-white/80 hover:text-white text-xl leading-none transition-colors"
             aria-label="Cerrar"
           >
             ×
@@ -119,101 +119,101 @@ export default function EditarResguardoCorreoModal({
         {cargando ? (
           <div className="p-8 text-center text-gray-500 text-sm">Cargando información…</div>
         ) : (
-          <div className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
+          <div className="px-6 py-5 space-y-5 max-h-[72vh] overflow-y-auto">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-2">
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 font-medium shadow-xs">
                 {error}
               </div>
             )}
 
             {/* Datos de la solicitud (solo lectura) */}
-            <div className="border rounded">
-              <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">
+            <div className="border border-blue-200 rounded-lg overflow-hidden">
+              <div className="bg-blue-50/70 px-4 py-2.5 font-semibold text-xs uppercase tracking-wider text-blue-950 border-b border-blue-200">
                 Datos de la Solicitud (solo lectura)
               </div>
-              <div className="p-3 grid grid-cols-2 gap-3">
+              <div className="p-4 grid grid-cols-2 gap-3.5 bg-blue-50/10">
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Tipo de solicitud</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Tipo de solicitud</label>
                   <input disabled value={detalle?.tipo_solicitud?.toUpperCase() ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Nombre</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Nombre</label>
                   <input disabled value={detalle?.nombre ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Puesto</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Puesto</label>
                   <input disabled value={detalle?.puesto ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Área interna</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Área interna</label>
                   <input disabled value={detalle?.area_interna ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Dependencia / Área</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Dependencia / Área</label>
                   <input disabled value={detalle?.area ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Extensión</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Extensión</label>
                   <input disabled value={detalle?.extension ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Oficio CGD</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Oficio CGD</label>
                   <input disabled value={detalle?.oficio_cgd ?? '-'} className={campoGris} />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs font-medium text-gray-600">Observaciones</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Observaciones</label>
                   <textarea disabled value={detalle?.observaciones ?? '-'} rows={2} className={campoGris} />
                 </div>
               </div>
             </div>
 
             {/* Datos editables */}
-            <div className="border rounded">
-              <div className="bg-blue-50 px-3 py-2 font-semibold text-sm border-b text-blue-800">
+            <div className="border border-blue-200 rounded-lg overflow-hidden">
+              <div className="bg-blue-50 px-4 py-2.5 font-semibold text-xs uppercase tracking-wider text-blue-900 border-b border-blue-200">
                 Datos Editables
               </div>
-              <div className="p-3 grid grid-cols-2 gap-3">
+              <div className="p-4 grid grid-cols-2 gap-3.5 bg-white">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Correo secundario <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={correoSecundario}
                     onChange={(e) => setCorreoSecundario(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Teléfono de contacto <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={telefonoContacto}
                     onChange={(e) => setTelefonoContacto(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Correo institucional asignado <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={correoInstitucional}
                     onChange={(e) => setCorreoInstitucional(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                     placeholder="usuario@oaxaca.gob.mx"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Usuario generado</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Usuario generado</label>
                   <input
                     type="text"
                     value={usuarioGenerado}
                     onChange={(e) => setUsuarioGenerado(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                   />
                 </div>
               </div>
@@ -221,18 +221,18 @@ export default function EditarResguardoCorreoModal({
           </div>
         )}
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-blue-100 bg-blue-50/20">
           <button
             onClick={onClose}
             disabled={guardando}
-            className="px-4 py-2 border rounded text-sm disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 font-medium disabled:opacity-50 transition shadow-sm"
           >
             Cancelar
           </button>
           <button
             onClick={handleGuardar}
             disabled={guardando || cargando}
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition shadow-sm"
           >
             {guardando ? 'Guardando...' : 'Guardar'}
           </button>

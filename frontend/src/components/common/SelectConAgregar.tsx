@@ -65,22 +65,22 @@ export default function SelectConAgregar({
   if (agregando) {
     return (
       <div>
-        <label className="text-sm font-medium">{label}:</label>
+        <label className="block text-xs font-semibold text-gray-700 mb-1">{label}:</label>
 
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2">
           <input
             autoFocus
             value={nuevoValor}
             onChange={(e) => setNuevoValor(e.target.value)}
             placeholder={placeholder ?? `Nuevo ${label.toLowerCase()}`}
-            className="border rounded p-2 flex-1"
+            className="border border-blue-200 rounded-lg p-2.5 flex-1 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
           />
 
           <button
             type="button"
             onClick={handleGuardarNuevo}
             disabled={guardando}
-            className="bg-green-600 text-white px-3 rounded disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 rounded-lg font-bold disabled:opacity-50 transition shadow-sm"
           >
             {guardando ? '...' : '✓'}
           </button>
@@ -92,14 +92,14 @@ export default function SelectConAgregar({
               setNuevoValor('');
               setError('');
             }}
-            className="bg-gray-300 px-3 rounded"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-3.5 rounded-lg transition shadow-sm"
           >
             ✕
           </button>
         </div>
 
         {error && (
-          <p className="text-red-500 text-xs mt-1">
+          <p className="text-red-600 text-xs mt-1 font-medium bg-red-50 p-1.5 rounded border border-red-100">
             {error}
           </p>
         )}
@@ -109,12 +109,12 @@ export default function SelectConAgregar({
 
   return (
     <div>
-      <label className="text-sm font-medium">{label}:</label>
+      <label className="block text-xs font-semibold text-gray-700 mb-1">{label}:</label>
 
       <select
         value={value}
         onChange={handleSelectChange}
-        className="border rounded p-2 w-full mt-1"
+        className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
       >
         <option value="">--Seleccionar--</option>
 
@@ -124,7 +124,7 @@ export default function SelectConAgregar({
           </option>
         ))}
 
-        <option value="__agregar__">
+        <option value="__agregar__" className="text-blue-700 font-medium">
           + Agregar nuevo...
         </option>
       </select>

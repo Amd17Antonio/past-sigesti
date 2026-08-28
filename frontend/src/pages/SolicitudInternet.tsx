@@ -101,25 +101,26 @@ export default function SolicitudInternet() {
 
   return (
     <div className="p-6">
+      {/* Cabecera Azul Institucional */}
       <div className="bg-blue-600 text-white px-4 py-2 rounded-t font-semibold">
         SOLICITUDES DE INTERNET
       </div>
 
-      <div className="border border-t-0 rounded-b p-4">
+      <div className="border border-t-0 rounded-b p-4 border-blue-100 bg-white">
         <div className="flex justify-between items-center mb-3">
           <button
             onClick={() => setMostrarModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition"
           >
             + Nueva Solicitud
           </button>
 
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>Mostrar</span>
             <select
               value={porPagina}
               onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }}
-              className="border rounded p-1"
+              className="border border-blue-200 rounded p-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -128,16 +129,16 @@ export default function SolicitudInternet() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border text-sm">
+          <table className="w-full border border-blue-100 text-sm">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-blue-50/70 text-blue-900">
                 {COLUMNAS.map((c) => (
                   <th
                     key={c.key}
                     onClick={() => handleSort(c.key)}
-                    className={`p-2 text-left cursor-pointer select-none ${c.key === 'id' ? 'w-14' : ''}`}
+                    className={`p-2 text-left cursor-pointer select-none transition-colors ${c.key === 'id' ? 'w-14' : ''}`}
                   >
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center">
                       {c.label}
                       <SortIcon active={sortKey === c.key} direction={sortDir} />
                     </span>
@@ -153,7 +154,7 @@ export default function SolicitudInternet() {
                     <input
                       value={filtros[c.key] ?? ''}
                       onChange={(e) => handleFiltroColumna(c.key, e.target.value)}
-                      className="border p-1 w-full text-xs font-normal"
+                      className="border border-blue-200 p-1 w-full text-xs font-normal bg-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </th>
                 ))}
@@ -161,7 +162,7 @@ export default function SolicitudInternet() {
                   <select
                     value={filtroEstatus}
                     onChange={(e) => { setFiltroEstatus(e.target.value); setPagina(1); }}
-                    className="border p-1 w-full text-xs font-normal"
+                    className="border border-blue-200 p-1 w-full text-xs font-normal bg-white rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="todos">Todos</option>
                     {Object.entries(ESTATUS_INTERNET_LABEL).map(([value, label]) => (
@@ -175,7 +176,7 @@ export default function SolicitudInternet() {
 
             <tbody>
               {paginadas.map((s) => (
-                <tr key={s.id} className="border-t">
+                <tr key={s.id} className="border-t border-blue-100 align-top hover:bg-blue-50/40 transition-colors">
                   <td className="p-2 w-14">
                     {user?.rol?.nombre === 'Administrador' ? (
                       <button
@@ -188,17 +189,17 @@ export default function SolicitudInternet() {
                       s.id
                     )}
                   </td>
-                  <td className="p-2">{s.tipo_solicitud.toUpperCase()}</td>
-                  <td className="p-2">{s.usuario_internet}</td>
-                  <td className="p-2">{s.area}</td>
-                  <td className="p-2">{s.no_inventario}</td>
-                  <td className="p-2">{s.tipo_conexion}</td>
-                  <td className="p-2">{s.tel_ext}</td>
-                  <td className="p-2">{s.correo}</td>
+                  <td className="p-2 text-gray-800">{s.tipo_solicitud.toUpperCase()}</td>
+                  <td className="p-2 text-gray-800">{s.usuario_internet}</td>
+                  <td className="p-2 text-gray-600">{s.area}</td>
+                  <td className="p-2 text-gray-600">{s.no_inventario}</td>
+                  <td className="p-2 text-gray-600">{s.tipo_conexion}</td>
+                  <td className="p-2 text-gray-600">{s.tel_ext}</td>
+                  <td className="p-2 text-gray-600">{s.correo}</td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <SenalEstatus tipo="internet" estatus={s.estatus} />
-                      {ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}
+                      <span className="text-xs text-gray-700 font-medium">{ESTATUS_INTERNET_LABEL[s.estatus] ?? s.estatus}</span>
                     </div>
                   </td>
                   <td className="p-2 whitespace-nowrap w-[120px]">
@@ -206,7 +207,7 @@ export default function SolicitudInternet() {
                       <button
                         onClick={() => descargarPdfSolicitudInternet(s.id)}
                         title="Imprimir / Descargar PDF"
-                        className="p-1.5 rounded hover:bg-gray-200 hover:ring-1 hover:ring-gray-300 transition-colors"
+                        className="p-1.5 rounded hover:bg-blue-100 hover:ring-1 hover:ring-blue-300 transition-colors"
                       >
                         📄
                       </button>
@@ -219,7 +220,7 @@ export default function SolicitudInternet() {
                           ✏️
                         </button>
                       ) : (
-                        <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención de DGTID">✏️</span>
+                        <span className="opacity-30 cursor-not-allowed p-1.5" title="No editable: ya está en atención">✏️</span>
                       )}
                       <button
                         onClick={() => handleEliminar(s.id)}
@@ -236,26 +237,26 @@ export default function SolicitudInternet() {
           </table>
         </div>
 
-        {paginadas.length === 0 && <p className="text-gray-500 mt-4">Sin resultados</p>}
+        {paginadas.length === 0 && <p className="text-gray-500 mt-4 text-center py-4">Sin resultados</p>}
 
-        <div className="flex justify-between items-center mt-4 text-sm">
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
           <span>
             Mostrando registros del {ordenadas.length === 0 ? 0 : inicio + 1} al{' '}
             {Math.min(inicio + porPagina, ordenadas.length)} de un total de {ordenadas.length} registros
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button
               onClick={() => setPagina((p) => Math.max(1, p - 1))}
               disabled={paginaSegura === 1}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Anterior
             </button>
-            <span className="px-3 py-1 bg-purple-800 text-white rounded">{paginaSegura}</span>
+            <span className="px-3 py-1 bg-blue-600 text-white rounded font-medium shadow-sm">{paginaSegura}</span>
             <button
               onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
               disabled={paginaSegura === totalPaginas}
-              className="px-3 py-1 border rounded disabled:opacity-40"
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100 transition"
             >
               Siguiente
             </button>

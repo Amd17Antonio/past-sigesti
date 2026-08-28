@@ -34,13 +34,15 @@ export default function EquiposBaja() {
     });
   };
 
-  useEffect(() => { cargar(); // eslint-disable-next-line
+  useEffect(() => { 
+    cargar(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagina, porPagina, sortBy, sortDir]);
 
   useEffect(() => {
     const t = setTimeout(() => { setPagina(1); cargar(); }, 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtros]);
 
   const handleSort = (key: string) => {
@@ -62,67 +64,96 @@ export default function EquiposBaja() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-3">
-        <h1 className="text-xl font-bold">Equipos sugeridos para baja</h1>
+      {/* Cabecera de la vista */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold text-gray-800">Equipos sugeridos para baja</h1>
         <button
           onClick={handleExportar}
           disabled={exportando}
-          className="bg-green-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 transition-colors shadow-sm inline-flex items-center gap-2"
         >
           📊 {exportando ? 'Exportando...' : 'Exportar a Excel'}
         </button>
       </div>
 
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
-                <span className="inline-flex items-center">{c.label}<SortIcon active={sortBy === c.key} direction={sortDir} /></span>
-              </th>
-            ))}
-            <th className="p-2 text-left">Dictamen</th>
-          </tr>
-          <tr className="bg-gray-50">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-1">
-                {c.key !== 'no_dictamen' && (
+      {/* Contenedor de la Tabla */}
+      <div className="overflow-x-auto border border-blue-100 rounded-lg bg-white shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-blue-50/70 text-blue-900 uppercase text-xs">
+            <tr>
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-3 cursor-pointer select-none hover:bg-blue-100/50 transition-colors" onClick={() => handleSort(c.key)}>
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <SortIcon active={sortBy === c.key} direction={sortDir} />
+                  </span>
+                </th>
+              ))}
+              <th className="p-3">Dictamen</th>
+            </tr>
+            <tr className="bg-gray-50 border-t border-blue-100">
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-2">
                   <input
                     value={filtros[c.key] ?? ''}
                     onChange={(e) => setFiltros({ ...filtros, [c.key]: e.target.value })}
-                    className="border p-1 w-full text-xs font-normal"
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                   />
-                )}
-              </th>
-            ))}
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((r) => (
-            <tr key={r.id_dictamen} className="border-t align-top">
-              <td className="p-2">{r.no_dictamen}</td>
-              <td className="p-2">{r.solicitante}</td>
-              <td className="p-2">{r.area}</td>
-              <td className="p-2">{r.tipo ?? '-'}</td>
-              <td className="p-2">{r.marca ?? '-'}</td>
-              <td className="p-2">{r.no_inventario ?? '-'}</td>
-              <td className="p-2 max-w-xs text-xs">{r.dictamen}</td>
+                </th>
+              ))}
+              <th className="p-2"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-blue-100">
+            {data.map((r) => (
+              <tr key={r.id_dictamen} className="hover:bg-blue-50/40 transition-colors align-top">
+                <td className="p-3 font-medium text-gray-800">{r.no_dictamen}</td>
+                <td className="p-3 text-gray-700">{r.solicitante}</td>
+                <td className="p-3 text-gray-700">{r.area}</td>
+                <td className="p-3 text-gray-700">{r.tipo ?? '-'}</td>
+                <td className="p-3 text-gray-700">{r.marca ?? '-'}</td>
+                <td className="p-3 text-gray-700">{r.no_inventario ?? '-'}</td>
+                <td className="p-3 text-xs text-gray-600 max-w-xs">{r.dictamen}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {data.length === 0 && <p className="text-gray-500 mt-4">Sin equipos sugeridos para baja.</p>}
+      {data.length === 0 && (
+        <div className="text-center py-8 text-gray-500 text-sm bg-white border border-blue-100 rounded-lg mt-2 shadow-sm">
+          Sin equipos sugeridos para baja.
+        </div>
+      )}
 
-      <div className="flex justify-between items-center mt-4 text-sm">
+      {/* Paginación y Controles Inferiores */}
+      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
         <div className="flex items-center gap-2">
-          <select value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }} className="border rounded p-1">
+          <select 
+            value={porPagina} 
+            onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1); }} 
+            className="border border-blue-200 rounded-md p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+          >
             {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <span>Página {pagina} de {totalPaginas}</span>
-          <button onClick={() => setPagina((p) => Math.max(1, p - 1))} disabled={pagina === 1} className="px-2 py-1 border rounded disabled:opacity-40">◀</button>
-          <button onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas} className="px-2 py-1 border rounded disabled:opacity-40">▶</button>
+          <div className="flex gap-1 ml-2">
+            <button 
+              onClick={() => setPagina((p) => Math.max(1, p - 1))} 
+              disabled={pagina === 1} 
+              className="px-2.5 py-1 border border-blue-200 rounded bg-white hover:bg-blue-50 disabled:opacity-40 transition-colors shadow-sm"
+            >
+              ◀
+            </button>
+            <button 
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} 
+              disabled={pagina === totalPaginas} 
+              className="px-2.5 py-1 border border-blue-200 rounded bg-white hover:bg-blue-50 disabled:opacity-40 transition-colors shadow-sm"
+            >
+              ▶
+            </button>
+          </div>
         </div>
         <span>Mostrando {inicio} a {fin} de {total} elementos</span>
       </div>

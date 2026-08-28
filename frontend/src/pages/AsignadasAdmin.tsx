@@ -140,127 +140,138 @@ export default function AsignadasAdmin() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <h1 className="text-xl font-bold text-blue-950">Asignadas</h1>
-        <button
-          onClick={() => navigate('/solicitudes-uie')}
-          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition"
-        >
-          ← Regresar
-        </button>
+    <div className="p-6 max-w-7xl mx-auto">
+      <button
+        onClick={() => navigate('/solicitudes-uie')}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-1.5 rounded shadow-sm mb-4 transition-colors flex items-center gap-1.5 w-fit"
+      >
+        <span>←</span> Regresar
+      </button>
+
+      <div className="bg-blue-900 text-white px-4 py-3 font-bold rounded-t-lg shadow-sm">
+        Solicitudes Asignadas
       </div>
 
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2 text-sm">
+      <div className="border-x border-blue-100 bg-white px-4 py-3 flex justify-between items-center flex-wrap gap-3 text-sm shadow-sm">
         <div className="flex items-center gap-2">
-          <span>Mostrar</span>
+          <span className="text-xs text-gray-600">Mostrar</span>
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="border border-blue-200 rounded p-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="border border-blue-200 rounded p-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs shadow-sm"
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
-          <span>registros</span>
+          <span className="text-xs text-gray-600">registros</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span>Buscar:</span>
+          <span className="text-xs text-gray-600">Buscar:</span>
           <input
             value={busquedaGlobal}
             onChange={(e) => setBusquedaGlobal(e.target.value)}
-            className="border border-blue-200 p-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            placeholder="Buscar en todo..."
+            className="border border-blue-200 p-1.5 rounded text-xs bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
           />
         </div>
       </div>
 
-      <table className="w-full border-collapse border border-gray-200 text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            {COLUMNAS.map((c) => (
-              <th
-                key={c.key}
-                className="p-2 text-left cursor-pointer select-none border-b border-gray-200"
-                onClick={() => handleSort(c.key)}
-              >
-                <span className="inline-flex items-center">
-                  {c.label}
-                  <SortIcon active={sortBy === c.key} direction={sortDir} />
-                </span>
-              </th>
-            ))}
-            <th className="p-2 text-left border-b border-gray-200">Reasignar</th>
-          </tr>
-          <tr className="bg-gray-50">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-1 border-b border-gray-200">
-                <input
-                  value={filtros[c.filtro]}
-                  onChange={(e) => handleFiltro(c.filtro, e.target.value)}
-                  className="border border-blue-200 p-1 w-full rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </th>
-            ))}
-            <th className="p-1 border-b border-gray-200"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginadas.map((s) => (
-            <tr key={s.id} className="border-t border-gray-200 hover:bg-gray-50 align-top">
-              <td className="p-2">
-                <button
-                  onClick={() => setDetalleId(s.id)}
-                  className="text-gray-600 hover:text-indigo-600 transition"
-                  title="Ver detalle"
+      <div className="overflow-x-auto border border-blue-100 rounded-b-lg shadow-sm bg-white">
+        <table className="w-full border-collapse text-sm text-left">
+          <thead>
+            <tr className="bg-blue-900 text-white uppercase text-xs border-b border-blue-800">
+              {COLUMNAS.map((c) => (
+                <th
+                  key={c.key}
+                  className="p-3 font-semibold cursor-pointer select-none hover:bg-blue-800 transition-colors"
+                  onClick={() => handleSort(c.key)}
                 >
-                  👁 {s.id}
-                </button>
-              </td>
-              <td className="p-2">{s.solicitante ?? '-'}</td>
-              <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.descripcion ?? '-'}</td>
-              <td className="p-2">{s.area ?? 'Sin área asignada'}</td>
-              <td className="p-2">{s.nombre ?? '-'}</td>
-              <td className="p-2">{s.no_inventario ?? '-'}</td>
-              <td className="p-2">
-                {s.status_uie > 0 ? (
-                  <span className="text-gray-400 text-xs">Asignador por CGD</span>
-                ) : (
-                  <button
-                    onClick={() => setReasignarId(s.id)}
-                    className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition"
-                    title="Reasignar"
-                  >
-                    ➔
-                  </button>
-                )}
-              </td>
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <SortIcon active={sortBy === c.key} direction={sortDir} />
+                  </span>
+                </th>
+              ))}
+              <th className="p-3 text-center font-semibold w-24">Reasignar</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+            <tr className="bg-blue-50/70 border-b border-blue-100">
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-2">
+                  <input
+                    value={filtros[c.filtro]}
+                    onChange={(e) => handleFiltro(c.filtro, e.target.value)}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1.5 w-full text-xs font-normal bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  />
+                </th>
+              ))}
+              <th className="p-2"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {paginadas.map((s) => (
+              <tr key={s.id} className="hover:bg-blue-50/30 transition-colors align-top">
+                <td className="p-3 font-medium">
+                  <button
+                    onClick={() => setDetalleId(s.id)}
+                    className="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1 font-semibold"
+                    title="Ver detalle"
+                  >
+                    👁 {s.id}
+                  </button>
+                </td>
+                <td className="p-3 text-gray-800">{s.solicitante ?? '-'}</td>
+                <td className="p-3 text-gray-600">{s.extension ?? '-'}</td>
+                <td className="p-3 text-gray-700">{s.descripcion ?? '-'}</td>
+                <td className="p-3 text-gray-800">{s.area ?? 'Sin área asignada'}</td>
+                <td className="p-3 text-gray-800">{s.nombre ?? '-'}</td>
+                <td className="p-3 text-gray-600 font-mono text-xs">{s.no_inventario ?? '-'}</td>
+                <td className="p-3 text-center">
+                  {s.status_uie > 0 ? (
+                    <span className="text-gray-400 text-xs italic">Asignador por CGD</span>
+                  ) : (
+                    <button
+                      onClick={() => setReasignarId(s.id)}
+                      className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors shadow-sm"
+                      title="Reasignar"
+                    >
+                      ➔
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {filtradas.length === 0 && <p className="text-gray-500 mt-4 text-sm">Sin resultados</p>}
+      {filtradas.length === 0 && (
+        <p className="text-gray-500 mt-4 text-sm text-center py-4 bg-white border border-blue-100 rounded-lg shadow-sm">
+          Sin resultados
+        </p>
+      )}
 
-      <div className="flex justify-between items-center mt-4">
-        <p className="text-sm text-gray-600">
+      <div className="flex justify-between items-center mt-4 text-sm text-gray-600 flex-wrap gap-3">
+        <p className="text-xs">
           Mostrando registros del {filtradas.length === 0 ? 0 : inicio + 1} al{' '}
           {Math.min(inicio + pageSize, filtradas.length)} de un total de {filtradas.length} registros
         </p>
 
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           {getPaginas(pagina, totalPaginas).map((p, idx) =>
             p === '...' ? (
-              <span key={`dots-${idx}`} className="px-2 py-1 text-gray-400 text-sm">...</span>
+              <span key={`dots-${idx}`} className="px-2 py-1 text-gray-400 text-xs">...</span>
             ) : (
               <button
                 key={p}
                 onClick={() => setPagina(p)}
-                className={`px-3 py-1 rounded text-sm transition ${
-                  p === pagina ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors shadow-sm ${
+                  p === pagina
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-blue-200 text-gray-700 hover:bg-blue-50'
                 }`}
               >
                 {p}

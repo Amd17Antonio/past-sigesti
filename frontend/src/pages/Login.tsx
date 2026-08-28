@@ -30,7 +30,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 via-white to-white">
       {/* Encabezado */}
-      <header className="flex justify-center items-center bg-white py-3 border-b">
+      <header className="flex justify-center items-center bg-white py-3 border-b border-blue-100">
         <img
           src={logoPast}
           alt="PAST - Plataforma de Atención y Soporte Tecnológico"
@@ -59,7 +59,7 @@ export default function Login() {
                   placeholder="Ingresa tu usuario"
                   autoComplete="username"
                   required
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  className="border border-blue-200 rounded-lg px-3 py-2.5 w-full text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
 
@@ -75,7 +75,7 @@ export default function Login() {
                   placeholder="Ingresa tu contraseña"
                   autoComplete="current-password"
                   required
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                  className="border border-blue-200 rounded-lg px-3 py-2.5 w-full text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
 
@@ -88,7 +88,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={cargando}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium rounded-lg p-2.5 w-full transition shadow-md shadow-indigo-600/20"
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium rounded-lg p-2.5 w-full transition shadow-md shadow-blue-600/25"
               >
                 {cargando ? 'Entrando...' : 'Entrar'}
               </button>
@@ -101,7 +101,7 @@ export default function Login() {
       <footer className="bg-gray-100 border-t border-blue-200 text-center text-[10px] text-gray-700 py-3 px-4">
         <p>
           Ciudad Administrativa Benemérito de las Américas Edificio 4 nivel 3. Carretera Oaxaca-Istmo
-          Km. 11.5, Tlalixtco de Cabrera, Oaxaca C.P. 68270.
+          Km. 11.5, Tlalixtac de Cabrera, Oaxaca C.P. 68270.
         </p>
         <p>Conmutador (951) 501 50 00.</p>
         <p className="mt-1 font-medium">EXTENSIÓN:</p>

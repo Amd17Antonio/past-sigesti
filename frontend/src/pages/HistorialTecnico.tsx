@@ -10,7 +10,7 @@ interface SolicitudHistorial {
   descripcion: string;
   fecha_solicitud: string;
   fecha_cierre: string | null;
-  seguimiento: string | null;   // NUEVO
+  seguimiento: string | null;
   observaciones: string | null;
 }
 
@@ -22,7 +22,7 @@ const COLUMNAS: { key: keyof SolicitudHistorial; label: string }[] = [
   { key: 'descripcion', label: 'Desc. Problema' },
   { key: 'fecha_solicitud', label: 'Fecha Inicio' },
   { key: 'fecha_cierre', label: 'Fecha Cierre' },
-  { key: 'seguimiento', label: 'Seguimiento' },   // NUEVO
+  { key: 'seguimiento', label: 'Seguimiento' },
   { key: 'observaciones', label: 'Respuesta' },
 ];
 
@@ -71,58 +71,71 @@ export default function HistorialTecnico() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Historial de Solicitudes Finalizadas</h1>
+      {/* Cabecera y buscador general */}
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h1 className="text-xl font-bold text-gray-800">Historial de Solicitudes Finalizadas</h1>
         <input
-          placeholder="Buscar..."
+          placeholder="Buscar de forma general..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          className="border p-2 rounded"
+          className="border border-blue-200 rounded-md p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none w-72 shadow-sm"
         />
       </div>
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-2 text-left cursor-pointer" onClick={() => handleSort(c.key)}>
-                <span className="inline-flex items-center">
-                  {c.label}
-                  <SortIcon active={sortKey === c.key} direction={sortDir} />
-                </span>
-              </th>
-            ))}
-          </tr>
-          <tr className="bg-gray-50">
-            {COLUMNAS.map((c) => (
-              <th key={c.key} className="p-1">
-                <input
-                  value={filtros[c.key] ?? ''}
-                  onChange={(e) => setFiltros({ ...filtros, [c.key]: e.target.value })}
-                  className="border p-1 w-full text-xs font-normal"
-                  placeholder="Filtrar..."
-                />
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {ordenadas.map((s) => (
-            <tr key={s.id} className="border-t">
-              <td className="p-2">👁 {s.id}</td>
-              <td className="p-2">{s.solicitante}</td>
-              <td className="p-2">{s.extension ?? '-'}</td>
-              <td className="p-2">{s.area}</td>
-              <td className="p-2">{s.descripcion}</td>
-              <td className="p-2">{s.fecha_solicitud}</td>
-              <td className="p-2">{s.fecha_cierre ?? '-'}</td>
-              <td className="p-2 max-w-xs whitespace-pre-wrap text-xs">{s.seguimiento ?? '-'}</td>
-              <td className="p-2">{s.observaciones ?? '-'}</td>
+
+      {/* Contenedor de la Tabla */}
+      <div className="overflow-x-auto border border-blue-100 rounded-lg bg-white shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-blue-50/70 text-blue-900 uppercase text-xs">
+            <tr>
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-3 cursor-pointer select-none hover:bg-blue-100/50 transition-colors" onClick={() => handleSort(c.key)}>
+                  <span className="inline-flex items-center gap-1">
+                    {c.label}
+                    <SortIcon active={sortKey === c.key} direction={sortDir} />
+                  </span>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+            <tr className="bg-gray-50 border-t border-blue-100">
+              {COLUMNAS.map((c) => (
+                <th key={c.key} className="p-2">
+                  <input
+                    value={filtros[c.key] ?? ''}
+                    onChange={(e) => setFiltros({ ...filtros, [c.key]: e.target.value })}
+                    placeholder="Filtrar..."
+                    className="border border-blue-200 rounded p-1 w-full text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-blue-100">
+            {ordenadas.map((s) => (
+              <tr key={s.id} className="hover:bg-blue-50/40 transition-colors align-top">
+                <td className="p-3 font-medium text-gray-800">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="bg-blue-50 text-blue-600 border border-blue-200 p-1 rounded text-xs shadow-sm">👁</span>
+                    {s.id}
+                  </span>
+                </td>
+                <td className="p-3 text-gray-700">{s.solicitante}</td>
+                <td className="p-3 text-gray-700">{s.extension ?? '-'}</td>
+                <td className="p-3 text-gray-700">{s.area}</td>
+                <td className="p-3 text-gray-700 max-w-xs">{s.descripcion}</td>
+                <td className="p-3 text-gray-700">{s.fecha_solicitud}</td>
+                <td className="p-3 text-gray-700">{s.fecha_cierre ?? '-'}</td>
+                <td className="p-3 max-w-xs whitespace-pre-wrap text-xs text-gray-600">{s.seguimiento ?? '-'}</td>
+                <td className="p-3 text-gray-700">{s.observaciones ?? '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {ordenadas.length === 0 && (
-        <p className="text-gray-500 mt-4">Aún no has finalizado ninguna solicitud.</p>
+        <div className="text-center py-8 text-gray-500 text-sm bg-white border border-blue-100 rounded-lg mt-2 shadow-sm">
+          Aún no has finalizado ninguna solicitud.
+        </div>
       )}
     </div>
   );

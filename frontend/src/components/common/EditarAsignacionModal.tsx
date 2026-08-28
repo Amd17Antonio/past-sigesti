@@ -58,10 +58,10 @@ export default function EditarAsignacionModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-lg w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b">
-          <h2 className="text-xl font-medium">{titulo} — Folio: {folio}</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-blue-100 overflow-hidden max-h-[90vh] flex flex-col my-8">
+        <div className="flex justify-between items-center px-6 pt-5 pb-3 border-b border-blue-100 bg-blue-50/20">
+          <h2 className="text-lg font-bold text-blue-950">{titulo} — Folio: {folio}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
             ×
           </button>
@@ -70,7 +70,7 @@ export default function EditarAsignacionModal({
         <div className="p-6 space-y-4 overflow-y-auto">
           {campos.map((campo) => (
             <div key={campo.name}>
-              <label className="text-sm font-medium block mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
                 {campo.label}
                 {campo.requerido && <span className="text-red-500"> *</span>}
               </label>
@@ -78,7 +78,7 @@ export default function EditarAsignacionModal({
                 <select
                   value={valores[campo.name] ?? ''}
                   onChange={(e) => handleCambio(campo.name, e.target.value)}
-                  className="border rounded p-2 w-full"
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                 >
                   <option value="">Selecciona...</option>
                   {campo.opciones?.map((o) => (
@@ -92,22 +92,25 @@ export default function EditarAsignacionModal({
                   value={valores[campo.name] ?? ''}
                   onChange={(e) => handleCambio(campo.name, e.target.value)}
                   placeholder={campo.placeholder}
-                  className="border rounded p-2 w-full"
+                  className="border border-blue-200 rounded-lg p-2.5 w-full text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                 />
               )}
             </div>
           ))}
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-600 text-sm font-semibold bg-red-50 p-2 rounded border border-red-100">{error}</p>}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={onClose} className="px-4 py-2 rounded border text-sm">
+          <div className="flex justify-end gap-2 pt-4 border-t border-blue-100 mt-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 font-medium transition shadow-sm"
+            >
               Cancelar
             </button>
             <button
               onClick={handleGuardar}
               disabled={enviando}
-              className="bg-blue-600 text-white px-5 py-2 rounded text-sm disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg shadow-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition"
             >
               {enviando ? 'Guardando...' : 'Guardar'}
             </button>

@@ -37,8 +37,6 @@ interface UsuarioTelefonia {
   categoria?: string | null;
   justificacion_categoria: string | null;
   jefe_id: number | null;
-  // Enlace: nombre del jefe del arreglo Jefe-Secretaria vinculado a este usuario (solo lectura,
-  // se calcula en el backend a partir de la tabla jefe_secretaria).
   vinculado_como_secretaria_de?: string | null;
 }
 
@@ -47,12 +45,11 @@ interface Categoria {
   categoria: string;
 }
 
-// Enum real de la columna `status` en usuarios_telefonia
 const OPCIONES_STATUS = ['Activo', 'Suspendido', 'Baja', 'Mantenimiento'];
 
-const campoReadOnlyClase = 'border bg-gray-200 rounded px-3 py-2 text-sm w-full';
-const campoEditableClase = 'border rounded px-3 py-2 text-sm w-full';
-const labelClase = 'text-xs font-semibold uppercase text-gray-600 mb-1 block';
+const campoReadOnlyClase = 'border border-slate-200 bg-slate-100 rounded px-3 py-2 text-sm w-full text-slate-600';
+const campoEditableClase = 'border border-slate-300 rounded px-3 py-2 text-sm w-full text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500';
+const labelClase = 'text-xs font-semibold uppercase text-slate-600 mb-1 block';
 
 export default function EditarResguardoTelefoniaModal({ extension, onClose, onActualizado }: Props) {
   const [usuario, setUsuario] = useState<UsuarioTelefonia | null>(null);
@@ -142,24 +139,28 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="bg-purple-800 text-white px-4 py-3 rounded-t-lg flex justify-between items-center">
-          <h2 className="font-semibold">Editar Resguardo de Telefonía</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-xl leading-none">×</button>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden border border-blue-100 flex flex-col">
+        {/* Cabecera */}
+        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
+          <span className="text-base">Editar Resguardo de Telefonía</span>
+          <button onClick={onClose} className="text-blue-100 hover:text-white text-xl leading-none transition">✕</button>
         </div>
 
         {cargando ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Cargando información...</div>
+          <div className="p-8 text-center text-slate-500 text-sm flex items-center justify-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            <span>Cargando información...</span>
+          </div>
         ) : !usuario ? (
-          <div className="p-8 text-center text-red-500 text-sm">{error || 'No se encontró el usuario.'}</div>
+          <div className="p-8 text-center text-red-600 text-sm bg-red-50 border border-red-200 m-4 rounded">{error || 'No se encontró el usuario.'}</div>
         ) : (
-          <div className="p-4 space-y-4">
+          <div className="p-5 overflow-y-auto flex-1 space-y-4 text-sm">
             {error && (
-              <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+              <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2 font-medium">{error}</p>
             )}
 
-            <div className="bg-purple-100 text-purple-900 font-semibold px-3 py-1.5 rounded text-sm">
+            <div className="bg-blue-50 text-blue-900 font-semibold px-3 py-1.5 rounded border border-blue-100 text-sm">
               INFORMACIÓN PERSONAL
             </div>
 
@@ -265,7 +266,7 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
               </div>
             </div>
 
-            <div className="bg-purple-100 text-purple-900 font-semibold px-3 py-1.5 rounded text-sm">
+            <div className="bg-blue-50 text-blue-900 font-semibold px-3 py-1.5 rounded border border-blue-100 text-sm">
               INFORMACIÓN DEL EQUIPO TELEFÓNICO
             </div>
 
@@ -369,24 +370,25 @@ export default function EditarResguardoTelefoniaModal({ extension, onClose, onAc
                 />
               </div>
             </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 rounded border text-sm hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleGuardar}
-                disabled={guardando}
-                className="px-4 py-2 rounded bg-purple-800 hover:bg-purple-900 text-white text-sm disabled:opacity-50"
-              >
-                {guardando ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
           </div>
         )}
+
+        {/* Pie del modal */}
+        <div className="flex justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 transition text-sm font-medium"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={guardando || cargando || !usuario}
+            className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition text-sm font-medium shadow-sm"
+          >
+            {guardando ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
       </div>
     </div>
   );

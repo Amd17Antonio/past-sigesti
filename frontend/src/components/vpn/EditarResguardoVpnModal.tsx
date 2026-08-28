@@ -96,18 +96,19 @@ export default function EditarResguardoVpnModal({
     }
   };
 
-  const campoGris = 'w-full border rounded p-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed';
+  const campoGris = 'w-full px-3 py-2 border border-gray-200 rounded text-sm text-gray-500 bg-gray-100 cursor-not-allowed';
+  const campoEditable = 'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-6">
-        <div className="flex justify-between items-center px-5 py-4 border-b bg-blue-600 rounded-t-lg">
-          <h2 className="text-lg font-semibold text-white">
+      <div className="bg-white rounded-lg shadow-xl border border-gray-100 w-full max-w-2xl my-6 overflow-hidden">
+        <div className="flex justify-between items-center px-5 py-4 border-b bg-blue-600">
+          <h2 className="text-lg font-bold text-white">
             Editar acceso VPN — Folio: {folio}
           </h2>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white text-xl leading-none"
+            className="text-white/80 hover:text-white text-xl leading-none transition-colors"
             aria-label="Cerrar"
           >
             ×
@@ -119,39 +120,39 @@ export default function EditarResguardoVpnModal({
         ) : (
           <div className="px-5 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded p-2">
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
                 {error}
               </div>
             )}
 
             {/* Datos de la solicitud (solo lectura) */}
-            <div className="border rounded">
-              <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-3 py-2 font-semibold text-xs uppercase tracking-wider text-gray-600 border-b border-gray-200">
                 Datos de la Solicitud (solo lectura)
               </div>
               <div className="p-3 grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="text-xs font-medium text-gray-600">Nombre del usuario</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre del usuario</label>
                   <input disabled value={detalle?.nombre_usuario ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Puesto</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Puesto</label>
                   <input disabled value={detalle?.puesto ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Área de adscripción</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Área de adscripción</label>
                   <input disabled value={detalle?.area ?? '-'} className={campoGris} />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs font-medium text-gray-600">Dependencia o Entidad</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Dependencia o Entidad</label>
                   <input disabled value={detalle?.dependencia ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Correo institucional</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Correo institucional</label>
                   <input disabled value={detalle?.correo_institucional ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Teléfono / Extensión</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Teléfono / Extensión</label>
                   <input
                     disabled
                     value={`${detalle?.telefono ?? '-'} / ${detalle?.extension ?? '-'}`}
@@ -159,7 +160,7 @@ export default function EditarResguardoVpnModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Tipo de acceso</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de acceso</label>
                   <input
                     disabled
                     value={TIPO_ACCESO_LABEL[detalle?.tipo_acceso ?? ''] ?? detalle?.tipo_acceso ?? '-'}
@@ -167,32 +168,32 @@ export default function EditarResguardoVpnModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">No. Ticket</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">No. Ticket</label>
                   <input disabled value={detalle?.num_ticket ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Fecha inicial</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Fecha inicial</label>
                   <input disabled value={detalle?.fecha_inicio ?? '-'} className={campoGris} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Fecha final</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Fecha final</label>
                   <input disabled value={detalle?.fecha_fin ?? '-'} className={campoGris} />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs font-medium text-gray-600">Justificación de uso</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Justificación de uso</label>
                   <textarea
                     disabled
                     value={detalle?.justificacion_uso ?? '-'}
                     rows={2}
-                    className={campoGris}
+                    className={`${campoGris} resize-none`}
                   />
                 </div>
               </div>
             </div>
 
             {/* Datos editables del resguardo */}
-            <div className="border rounded">
-              <div className="bg-blue-50 px-3 py-2 font-semibold text-sm border-b text-blue-800">
+            <div className="border border-blue-200 rounded-lg overflow-hidden">
+              <div className="bg-blue-50 px-3 py-2 font-semibold text-xs uppercase tracking-wider text-blue-800 border-b border-blue-200">
                 Datos de Acceso (editable)
               </div>
               <div className="p-3 space-y-3">
@@ -204,7 +205,7 @@ export default function EditarResguardoVpnModal({
                     type="text"
                     value={linkSistema}
                     onChange={(e) => setLinkSistema(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className={campoEditable}
                     placeholder="https://..."
                   />
                 </div>
@@ -216,7 +217,7 @@ export default function EditarResguardoVpnModal({
                     type="text"
                     value={ipPuerto}
                     onChange={(e) => setIpPuerto(e.target.value)}
-                    className="w-full border rounded p-2 text-sm"
+                    className={campoEditable}
                     placeholder="192.168.1.100:8080"
                   />
                 </div>
@@ -225,18 +226,20 @@ export default function EditarResguardoVpnModal({
           </div>
         )}
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50">
           <button
+            type="button"
             onClick={onClose}
             disabled={guardando}
-            className="px-4 py-2 border rounded text-sm disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
+            type="button"
             onClick={handleGuardar}
             disabled={guardando || cargando}
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm disabled:opacity-50 transition-colors"
           >
             {guardando ? 'Guardando...' : 'Guardar'}
           </button>

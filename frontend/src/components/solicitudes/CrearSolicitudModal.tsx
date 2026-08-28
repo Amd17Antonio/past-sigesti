@@ -102,87 +102,87 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
       <div className="bg-white rounded-lg shadow-xl w-[52rem] max-w-[95vw] overflow-hidden border border-blue-100">
-        <div className="bg-blue-950 text-white px-5 py-3 font-semibold flex justify-between items-center">
+        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
           <span className="text-base">Nueva Solicitud</span>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none transition">✕</button>
+          <button onClick={onClose} className="text-blue-100 hover:text-white text-xl leading-none transition">✕</button>
         </div>
 
         <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-sm">
           {/* Datos del Solicitante */}
           <div className="border border-blue-100 rounded-md overflow-hidden">
-            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Datos del Solicitante</div>
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-900 border-b border-blue-100">Datos del Solicitante</div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Solicitante:</label>
+                <label className="text-xs font-medium text-slate-700">Solicitante:</label>
                 <input
                   name="solicitante"
                   placeholder="Ejemplo: C.P. Omar Pérez"
                   value={form.solicitante}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Puesto <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Puesto <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <input
                   name="puesto"
                   placeholder="Ingresa el puesto"
                   value={form.puesto}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Tipo documento <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Tipo documento <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <select
                   name="tipo_documento"
                   value={form.tipo_documento}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   {TIPOS_DOCUMENTO.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  No. Documento <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  No. Documento <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <input
                   name="num_documento"
                   value={form.num_documento}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Fecha de memorándum <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Fecha de memorándum <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <input
                   type="date"
                   name="fecha_memo"
                   value={form.fecha_memo}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Fecha recibido <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Fecha recibido <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <input
                   type="date"
                   name="fecha_memo_recibido"
                   value={form.fecha_memo_recibido}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 />
               </div>
             </div>
@@ -190,27 +190,27 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
 
           {/* Asignación */}
           <div className="border border-blue-100 rounded-md overflow-hidden">
-            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Asignación</div>
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-900 border-b border-blue-100">Asignación</div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Área:</label>
+                <label className="text-xs font-medium text-slate-700">Área:</label>
                 <select
                   name="id_area"
                   value={form.id_area}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Técnico:</label>
+                <label className="text-xs font-medium text-slate-700">Técnico:</label>
                 <select
                   name="id_soporte"
                   value={form.id_soporte}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   {tecnicos.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
@@ -221,26 +221,26 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
 
           {/* Detalles del Problema */}
           <div className="border border-blue-100 rounded-md overflow-hidden">
-            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Detalles del Problema</div>
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-900 border-b border-blue-100">Detalles del Problema</div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Descripción del problema:</label>
+                <label className="text-xs font-medium text-slate-700">Descripción del problema:</label>
                 <textarea
                   name="descripcion"
                   rows={3}
                   value={form.descripcion}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Prioridad:</label>
+                <label className="text-xs font-medium text-slate-700">Prioridad:</label>
                 <select
                   name="prioridad"
                   value={form.prioridad}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   <option value="baja">Baja</option>
@@ -249,12 +249,12 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Extensión:</label>
+                <label className="text-xs font-medium text-slate-700">Extensión:</label>
                 <input
                   name="extension"
                   value={form.extension}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -262,31 +262,31 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
 
           {/* Ubicación */}
           <div className="border border-blue-100 rounded-md overflow-hidden">
-            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-950 border-b border-blue-100">Ubicación</div>
+            <div className="bg-blue-50/70 px-3 py-2 font-semibold text-blue-900 border-b border-blue-100">Ubicación</div>
             <div className="p-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Edificio <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Edificio <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <select
                   name="edificio"
                   value={form.edificio}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   {['2', '3', '4', '6'].map((e) => <option key={e} value={e}>Edificio {e}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Nivel <span className="text-gray-400">(Opcional)</span>:
+                <label className="text-xs font-medium text-slate-700">
+                  Nivel <span className="text-slate-400">(Opcional)</span>:
                 </label>
                 <select
                   name="nivel"
                   value={form.nivel}
                   onChange={handleChange}
-                  className="border border-blue-200 p-2 w-full mt-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border border-slate-300 p-2 w-full mt-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
                 >
                   <option value="">-- Seleccionar --</option>
                   {['PB', '1', '2', '3'].map((n) => <option key={n} value={n}>{n}</option>)}
@@ -295,20 +295,20 @@ export default function CrearSolicitudModal({ onClose, onCreado }: Props) {
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+          {error && <p className="text-red-600 bg-red-50 border border-red-200 p-2 rounded text-sm font-medium">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-blue-100">
+        <div className="flex justify-end gap-2 px-5 py-3 bg-slate-50 border-t border-slate-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition"
+            className="px-4 py-2 text-slate-700 border border-slate-300 rounded hover:bg-slate-100 transition text-sm"
           >
             ✕ Cancelar
           </button>
           <button
             onClick={handleSubmit}
             disabled={enviando}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded disabled:opacity-50 transition font-medium"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 transition font-medium text-sm shadow-sm"
           >
             💾 {enviando ? 'Guardando...' : 'Guardar'}
           </button>

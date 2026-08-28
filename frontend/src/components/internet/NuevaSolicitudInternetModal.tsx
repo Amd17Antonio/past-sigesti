@@ -61,7 +61,6 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
       setMacEthernet(data.mac_ethernet ?? '');
       setMacWifi(data.mac_wifi ?? '');
 
-      // Si ya existe una solicitud previa para este equipo, vinculamos/autocompletamos los datos del usuario
       if (data.ultima_solicitud) {
         const us = data.ultima_solicitud;
         setForm((prev) => ({
@@ -106,7 +105,6 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
       return;
     }
 
-    // Todos los campos son obligatorios excepto MAC
     if (
       !form.usuario_internet || !form.id_cargo || !form.id_area || !form.correo ||
       !form.tel_ext || !form.id_autoriza || !form.edificio || !form.nivel
@@ -148,7 +146,6 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
       onCreado();
       onClose();
     } catch (err: any) {
-      // Laravel manda 422 con { message, errors: { campo: [mensajes] } }
       const errores = err?.response?.data?.errors;
       if (errores) {
         const detalle = Object.entries(errores)
@@ -165,75 +162,89 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto py-6">
-      <div className="bg-white rounded shadow-lg w-[52rem] max-w-[95vw] overflow-hidden">
-        <div className="bg-blue-600 text-white px-5 py-3 font-semibold flex justify-between items-center">
-          Nueva Solicitud
-          <button onClick={onClose} className="text-white/80 hover:text-white text-lg leading-none">✕</button>
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 overflow-y-auto py-6">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[52rem] max-w-[95vw] overflow-hidden">
+        {/* Cabecera Principal */}
+        <div className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-6 py-4 font-semibold flex justify-between items-center shadow-sm">
+          <span className="text-base tracking-wide flex items-center gap-2">
+            ✨ Nueva Solicitud de Internet
+          </span>
+          <button 
+            onClick={onClose} 
+            className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center transition-colors text-base"
+          >
+            ✕
+          </button>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto bg-slate-50/50">
           {/* Datos del Equipo */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Datos del Equipo</div>
-            <div className="p-3 space-y-3">
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+            <div className="bg-slate-50 px-4 py-3 font-semibold text-xs uppercase tracking-wider text-slate-700 border-b border-slate-200/80 flex items-center gap-2">
+              💻 Datos del Equipo
+            </div>
+            <div className="p-4 space-y-4">
               <div className="flex gap-2">
                 <input
                   placeholder="NÚMERO DE INVENTARIO..."
                   value={noInventario}
                   onChange={(e) => setNoInventario(e.target.value)}
-                  className="border p-2 flex-1"
+                  className="border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase font-medium bg-slate-50/50"
                 />
-                <button onClick={handleBuscar} disabled={buscando} className="bg-blue-600 text-white px-4 rounded text-sm">
-                  🔍 {buscando ? '...' : 'Buscar!'}
+                <button 
+                  onClick={handleBuscar} 
+                  disabled={buscando} 
+                  className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 rounded-lg text-sm font-medium transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  🔍 {buscando ? 'Buscando...' : 'Buscar!'}
                 </button>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Tipo de equipo:</label>
-                  <input readOnly value={equipo?.tipo ?? ''} className="border p-2 w-full mt-1 bg-yellow-50" />
+                  <label className="text-xs font-semibold text-slate-600">Tipo de equipo:</label>
+                  <input readOnly value={equipo?.tipo ?? ''} className="border border-slate-200 rounded-lg p-2.5 w-full mt-1 bg-amber-50/60 text-slate-700 font-medium text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">No. de inventario:</label>
-                  <input readOnly value={equipo?.no_inventario ?? ''} className="border p-2 w-full mt-1 bg-yellow-50" />
+                  <label className="text-xs font-semibold text-slate-600">No. de inventario:</label>
+                  <input readOnly value={equipo?.no_inventario ?? ''} className="border border-slate-200 rounded-lg p-2.5 w-full mt-1 bg-amber-50/60 text-slate-700 font-medium text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Sistema operativo:</label>
-                  <input readOnly value={equipo?.sistema ?? ''} className="border p-2 w-full mt-1 bg-yellow-50" />
+                  <label className="text-xs font-semibold text-slate-600">Sistema operativo:</label>
+                  <input readOnly value={equipo?.sistema ?? ''} className="border border-slate-200 rounded-lg p-2.5 w-full mt-1 bg-amber-50/60 text-slate-700 font-medium text-sm" />
                 </div>
               </div>
 
               {equipo && !requiereMac && (
-                <p className="text-xs bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-2">
-                  Este equipo (tipo: {equipo.tipo}) no requiere dirección MAC.
-                </p>
+                <div className="text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 flex items-center gap-2">
+                  ⚠️ Este equipo (tipo: <strong className="uppercase">{equipo.tipo}</strong>) no requiere dirección MAC.
+                </div>
               )}
 
               {equipo?.ultima_solicitud && (
-                <p className="text-xs bg-blue-50 border border-blue-200 text-blue-700 rounded p-2">
-                  Este equipo ya tiene una solicitud previa — se autocompletaron los datos del usuario.
-                </p>
+                <div className="text-xs bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-3 flex items-center gap-2">
+                  ℹ️ Este equipo ya cuenta con una solicitud previa — se autocompletaron los datos del usuario.
+                </div>
               )}
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Tipo de conexión:</label>
-                  <select name="tipo_conexion" value={form.tipo_conexion} onChange={handleChange} className="border p-2 w-full mt-1">
+                  <label className="text-xs font-semibold text-slate-600">Tipo de conexión:</label>
+                  <select name="tipo_conexion" value={form.tipo_conexion} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="cableada">Cableada</option>
                     <option value="inalambrica">Inalámbrica</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Nivel de acceso a Internet:</label>
-                  <select name="nivel_filtrado" value={form.nivel_filtrado} onChange={handleChange} className="border p-2 w-full mt-1">
+                  <label className="text-xs font-semibold text-slate-600">Nivel de acceso:</label>
+                  <select name="nivel_filtrado" value={form.nivel_filtrado} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="1">Nivel 1 (básico)</option>
-                    <option value="2">Nivel 2 (avanzado — requiere justificación)</option>
+                    <option value="2">Nivel 2 (avanzado)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">
-                    Dirección MAC Ethernet <span className="text-gray-400">(Opcional)</span>:
+                  <label className="text-xs font-semibold text-slate-600">
+                    MAC Ethernet <span className="text-slate-400 font-normal">(Opcional)</span>:
                   </label>
                   <input
                     value={macEthernet}
@@ -241,12 +252,12 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
                     placeholder="00:00:00:00:00:00"
                     disabled={!requiereMac}
                     maxLength={17}
-                    className="border p-2 w-full mt-1 font-mono disabled:bg-gray-100 disabled:text-gray-400"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm font-mono disabled:bg-slate-100 disabled:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">
-                    Dirección MAC Wi-Fi <span className="text-gray-400">(Opcional)</span>:
+                  <label className="text-xs font-semibold text-slate-600">
+                    MAC Wi-Fi <span className="text-slate-400 font-normal">(Opcional)</span>:
                   </label>
                   <input
                     value={macWifi}
@@ -254,102 +265,120 @@ export default function NuevaSolicitudInternetModal({ onClose, onCreado }: Props
                     placeholder="00:00:00:00:00:00"
                     disabled={!requiereMac}
                     maxLength={17}
-                    className="border p-2 w-full mt-1 font-mono disabled:bg-gray-100 disabled:text-gray-400"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm font-mono disabled:bg-slate-100 disabled:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Edificio:</label>
-                  <select name="edificio" value={form.edificio} onChange={handleChange} className="border p-2 w-full mt-1">
+                  <label className="text-xs font-semibold text-slate-600">Edificio:</label>
+                  <select name="edificio" value={form.edificio} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     {['2', '3', '4', '6'].map((e) => <option key={e} value={e}>Edificio {e}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Nivel:</label>
-                  <select name="nivel" value={form.nivel} onChange={handleChange} className="border p-2 w-full mt-1">
+                  <label className="text-xs font-semibold text-slate-600">Nivel:</label>
+                  <select name="nivel" value={form.nivel} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     {['PB', '1', '2', '3'].map((n) => <option key={n} value={n}>Nivel {n}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-600">Puerto:</label>
-                  <input name="puerto" value={form.puerto} onChange={handleChange} className="border p-2 w-full mt-1" />
+                  <label className="text-xs font-semibold text-slate-600">Puerto:</label>
+                  <input name="puerto" value={form.puerto} onChange={handleChange} placeholder="Ej. 12" className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Datos del Usuario */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Datos del Usuario</div>
-            <div className="p-3 grid grid-cols-2 gap-3">
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+            <div className="bg-slate-50 px-4 py-3 font-semibold text-xs uppercase tracking-wider text-slate-700 border-b border-slate-200/80 flex items-center gap-2">
+              👤 Datos del Usuario
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Nombre completo:</label>
-                <input name="usuario_internet" value={form.usuario_internet} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <label className="text-xs font-semibold text-slate-600">Nombre completo:</label>
+                <input name="usuario_internet" value={form.usuario_internet} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Cargo:</label>
-                <select name="id_cargo" value={form.id_cargo} onChange={handleChange} className="border p-2 w-full mt-1">
+                <label className="text-xs font-semibold text-slate-600">Cargo:</label>
+                <select name="id_cargo" value={form.id_cargo} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="">--Seleccionar--</option>
                   {cargos.map((c) => <option key={c.id} value={c.id}>{c.cargo}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Adscripción:</label>
-                <select name="id_area" value={form.id_area} onChange={handleChange} className="border p-2 w-full mt-1">
+                <label className="text-xs font-semibold text-slate-600">Adscripción:</label>
+                <select name="id_area" value={form.id_area} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="">--Seleccionar--</option>
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.area}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-600">Correo electrónico:</label>
-                <input name="correo" value={form.correo} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <label className="text-xs font-semibold text-slate-600">Correo electrónico:</label>
+                <input name="correo" value={form.correo} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Extensión:</label>
-                <input name="tel_ext" value={form.tel_ext} onChange={handleChange} className="border p-2 w-full mt-1" />
+                <label className="text-xs font-semibold text-slate-600">Extensión:</label>
+                <input name="tel_ext" value={form.tel_ext} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
 
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Persona que autoriza:</label>
-                <select name="id_autoriza" value={form.id_autoriza} onChange={handleChange} className="border p-2 w-full mt-1">
+                <label className="text-xs font-semibold text-slate-600">Persona que autoriza:</label>
+                <select name="id_autoriza" value={form.id_autoriza} onChange={handleChange} className="border border-slate-300 rounded-lg p-2.5 w-full mt-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="">--Seleccionar--</option>
                   {autorizantes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
               </div>
 
               {autorizaSeleccionado && (
-                <p className="text-xs text-gray-500 col-span-2">
-                  Cargo: {autorizaSeleccionado.cargo} — Correo: {autorizaSeleccionado.correo}
-                </p>
+                <div className="text-xs text-slate-600 col-span-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                  💼 Cargo: <strong className="text-slate-700">{autorizaSeleccionado.cargo}</strong> — ✉️ Correo: <strong className="text-slate-700">{autorizaSeleccionado.correo}</strong>
+                </div>
               )}
             </div>
           </div>
 
           {/* Justificación */}
-          <div className="border rounded">
-            <div className="bg-gray-50 px-3 py-2 font-semibold text-sm border-b">Justificación</div>
-            <div className="p-3">
+          <div className="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+            <div className="bg-slate-50 px-4 py-3 font-semibold text-xs uppercase tracking-wider text-slate-700 border-b border-slate-200/80 flex items-center gap-2">
+              📝 Justificación
+            </div>
+            <div className="p-4">
               <textarea
                 name="justificacion"
-                rows={7}
+                rows={6}
                 value={form.justificacion}
                 onChange={handleChange}
-                className="border p-2 w-full text-sm"
+                className="border border-slate-300 rounded-lg p-3 w-full text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50/30"
               />
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2 shadow-xs">
+              ❌ {error}
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-3 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 border rounded">✕ Cancelar</button>
-          <button onClick={handleSubmit} disabled={enviando} className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-            💾 {enviando ? 'Guardando...' : 'Guardar'}
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 bg-slate-100/80 border-t border-slate-200/80">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 text-slate-700 hover:text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors shadow-xs cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            disabled={enviando} 
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-medium transition-colors shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+          >
+            💾 {enviando ? 'Guardando...' : 'Guardar Solicitud'}
           </button>
         </div>
       </div>

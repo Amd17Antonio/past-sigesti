@@ -25,25 +25,28 @@ export default function HistorialSolicitante() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Mis Solicitudes Finalizadas</h1>
-      <HistorialTable
-        data={datos}
-        labelAcciones="Evaluar"
-        renderAcciones={(item: HistorialItemConEvaluacion) =>
-          item.evaluada ? (
-            <span className="px-2 py-1 bg-gray-200 text-gray-500 rounded text-xs">
-              Evaluada
-            </span>
-          ) : (
-            <button
-              onClick={() => setEvaluarId(item.id)}
-              className="px-2 py-1 bg-green-700 text-white rounded text-xs"
-            >
-              Evaluar
-            </button>
-          )
-        }
-      />
+      <h1 className="text-xl font-bold mb-4 text-gray-800">Mis Solicitudes Finalizadas</h1>
+      
+      <div className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden">
+        <HistorialTable
+          data={datos}
+          labelAcciones="Evaluar"
+          renderAcciones={(item: HistorialItemConEvaluacion) =>
+            item.evaluada ? (
+              <span className="px-2.5 py-1 bg-gray-100 text-gray-500 border border-gray-200 rounded text-xs font-medium inline-block">
+                Evaluada
+              </span>
+            ) : (
+              <button
+                onClick={() => setEvaluarId(item.id)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors shadow-sm"
+              >
+                Evaluar
+              </button>
+            )
+          }
+        />
+      </div>
 
       {evaluarId !== null && (() => {
         const idActual = evaluarId;

@@ -124,6 +124,7 @@ export default function RegistrarEquipoModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
       <div className="bg-white rounded shadow-lg w-[26rem] overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Encabezado con el color azul institucional */}
         <div className="bg-blue-600 text-white px-4 py-3 font-semibold">Registrar Equipo</div>
 
         <div className="p-4 space-y-3 overflow-y-auto">
@@ -184,13 +185,13 @@ export default function RegistrarEquipoModal({
                 onChange={handleSerieChange}
                 onBlur={handleSerieBlur}
                 readOnly={esBusquedaPorSerie}
-                className={`border p-2 flex-1 ${esBusquedaPorSerie ? 'bg-gray-100 text-gray-500' : ''}`}
+                className={`border p-2 flex-1 rounded ${esBusquedaPorSerie ? 'bg-gray-100 text-gray-500' : 'focus:ring-2 focus:ring-blue-500 focus:outline-none'}`}
               />
               {!esBusquedaPorSerie && (
                 <button
                   type="button"
                   onClick={handleUsarSN}
-                  className="text-blue-600 text-sm border border-blue-600 rounded px-2 py-1 hover:bg-blue-50"
+                  className="text-blue-600 text-sm border border-blue-600 rounded px-2 py-1 hover:bg-blue-50 transition-colors"
                   title="Este equipo no tiene número de serie"
                 >
                   S/N
@@ -210,10 +211,10 @@ export default function RegistrarEquipoModal({
                 value={form.no_inventario}
                 onChange={handleInventarioChange}
                 placeholder="Captura el número de inventario"
-                className="border p-2 w-full mt-1"
+                className="border p-2 w-full mt-1 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             ) : (
-              <input readOnly value={form.no_inventario} className="border p-2 w-full mt-1 bg-gray-100 text-gray-500" />
+              <input readOnly value={form.no_inventario} className="border p-2 w-full mt-1 rounded bg-gray-100 text-gray-500" />
             )}
           </div>
 
@@ -232,15 +233,15 @@ export default function RegistrarEquipoModal({
 
           <div>
             <label className="text-sm font-medium">Observaciones:</label>
-            <input name="observacion" value={form.observacion} onChange={handleChange} className="border p-2 w-full mt-1" />
+            <input name="observacion" value={form.observacion} onChange={handleChange} className="border p-2 w-full mt-1 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none" />
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50 border-t">
-          <button onClick={onClose} className="px-4 py-2 bg-orange-500 text-white rounded text-sm">✕ Cancelar</button>
-          <button onClick={handleGuardar} disabled={enviando} className="px-4 py-2 bg-green-600 text-white rounded text-sm disabled:opacity-50">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors">✕ Cancelar</button>
+          <button onClick={handleGuardar} disabled={enviando} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50 transition-colors">
             💾 {enviando ? 'Guardando...' : 'Guardar'}
           </button>
         </div>
