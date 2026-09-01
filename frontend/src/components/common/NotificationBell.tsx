@@ -45,7 +45,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
-    getNotificaciones().then(setItems);
+    getNotificaciones().then((data) => {
+      setItems(data);
+      setContador(data.filter((n) => !n.leida).length); // sincroniza el badge al abrir
+    });
 
     const handleClickOutside = (e: MouseEvent) => {
       if (

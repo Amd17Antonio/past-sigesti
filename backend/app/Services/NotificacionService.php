@@ -23,27 +23,20 @@ class NotificacionService
      * Crea una notificación de mantenimiento solo si no existe ya una
      * sin leer por NADIE para ese mismo equipo (evita duplicados en cada poll).
      */
-    public function crearMantenimientoSiNoExiste(int $idEquipo, string $noInventario, string $color, string $motivo): void
+        public function crearMantenimientoSiNoExiste(int $idEquipo, string $noInventario, string $color, string $motivo): void
     {
-        $yaExiste = DB::table('notificaciones')
-            ->where('tipo', 'mantenimiento')
-            ->where('id_referencia', $idEquipo)
+        $existePendiente = DB::table('notificaciones as n')
+            ->where('n.tipo', 'mantenimiento')
+            ->where('n.id_referencia', $idEquipo)
             ->whereNotExists(function ($q) {
-                // si TODOS los admins ya la leyeron, se considera "cerrada" y se puede volver a generar
-                $q->select(DB::raw(1));
+                $q->select(DB::raw(1))
+                  ->from('notificaciones_leidas as l')
+                  ->whereColumn('l.id_notificacion', 'n.id');
             })
             ->exists();
 
-        // versión simple: solo evita duplicado si ya existe una notificación
-        // de este equipo creada en las últimas 24 horas
-        $reciente = DB::table('notificaciones')
-            ->where('tipo', 'mantenimiento')
-            ->where('id_referencia', $idEquipo)
-            ->where('created_at', '>=', now()->subDay())
-            ->exists();
-
-        if ($reciente) {
-            return;
+        if ($existePendiente) {
+            return; // ya hay una notificación de este equipo sin leer, no dupliques
         }
 
         $this->crearParaRol(
