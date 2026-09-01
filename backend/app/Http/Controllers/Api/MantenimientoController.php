@@ -35,7 +35,9 @@ class MantenimientoController extends Controller
             $query->where('d.no_inventario', 'like', '%' . $request->get('no_inventario') . '%');
         }
 
+        // Si se pide solo alerta, procesamos de manera eficiente mapeando el semáforo
         if ($request->get('solo_alerta') === '1') {
+            // Obtenemos los registros y filtramos excluyendo los verdes
             $todos = $query->get()->map(fn ($r) => $this->conSemaforo($r))
                 ->filter(fn ($r) => $r->semaforo_color !== 'verde')
                 ->values();
@@ -78,7 +80,10 @@ class MantenimientoController extends Controller
             ->sortBy('semaforo_dias_restantes')
             ->values();
 
-        return response()->json(['total' => $registros->count(), 'registros' => $registros]);
+        return response()->json([
+            'total' => $registros->count(), 
+            'registros' => $registros
+        ]);
     }
 
     public function historial(int $idEquipo)

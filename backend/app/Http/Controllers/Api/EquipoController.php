@@ -37,7 +37,7 @@ class EquipoController extends Controller
             ...(array) $equipo,
             ...(array) $macs,
             'ultima_solicitud' => $ultimaSolicitud,
-            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id), // <-- NUEVO
+            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id),
         ]);
     }
 
@@ -59,7 +59,7 @@ class EquipoController extends Controller
         return response()->json([
             ...(array) $equipo,
             ...(array) $macs,
-            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id), // <-- NUEVO
+            'ya_sugerido_baja' => $this->sugeridoParaBaja($equipo->id),
         ]);
     }
 
@@ -134,7 +134,6 @@ class EquipoController extends Controller
 
     // ---------------------------------------------------------
     // Catálogo de equipos: listado, filtros, orden, paginación
-    // (SIN lógica de mantenimiento — no está construida aún)
     // ---------------------------------------------------------
 
     private function baseQuery()
@@ -182,6 +181,7 @@ class EquipoController extends Controller
 
         $sortBy = $request->get('sort_by');
         $sortDir = $request->get('sort_dir', 'asc') === 'desc' ? 'desc' : 'asc';
+        
         if ($sortBy && isset($filtros[$sortBy])) {
             $query->orderBy($filtros[$sortBy], $sortDir);
         } else {
@@ -305,32 +305,26 @@ class EquipoController extends Controller
     public function guardarExtras(Request $request, int $id)
     {
         $data = $request->validate([
-        'IdArea' => 'nullable|integer|exists:areas,id',
-        'Resguardante' => 'nullable|string|max:150',
-        'Usuario' => 'nullable|string|max:150',
-        'Edificio' => 'nullable|integer',
-        'ENivel' => 'nullable|string|max:2',
-        'Puerto' => 'nullable|string|max:10',
-        'Switch' => 'nullable|boolean',
-        'Mac' => 'nullable|string|max:25',
-        'Conexion' => 'nullable|string|max:25',
-        'Nivel' => 'nullable|string|max:2',
+            'IdArea' => 'nullable|integer|exists:areas,id',
+            'Resguardante' => 'nullable|string|max:150',
+            'Usuario' => 'nullable|string|max:150',
+            'Edificio' => 'nullable|integer',
+            'ENivel' => 'nullable|string|max:2',
+            'Puerto' => 'nullable|string|max:10',
+            'Switch' => 'nullable|boolean',
+            'Mac' => 'nullable|string|max:25',
+            'Conexion' => 'nullable|string|max:25',
+            'Nivel' => 'nullable|string|max:2',
         ]);
 
-        $existe = DB::table('comp_equipos')->where('IdEquipo', $id)->first();
-
-        if ($existe) {
-            DB::table('comp_equipos')->where('IdEquipo', $id)->update([
+        // Usamos updateOrInsert para optimizar la consulta condicional en un solo paso
+        DB::table('comp_equipos')->updateOrInsert(
+            ['IdEquipo' => $id],
+            [
                 ...$data,
                 'usr' => $request->user()->usuario,
-            ]);
-        } else {
-            DB::table('comp_equipos')->insert([
-                'IdEquipo' => $id,
-                ...$data,
-                'usr' => $request->user()->usuario,
-            ]);
-        }
+            ]
+        );
 
         return response()->json(['message' => 'Datos de resguardo/red guardados correctamente']);
     }
@@ -356,5 +350,4 @@ class EquipoController extends Controller
             ->where('sugiere_baja', 1)
             ->exists();
     }
-
 }

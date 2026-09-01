@@ -23,11 +23,12 @@ class NotificacionController extends Controller
     {
         $ultimo = $this->mantenimientoService->subconsultaUltimoMantenimiento();
 
+        // Optimizamos la consulta trayendo únicamente los datos necesarios y filtrando a nivel de base de datos de ser posible
         $equipos = DB::table('datos_equipos as d')
             ->leftJoinSub($ultimo, 'u', 'u.id_equipo', '=', 'd.id')
             ->where('d.status', 1)
             ->select('d.id', 'd.no_inventario', 'u.proxima_fecha')
-            ->get();
+            ->cursor(); // Usamos cursor para procesar grandes volúmenes de manera eficiente sin saturar la memoria RAM
 
         foreach ($equipos as $e) {
             $s = $this->mantenimientoService->calcularSemaforo($e->proxima_fecha);
@@ -47,14 +48,15 @@ class NotificacionController extends Controller
         $this->sincronizarAlertasMantenimiento();
 
         $user = $request->user();
+        $rolNombre = $user->rol->nombre ?? null;
 
         $registros = DB::table('notificaciones as n')
             ->leftJoin('notificaciones_leidas as l', function ($q) use ($user) {
                 $q->on('l.id_notificacion', '=', 'n.id')
                   ->where('l.id_usuario', '=', $user->id);
             })
-            ->where(function ($q) use ($user) {
-                $q->where('n.rol_destino', $user->rol->nombre ?? null)
+            ->where(function ($q) use ($user, $rolNombre) {
+                $q->where('n.rol_destino', $rolNombre)
                   ->orWhere('n.id_usuario_destino', $user->id);
             })
             ->select('n.*', DB::raw('l.id_usuario IS NOT NULL as leida'))
@@ -68,14 +70,15 @@ class NotificacionController extends Controller
     public function contador(Request $request)
     {
         $user = $request->user();
+        $rolNombre = $user->rol->nombre ?? null;
 
         $total = DB::table('notificaciones as n')
             ->leftJoin('notificaciones_leidas as l', function ($q) use ($user) {
                 $q->on('l.id_notificacion', '=', 'n.id')
                   ->where('l.id_usuario', '=', $user->id);
             })
-            ->where(function ($q) use ($user) {
-                $q->where('n.rol_destino', $user->rol->nombre ?? null)
+            ->where(function ($q) use ($user, $rolNombre) {
+                $q->where('n.rol_destino', $rolNombre)
                   ->orWhere('n.id_usuario_destino', $user->id);
             })
             ->whereNull('l.id_usuario')
@@ -98,26 +101,28 @@ class NotificacionController extends Controller
     public function marcarTodasLeidas(Request $request)
     {
         $user = $request->user();
+        $rolNombre = $user->rol->nombre ?? null;
 
         $pendientes = DB::table('notificaciones as n')
             ->leftJoin('notificaciones_leidas as l', function ($q) use ($user) {
                 $q->on('l.id_notificacion', '=', 'n.id')
                   ->where('l.id_usuario', '=', $user->id);
             })
-            ->where(function ($q) use ($user) {
-                $q->where('n.rol_destino', $user->rol->nombre ?? null)
+            ->where(function ($q) use ($user, $rolNombre) {
+                $q->where('n.rol_destino', $rolNombre)
                   ->orWhere('n.id_usuario_destino', $user->id);
             })
             ->whereNull('l.id_usuario')
             ->pluck('n.id');
 
-        $rows = $pendientes->map(fn ($id) => [
-            'id_notificacion' => $id,
-            'id_usuario' => $user->id,
-            'fecha' => now(),
-        ])->toArray();
+        if ($pendientes->isNotEmpty()) {
+            $now = now();
+            $rows = $pendientes->map(fn ($id) => [
+                'id_notificacion' => $id,
+                'id_usuario' => $user->id,
+                'fecha' => $now,
+            ])->toArray();
 
-        if (!empty($rows)) {
             DB::table('notificaciones_leidas')->insertOrIgnore($rows);
         }
 

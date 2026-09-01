@@ -17,9 +17,11 @@ class ReporteController extends Controller
 
     public function actividades(Request $request)
     {
+        // Limpieza y tipado estricto de parámetros de entrada para evitar consultas ineficientes
         $idPoa = $request->filled('id_poa') ? (int) $request->get('id_poa') : null;
-        $del = $request->get('del');
-        $al = $request->get('al');
+        $del = $request->filled('del') ? $request->get('del') : null;
+        $al = $request->filled('al') ? $request->get('al') : null;
+        
         $pagina = max(1, (int) $request->get('pagina', 1));
         $porPagina = (int) $request->get('por_pagina', 20);
 

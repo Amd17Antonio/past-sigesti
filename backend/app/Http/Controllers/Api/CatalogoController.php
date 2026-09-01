@@ -62,6 +62,7 @@ class CatalogoController extends Controller
     {
         $cat = $this->resolver($slug);
 
+        // Optimización: Consulta específica y limpia según el catálogo
         if ($slug === 'modelos') {
             $registros = DB::table('cat_modelo as m')
                 ->leftJoin('cat_marca as ma', 'ma.id', '=', 'm.id_marca')
@@ -72,9 +73,13 @@ class CatalogoController extends Controller
             $registros = DB::table($cat['tabla'])->orderBy('id', 'desc')->get();
         }
 
+        // Mapeo eficiente de estatus solo si aplica
         if ($cat['estatus']) {
-            $registros = $registros->map(function ($r) use ($cat) {
-                $r->_activo = $this->esActivo($r->{$cat['estatus']}, $cat['tipoEstatus']);
+            $estatusCol = $cat['estatus'];
+            $tipoEstatus = $cat['tipoEstatus'];
+            
+            $registros->transform(function ($r) use ($estatusCol, $tipoEstatus) {
+                $r->_activo = $this->esActivo($r->{$estatusCol}, $tipoEstatus);
                 return $r;
             });
         }
@@ -90,23 +95,19 @@ class CatalogoController extends Controller
     {
         $cat = $this->resolver($slug);
 
-        $reglas = [];
-        foreach ($cat['campos'] as $campo) {
-            $reglas[$campo] = 'nullable|string|max:255';
-        }
+        $reglas = collect($cat['campos'])->mapWithKeys(fn ($campo) => [$campo => 'nullable|string|max:255'])->toArray();
+        
         if ($slug === 'modelos') {
             $reglas['id_marca'] = 'required|integer';
         }
+        
         $data = $request->validate($reglas);
-
         $campoPrincipal = $cat['campos'][0];
+
         if (!empty($data[$campoPrincipal])) {
             $query = DB::table($cat['tabla'])
                 ->whereRaw('LOWER(' . $campoPrincipal . ') = ?', [strtolower($data[$campoPrincipal])]);
 
-            // "modelos" es un caso especial: el mismo nombre de modelo puede repetirse
-            // entre marcas distintas (ej. varias marcas tienen un modelo "Pro"), así que
-            // solo es duplicado si coincide el modelo Y la marca.
             if ($slug === 'modelos' && !empty($data['id_marca'])) {
                 $query->where('id_marca', $data['id_marca']);
             }
@@ -131,10 +132,7 @@ class CatalogoController extends Controller
     {
         $cat = $this->resolver($slug);
 
-        $reglas = [];
-        foreach ($cat['campos'] as $campo) {
-            $reglas[$campo] = 'nullable|string|max:255';
-        }
+        $reglas = collect($cat['campos'])->mapWithKeys(fn ($campo) => [$campo => 'nullable|string|max:255'])->toArray();
         $data = $request->validate($reglas);
 
         $campoPrincipal = $cat['campos'][0];
@@ -173,7 +171,7 @@ class CatalogoController extends Controller
         try {
             DB::table($cat['tabla'])->where('id', $id)->delete();
             return response()->json(['message' => 'Registro eliminado']);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (\Illuminate\Database\QueryException) {
             return response()->json([
                 'message' => 'No se puede eliminar: este registro está siendo usado en otro lugar del sistema.',
             ], 422);
@@ -215,7 +213,7 @@ class CatalogoController extends Controller
             )
             ->orderBy('t.id', 'desc')
             ->get()
-            ->map(function ($r) {
+            ->transform(function ($r) {
                 $r->_activo = (string) $r->status === "\x01" || (int) $r->status === 1;
                 $r->vinculado = $r->id_usuario
                     ? trim("{$r->usuario_nombre} {$r->apellido_paterno} {$r->apellido_materno}")
@@ -242,9 +240,7 @@ class CatalogoController extends Controller
 
     public function destroyTelefono(int $id)
     {
-        // Baja lógica: conserva el registro pero lo marca inactivo (igual que otros catálogos con status bit)
         DB::table('telefonia')->where('id', $id)->update(['status' => 0]);
         return response()->json(['message' => 'Línea telefónica dada de baja']);
     }
-
 }

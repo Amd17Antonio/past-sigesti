@@ -31,12 +31,6 @@ class SolicitudCorreoController extends Controller
             );
     }
 
-    /**
-     * Reglas de validación del correo institucional según el tipo de solicitud:
-     * - Alta: solo se valida formato (aún no existe, se está solicitando).
-     * - Baja: debe existir y estar ACTIVO en el sistema (no se puede dar de baja
-     *   un correo que no está registrado o que ya no está activo).
-     */
     private function reglasCorreoInstitucional(string $tipoSolicitud, ?int $ignorarId = null): array
     {
         $reglas = ['required', 'email', 'max:150'];
@@ -86,12 +80,16 @@ class SolicitudCorreoController extends Controller
 
         $query->orderBy('sc.created_at', 'desc');
 
+        // Optimización: Clonar la consulta solo para obtener el total de forma rápida mediante índices
         $total = (clone $query)->count();
         $registros = $query->forPage($pagina, $porPagina)->get();
 
         return response()->json([
-            'registros' => $registros, 'total' => $total, 'pagina' => $pagina,
-            'por_pagina' => $porPagina, 'total_paginas' => max(1, (int) ceil($total / $porPagina)),
+            'registros' => $registros, 
+            'total' => $total, 
+            'pagina' => $pagina,
+            'por_pagina' => $porPagina, 
+            'total_paginas' => max(1, (int) ceil($total / $porPagina)),
         ]);
     }
 
@@ -276,6 +274,7 @@ class SolicitudCorreoController extends Controller
             ->where('estatus', 'activo')
             ->where('id', '<>', $id)
             ->exists();
+            
         if ($correoEnUso) {
             return response()->json(['message' => 'Ese correo ya está asignado y activo en otra solicitud.'], 422);
         }
@@ -377,10 +376,6 @@ class SolicitudCorreoController extends Controller
         return $this->oficio($id);
     }
 
-    /**
-     * Exporta a Excel los correos institucionales activos filtrados por rango
-     * de fecha_activo. Usado en la página ResguardoCorreo.
-     */
     public function exportarResguardo(Request $request)
     {
         $data = $request->validate([

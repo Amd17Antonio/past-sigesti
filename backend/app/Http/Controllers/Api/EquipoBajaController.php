@@ -31,16 +31,26 @@ class EquipoBajaController extends Controller
             );
     }
 
-    private function columnasFiltrables(): array
+    /**
+     * Aplica los filtros de búsqueda reutilizables para index y exportar.
+     */
+    private function aplicarFiltros($query, Request $request)
     {
-        return [
-            'no_dictamen' => DB::raw("CONCAT(d.folio, '/', d.ejercicio)"),
-            'solicitante' => 's.solicitante',
-            'area' => 'a.area',
-            'tipo' => 't.TipoEquipo',
-            'marca' => 'ma.marca',
+        $filtrosMap = [
+            'solicitante'   => 's.solicitante',
+            'area'          => 'a.area',
+            'tipo'          => 't.TipoEquipo',
+            'marca'         => 'ma.marca',
             'no_inventario' => 'eq.no_inventario',
         ];
+
+        foreach ($filtrosMap as $param => $columna) {
+            if ($request->filled($param)) {
+                $query->where($columna, 'like', '%' . $request->get($param) . '%');
+            }
+        }
+
+        return $query;
     }
 
     public function index(Request $request)
@@ -49,27 +59,20 @@ class EquipoBajaController extends Controller
         $pagina = max(1, (int) $request->get('pagina', 1));
 
         $query = $this->baseQuery();
-
-        foreach (['solicitante', 'area', 'tipo', 'marca', 'no_inventario'] as $param) {
-            if ($request->filled($param)) {
-                $columna = match ($param) {
-                    'solicitante' => 's.solicitante',
-                    'area' => 'a.area',
-                    'tipo' => 't.TipoEquipo',
-                    'marca' => 'ma.marca',
-                    'no_inventario' => 'eq.no_inventario',
-                };
-                $query->where($columna, 'like', '%' . $request->get($param) . '%');
-            }
-        }
+        $this->aplicarFiltros($query, $request);
 
         $sortBy = $request->get('sort_by');
         $sortDir = $request->get('sort_dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        
         $mapaOrden = [
-            'solicitante' => 's.solicitante', 'area' => 'a.area',
-            'tipo' => 't.TipoEquipo', 'marca' => 'ma.marca',
-            'no_inventario' => 'eq.no_inventario', 'fecha_dictamen' => 'd.fecha_dictamen',
+            'solicitante'    => 's.solicitante', 
+            'area'           => 'a.area',
+            'tipo'           => 't.TipoEquipo', 
+            'marca'          => 'ma.marca',
+            'no_inventario'  => 'eq.no_inventario', 
+            'fecha_dictamen' => 'd.fecha_dictamen',
         ];
+
         if ($sortBy && isset($mapaOrden[$sortBy])) {
             $query->orderBy($mapaOrden[$sortBy], $sortDir);
         } else {
@@ -80,58 +83,66 @@ class EquipoBajaController extends Controller
         $registros = $query->forPage($pagina, $porPagina)->get();
 
         return response()->json([
-            'registros' => $registros, 'total' => $total, 'pagina' => $pagina,
-            'por_pagina' => $porPagina, 'total_paginas' => max(1, (int) ceil($total / $porPagina)),
+            'registros'     => $registros, 
+            'total'         => $total, 
+            'pagina'        => $pagina,
+            'por_pagina'    => $porPagina, 
+            'total_paginas' => max(1, (int) ceil($total / $porPagina)),
         ]);
     }
 
-    // Exporta TODOS los registros filtrados (sin paginar) a un archivo abrible en Excel
+    /**
+     * Exporta TODOS los registros filtrados (sin paginar) a un archivo de Excel optimizado.
+     */
     public function exportar(Request $request)
-{
-    $query = $this->baseQuery();
+    {
+        $query = $this->baseQuery();
+        $this->aplicarFiltros($query, $request);
 
-    foreach (['solicitante', 'area', 'tipo', 'marca', 'no_inventario'] as $param) {
-        if ($request->filled($param)) {
-            $columna = match ($param) {
-                'solicitante' => 's.solicitante',
-                'area' => 'a.area',
-                'tipo' => 't.TipoEquipo',
-                'marca' => 'ma.marca',
-                'no_inventario' => 'eq.no_inventario',
-            };
-            $query->where($columna, 'like', '%' . $request->get($param) . '%');
+        $registros = $query->orderBy('d.fecha_dictamen', 'desc')->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Encabezados de la tabla
+        $encabezados = ['No. Dictamen', 'Fecha', 'Solicitante', 'Área', 'Tipo', 'Marca', 'Modelo', 'No. Serie', 'No. Inventario', 'Dictamen', 'Expediente'];
+        $sheet->fromArray($encabezados, null, 'A1');
+
+        // Mapeamos todos los registros en un arreglo bidimensional para inserción masiva en bloque
+        $filasDatos = [];
+        foreach ($registros as $r) {
+            $filasDatos[] = [
+                $r->no_dictamen, 
+                $r->fecha_dictamen, 
+                $r->solicitante, 
+                $r->area,
+                $r->tipo, 
+                $r->marca, 
+                $r->modelo, 
+                $r->no_serie, 
+                $r->no_inventario,
+                $r->dictamen, 
+                $r->expediente,
+            ];
         }
+
+        // Inserción de golpe (Evita múltiples llamadas individuales a la hoja de cálculo)
+        if (!empty($filasDatos)) {
+            $sheet->fromArray($filasDatos, null, 'A2');
+        }
+
+        // Ajuste automático de columnas
+        foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $nombreArchivo = 'equipos_baja_' . now()->format('Y-m-d') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $nombreArchivo, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
-
-    $registros = $query->orderBy('d.fecha_dictamen', 'desc')->get();
-
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    $encabezados = ['No. Dictamen', 'Fecha', 'Solicitante', 'Área', 'Tipo', 'Marca', 'Modelo', 'No. Serie', 'No. Inventario', 'Dictamen', 'Expediente'];
-    $sheet->fromArray($encabezados, null, 'A1');
-
-    $fila = 2;
-    foreach ($registros as $r) {
-        $sheet->fromArray([
-            $r->no_dictamen, $r->fecha_dictamen, $r->solicitante, $r->area,
-            $r->tipo, $r->marca, $r->modelo, $r->no_serie, $r->no_inventario,
-            $r->dictamen, $r->expediente,
-        ], null, "A{$fila}");
-        $fila++;
-    }
-
-    foreach (range('A', 'K') as $col) {
-        $sheet->getColumnDimension($col)->setAutoSize(true);
-    }
-
-    $nombreArchivo = 'equipos_baja_' . now()->format('Y-m-d') . '.xlsx';
-
-    return response()->streamDownload(function () use ($spreadsheet) {
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-    }, $nombreArchivo, [
-        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ]);
-}
 }

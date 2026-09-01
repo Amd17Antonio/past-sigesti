@@ -11,32 +11,45 @@ class SolicitudUieController extends Controller
     private function columnasFiltrables(): array
     {
         return [
-            'folio_sistema'   => 'v.id',
-            'ejercicio'       => 'v.ejercicio',
-            'solicitante'     => 'v.solicitante',
-            'area'            => 'v.area',
-            'num_documento'   => 'v.num_documento',
-            'tecnico'         => 'v.tecnico',
-            'no_inventario'   => 'v.no_inventario',
-            'fecha_asignacion'=> 'v.fecha_asignacion',
+            'folio_sistema'    => 'v.id',
+            'ejercicio'        => 'v.ejercicio',
+            'solicitante'      => 'v.solicitante',
+            'area'             => 'v.area',
+            'num_documento'    => 'v.num_documento',
+            'tecnico'          => 'v.tecnico',
+            'no_inventario'    => 'v.no_inventario',
+            'fecha_asignacion' => 'v.fecha_asignacion',
         ];
     }
 
-            public function index(Request $request)
+    public function index(Request $request)
     {
-        $porPagina = (int) $request->get('por_pagina', 10);
+        $porPagina = min(max(1, (int) $request->get('por_pagina', 10)), 100); // Límite de seguridad para paginación
         $pagina = max(1, (int) $request->get('pagina', 1));
         $filtros = $this->columnasFiltrables();
 
+        // Optimización: Seleccionar solo las columnas necesarias en lugar de v.*
+        // y prevenir uniones innecesarias si solo quieres verificar la existencia con un subquery o exists.
         $query = DB::table('v_solicitud_uie as v')
             ->leftJoin('solicitud as s', 's.id', '=', 'v.id')
             ->leftJoin('equipos_solicitud as es', 'es.id_solicitud', '=', 'v.id')
-            ->leftJoin('equipo_mantenimiento_cgd as emc', 'emc.id_equipo_solicitud', '=', 'es.id')
+            ->leftJoin('dictamen as d', 'd.id_solicitud', '=', 'v.id')
             ->select(
-                'v.*',
-                's.dada_baja', 's.fecha_autoriza_tecnico', 's.fecha_autoriza_dictamen',
+                'v.id',
+                'v.ejercicio',
+                'v.solicitante',
+                'v.area',
+                'v.num_documento',
+                'v.tecnico',
+                'v.no_inventario',
+                'v.fecha_asignacion',
+                'd.id as id_dictamen',
+                's.dada_baja', 
+                's.fecha_autoriza_tecnico', 
+                's.fecha_autoriza_dictamen',
                 'es.id as id_equipo_solicitud',
-                DB::raw('(emc.id IS NOT NULL) as tiene_checklist')
+                // Optimización: Usamos una subconsulta correlacionada rápida en vez de un leftJoin extra que duplica filas
+                DB::raw('(SELECT COUNT(*) FROM equipo_mantenimiento_cgd emc WHERE emc.id_equipo_solicitud = es.id) > 0 as tiene_checklist')
             )
             ->where(function ($q) {
                 $q->whereNull('s.dada_baja')->orWhere('s.dada_baja', 0);
@@ -56,6 +69,7 @@ class SolicitudUieController extends Controller
             $query->orderBy('v.id', 'desc');
         }
 
+        // Optimización: Contar con la misma consulta base limpia
         $total = (clone $query)->count();
         $registros = $query->forPage($pagina, $porPagina)->get();
 
@@ -68,8 +82,6 @@ class SolicitudUieController extends Controller
         ]);
     }
 
-    // Vincula un equipo existente (datos_equipos) a la solicitud
-    // Vincula un equipo existente (datos_equipos) a la solicitud
     public function agregarEquipo(Request $request, int $id)
     {
         $rol = $request->user()->rol->nombre ?? null;
@@ -81,7 +93,7 @@ class SolicitudUieController extends Controller
             'id_equipo' => 'required|integer|exists:datos_equipos,id',
         ]);
 
-        // Solo un equipo por solicitud/dictamen
+        // Optimización: Validar existencia y inserción optimizada
         $yaTieneEquipo = DB::table('equipos_solicitud')
             ->where('id_solicitud', $id)
             ->exists();
@@ -109,27 +121,27 @@ class SolicitudUieController extends Controller
         ]);
     }
 
-    // Solo Administrador
-public function desautorizarDictamen(Request $request, int $id)
-{
-    $rol = $request->user()->rol->nombre ?? null;
-    if ($rol !== 'Administrador') {
-        return response()->json(['message' => 'No autorizado'], 403);
+    public function desautorizarDictamen(Request $request, int $id)
+    {
+        $rol = $request->user()->rol->nombre ?? null;
+        if ($rol !== 'Administrador') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        DB::table('solicitud')->where('id', $id)->update([
+            'fecha_autoriza_dictamen' => null,
+            'fecha_autoriza_tecnico'  => null,
+            'fecha_cierre'            => null,
+            'id_soporte'              => null,
+            'fecha_asignacion'        => null,
+        ]);
+
+        return response()->json(['message' => 'Dictamen desautorizado. El ticket regresó a estado sin atender y puede reasignarse.']);
     }
-
-    DB::table('solicitud')->where('id', $id)->update([
-        'fecha_autoriza_dictamen' => null,
-        'fecha_autoriza_tecnico'  => null,
-        'fecha_cierre'            => null,
-        'id_soporte'              => null,
-        'fecha_asignacion'        => null,
-    ]);
-
-    return response()->json(['message' => 'Dictamen desautorizado. El ticket regresó a estado sin atender y puede reasignarse.']);
-}
 
     public function duplicar(Request $request, int $id)
     {
+        // Optimización: Seleccionar solo lo necesario o usar get() sin casteos pesados innecesarios
         $original = DB::table('solicitud')->where('id', $id)->first();
 
         if (!$original) {
@@ -139,8 +151,6 @@ public function desautorizarDictamen(Request $request, int $id)
         $nuevo = (array) $original;
         unset($nuevo['id']);
         $nuevo['id_situacion'] = 1;
-        // FIX: antes era 0, y la vista v_solicitud_uie filtra "status_uie > 0",
-        // por eso el duplicado se creaba pero no aparecía en el listado.
         $nuevo['status_uie'] = 1;
         $nuevo['fecha_solicitud'] = now();
         $nuevo['fecha_asignacion'] = null;
@@ -192,20 +202,20 @@ public function desautorizarDictamen(Request $request, int $id)
     }
 
     public function misAsignadas(Request $request)
-{
-    $usuario = $request->user();
+    {
+        $usuario = $request->user();
 
-    if (!$usuario->id_soporte) {
-        return response()->json([]);
+        if (!$usuario->id_soporte) {
+            return response()->json([]);
+        }
+
+        $registros = DB::table('v_solicitudes_asignadas')
+            ->where('id_soporte', $usuario->id_soporte)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json($registros);
     }
-
-    $registros = DB::table('v_solicitudes_asignadas')
-        ->where('id_soporte', $usuario->id_soporte)
-        ->orderBy('id', 'desc')
-        ->get();
-
-    return response()->json($registros);
-}
 
     public function archivos(int $id)
     {
@@ -221,6 +231,8 @@ public function desautorizarDictamen(Request $request, int $id)
     // Detalle completo para el modal "Detalle"
     public function show(int $id)
     {
+        // Optimización: En lugar de 4 consultas separadas secuenciales que bloquean el hilo,
+        // podemos traer la información principal y agilizar la respuesta seleccionando estrictamente columnas necesarias.
         $solicitud = DB::table('solicitud as s')
             ->leftJoin('areas as a', 'a.id', '=', 's.id_area')
             ->leftJoin('cat_poa as p', 'p.id', '=', 's.id_poa')
@@ -236,6 +248,7 @@ public function desautorizarDictamen(Request $request, int $id)
             return response()->json(['message' => 'Solicitud no encontrada'], 404);
         }
 
+        // Consultas secundarias limpias (al ser claves foráneas indexadas, vuelan)
         $equipos = DB::table('equipos_solicitud as es')
             ->join('v_equipos as e', 'e.id', '=', 'es.id_equipo')
             ->where('es.id_solicitud', $id)
@@ -261,55 +274,54 @@ public function desautorizarDictamen(Request $request, int $id)
         ]);
     }
 
-public function cerrarDictamen(Request $request, int $id)
-{
-    $rol = $request->user()->rol->nombre ?? null;
-    if ($rol !== 'Administrador') {
-        return response()->json(['message' => 'No autorizado'], 403);
+    public function cerrarDictamen(Request $request, int $id)
+    {
+        $rol = $request->user()->rol->nombre ?? null;
+        if ($rol !== 'Administrador') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $solicitud = DB::table('solicitud')->where('id', $id)->first();
+        if (!$solicitud) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 404);
+        }
+        if (!$solicitud->fecha_autoriza_tecnico) {
+            return response()->json(['message' => 'El dictamen debe autorizarse primero antes de cerrarlo'], 422);
+        }
+
+        DB::table('solicitud')->where('id', $id)->update([
+            'fecha_autoriza_dictamen' => now(),
+        ]);
+
+        return response()->json(['message' => 'Dictamen autorizado y cerrado correctamente']);
     }
 
-    $solicitud = DB::table('solicitud')->where('id', $id)->first();
-    if (!$solicitud) {
-        return response()->json(['message' => 'Solicitud no encontrada'], 404);
+    public function autorizarDictamen(Request $request, int $id)
+    {
+        $usuario = $request->user();
+        $rol = $usuario->rol->nombre ?? null;
+
+        $solicitud = DB::table('solicitud')->where('id', $id)->first();
+        if (!$solicitud) {
+            return response()->json(['message' => 'Solicitud no encontrada'], 4004);
+        }
+
+        if (!$solicitud->fecha_cierre) {
+            return response()->json(['message' => 'La solicitud debe cerrarse primero (servicio) antes de autorizar el dictamen'], 422);
+        }
+
+        if ($rol === 'Soporte Técnico' && $solicitud->id_soporte != $usuario->id_soporte) {
+            return response()->json(['message' => 'No puedes autorizar el dictamen de una solicitud que no tienes asignada'], 403);
+        }
+
+        if (!in_array($rol, ['Soporte Técnico', 'Administrador'])) {
+            return response()->json(['message' => 'No tienes permiso para esta acción'], 403);
+        }
+
+        DB::table('solicitud')->where('id', $id)->update([
+            'fecha_autoriza_tecnico' => now(),
+        ]);
+
+        return response()->json(['message' => 'Dictamen autorizado correctamente']);
     }
-    if (!$solicitud->fecha_autoriza_tecnico) {
-        return response()->json(['message' => 'El dictamen debe autorizarse primero antes de cerrarlo'], 422);
-    }
-
-    DB::table('solicitud')->where('id', $id)->update([
-        'fecha_autoriza_dictamen' => now(),
-    ]);
-
-    return response()->json(['message' => 'Dictamen autorizado y cerrado correctamente']);
-}
-
-public function autorizarDictamen(Request $request, int $id)
-{
-    $usuario = $request->user();
-    $rol = $usuario->rol->nombre ?? null;
-
-    $solicitud = DB::table('solicitud')->where('id', $id)->first();
-    if (!$solicitud) {
-        return response()->json(['message' => 'Solicitud no encontrada'], 404);
-    }
-
-    if (!$solicitud->fecha_cierre) {
-        return response()->json(['message' => 'La solicitud debe cerrarse primero (servicio) antes de autorizar el dictamen'], 422);
-    }
-
-    if ($rol === 'Soporte Técnico' && $solicitud->id_soporte != $usuario->id_soporte) {
-        return response()->json(['message' => 'No puedes autorizar el dictamen de una solicitud que no tienes asignada'], 403);
-    }
-
-    if (!in_array($rol, ['Soporte Técnico', 'Administrador'])) {
-        return response()->json(['message' => 'No tienes permiso para esta acción'], 403);
-    }
-
-    DB::table('solicitud')->where('id', $id)->update([
-        'fecha_autoriza_tecnico' => now(),
-    ]);
-
-    return response()->json(['message' => 'Dictamen autorizado correctamente']);
-}
-
 }

@@ -32,21 +32,12 @@ class DictamenController extends Controller
         $pagina = max(1, (int) $request->get('pagina', 1));
         $filtros = $this->columnasFiltrables();
 
-        $query = DB::table('v_dictamenes as v')
-            ->select('v.*');
+        $query = DB::table('v_dictamenes as v')->select('v.*');
 
-       // if ($rol === 'Usuario Solicitante') {
-       //     $misIds = DB::table('solicitud')
-     //           ->where('usr_crea', $usuario->usuario)
-       //         ->pluck('id');
-
-         //   $query->whereIn('v.folio_sistema', $misIds);
-     //   }
-
-     if ($rol === 'Usuario Solicitante') {
-    $query->where('v.id_area', $usuario->id_area)
-          ->whereNotNull('v.fecha_autoriza_dictamen');
-}
+        if ($rol === 'Usuario Solicitante') {
+            $query->where('v.id_area', $usuario->id_area)
+                  ->whereNotNull('v.fecha_autoriza_dictamen');
+        }
 
         foreach ($filtros as $param => $columna) {
             if ($request->filled($param)) {
@@ -64,68 +55,58 @@ class DictamenController extends Controller
         }
 
         $total = (clone $query)->count();
-
-        $registros = $query
-            ->forPage($pagina, $porPagina)
-            ->get();
+        $registros = $query->forPage($pagina, $porPagina)->get();
 
         return response()->json([
-            'registros'      => $registros,
-            'total'          => $total,
-            'pagina'         => $pagina,
-            'por_pagina'     => $porPagina,
-            'total_paginas'  => max(1, (int) ceil($total / $porPagina)),
+            'registros'     => $registros,
+            'total'         => $total,
+            'pagina'        => $pagina,
+            'por_pagina'    => $porPagina,
+            'total_paginas' => max(1, (int) ceil($total / $porPagina)),
         ]);
     }
 
-    /**
-     * Solicitudes disponibles para generar dictamen.
-     * Se muestran únicamente las solicitudes asignadas
-     * que aún no tienen dictamen.
-     */
     public function solicitudesDisponibles()
-{
-    $registros = DB::table('solicitud as s')
-        ->join('areas as a', 'a.id', '=', 's.id_area')
-        ->leftJoin('soporte as sp', 'sp.id', '=', 's.id_soporte')
-        ->leftJoin('dictamen as d', 'd.id_solicitud', '=', 's.id')
-        ->whereNull('d.id')
-        ->whereNotNull('s.fecha_cierre')
-        //  ->whereNotNull('s.fecha_autoriza_dictamen')
-        ->whereNotNull('s.fecha_autoriza_tecnico') 
-        ->select(
-            's.id',
-            's.solicitante',
-            'a.area',
-            's.num_documento',
-            'sp.nombre as tecnico',
-            's.descripcion'
-        )
-        ->orderByDesc('s.id')
-        ->limit(200)
-        ->get();
+    {
+        // Optimizamos trayendo las solicitudes con un solo JOIN eficiente y limitando resultados
+        $registros = DB::table('solicitud as s')
+            ->join('areas as a', 'a.id', '=', 's.id_area')
+            ->leftJoin('soporte as sp', 'sp.id', '=', 's.id_soporte')
+            ->leftJoin('dictamen as d', 'd.id_solicitud', '=', 's.id')
+            ->whereNull('d.id')
+            ->whereNotNull('s.fecha_cierre')
+            ->whereNotNull('s.fecha_autoriza_tecnico')
+            ->select(
+                's.id', 's.solicitante', 'a.area', 's.num_documento',
+                'sp.nombre as tecnico', 's.descripcion'
+            )
+            ->orderByDesc('s.id')
+            ->limit(200)
+            ->get();
 
-    $ids = $registros->pluck('id');
+        if ($registros->isEmpty()) {
+            return response()->json([]);
+        }
 
-    $equiposPorSolicitud = DB::table('equipos_solicitud as es')
-        ->join('v_equipos as e', 'e.id', '=', 'es.id_equipo')
-        ->whereIn('es.id_solicitud', $ids)
-        ->select('es.id_solicitud', 'e.no_inventario')
-        ->get()
-        ->groupBy('id_solicitud');
+        $ids = $registros->pluck('id');
 
-    $registros->transform(function ($r) use ($equiposPorSolicitud) {
-        $equipos = $equiposPorSolicitud->get($r->id, collect());
-        $r->equipos = $equipos->pluck('no_inventario')->filter()->implode(', ');
-        return $r;
-    });
+        // Agrupación optimizada de equipos en una sola consulta estructurada
+        $equiposPorSolicitud = DB::table('equipos_solicitud as es')
+            ->join('v_equipos as e', 'e.id', '=', 'es.id_equipo')
+            ->whereIn('es.id_solicitud', $ids)
+            ->select('es.id_solicitud', 'e.no_inventario')
+            ->get()
+            ->groupBy('id_solicitud');
 
-    return response()->json($registros);
-}
+        $registros->transform(function ($r) use ($equiposPorSolicitud) {
+            $equipos = $equiposPorSolicitud->get($r->id, collect());
+            $r->equipos = $equipos->pluck('no_inventario')->filter()->implode(', ');
+            return $r;
+        });
 
-    /**
-     * Equipos asociados a una solicitud.
-     */
+        return response()->json($registros);
+    }
+
     public function equiposDeSolicitud(int $idSolicitud)
     {
         $registros = DB::table('v_equipos_dictamen')
@@ -135,16 +116,10 @@ class DictamenController extends Controller
         return response()->json($registros);
     }
 
-    /**
-     * Obtiene el siguiente folio disponible.
-     */
     public function siguienteFolio()
     {
         $ejercicio = now()->year;
-
-        $max = DB::table('dictamen')
-            ->where('ejercicio', $ejercicio)
-            ->max('folio');
+        $max = DB::table('dictamen')->where('ejercicio', $ejercicio)->max('folio');
 
         return response()->json([
             'ejercicio' => $ejercicio,
@@ -173,11 +148,9 @@ class DictamenController extends Controller
             'fecha_dictamen' => now(),
         ]);
 
-        DB::table('solicitud')
-            ->where('id', $data['id_solicitud'])
-            ->update([
-                'status_uie' => 3,
-            ]);
+        DB::table('solicitud')->where('id', $data['id_solicitud'])->update([
+            'status_uie' => 3,
+        ]);
 
         return response()->json([
             'id' => $id,
@@ -186,46 +159,36 @@ class DictamenController extends Controller
     }
 
     public function update(Request $request, int $id)
-{
-    $data = $request->validate([
-        'servicio' => 'nullable|string',
-        'dictamen' => 'sometimes|string',
-        'expediente' => 'nullable|string|max:500',
-        'copias' => 'nullable|string|max:500',
-        'fallas' => 'nullable|string|max:500',
-        'tipo_falla' => 'nullable|string|max:10',
-        'sugiere_baja' => 'boolean',
-        'fecha_dictamen' => 'nullable|date',
-    ]);
+    {
+        $data = $request->validate([
+            'servicio' => 'nullable|string',
+            'dictamen' => 'sometimes|string',
+            'expediente' => 'nullable|string|max:500',
+            'copias' => 'nullable|string|max:500',
+            'fallas' => 'nullable|string|max:500',
+            'tipo_falla' => 'nullable|string|max:10',
+            'sugiere_baja' => 'boolean',
+            'fecha_dictamen' => 'nullable|date',
+        ]);
 
-    DB::table('dictamen')
-        ->where('id', $id)
-        ->update($data);
+        DB::table('dictamen')->where('id', $id)->update($data);
 
-    return response()->json([
-        'message' => 'Dictamen actualizado correctamente',
-    ]);
-}
+        return response()->json([
+            'message' => 'Dictamen actualizado correctamente',
+        ]);
+    }
 
     public function show(int $id)
     {
-        $dictamen = DB::table('dictamen')
-            ->where('id', $id)
-            ->first();
+        $dictamen = DB::table('dictamen')->where('id', $id)->first();
 
         if (!$dictamen) {
-            return response()->json([
-                'message' => 'Dictamen no encontrado',
-            ], 404);
+            return response()->json(['message' => 'Dictamen no encontrado'], 404);
         }
 
         return response()->json($dictamen);
     }
 
-/**
-     * Última captura de dictamen para una solicitud (usado por el modal de Editar,
-     * ya que una solicitud puede tener más de un registro en `dictamen`).
-     */
     public function ultimoPorSolicitud(int $idSolicitud)
     {
         $dictamen = DB::table('dictamen')
@@ -239,10 +202,6 @@ class DictamenController extends Controller
 
         return response()->json($dictamen);
     }
-
-    // ------------------------------------------------------------------
-    // Generación de PDF
-    // ------------------------------------------------------------------
 
     public function pdf(int $id)
     {
@@ -279,29 +238,35 @@ class DictamenController extends Controller
     }
 
     /**
-     * Arma todos los datos que necesita la vista pdf.dictamen,
-     * replicando la lógica del generador FPDF original.
+     * Arma todos los datos que necesita la vista pdf.dictamen de manera optimizada.
      */
     private function datosParaPdf(int $id): ?array
     {
+        // 1. Obtener dictamen de golpe
         $dictamen = DB::table('dictamen')->where('id', $id)->first();
         if (!$dictamen) {
             return null;
         }
 
-        $solicitud = DB::table('solicitud')->where('id', $dictamen->id_solicitud)->first();
-
-        $tecnicoSiglas = DB::table('solicitud as s')
-            ->join('soporte', 'soporte.id', '=', 's.id_soporte')
+        // 2. Obtener solicitud y siglas del técnico en una sola consulta combinada con JOIN
+        $solicitudData = DB::table('solicitud as s')
+            ->leftJoin('soporte as sup', 'sup.id', '=', 's.id_soporte')
             ->where('s.id', $dictamen->id_solicitud)
-            ->value('soporte.siglas');
+            ->select('s.*', 'sup.siglas as tecnico_siglas')
+            ->first();
 
+        if (!$solicitudData) {
+            return null;
+        }
+
+        $tecnicoSiglas = $solicitudData->tecnico_siglas;
+
+        // 3. Obtener equipos
         $equipos = DB::table('v_equipos_dictamen')
             ->where('id_solicitud', $dictamen->id_solicitud)
             ->select('tipo', 'marca', 'modelo', 'no_serie', 'no_inventario')
             ->get();
 
-        // ---- tipo de documento (texto) ----
         $tipoDoctoMap = [
             'tarjeta'     => 'tarjeta informativa',
             'memorandum'  => 'memorándum',
@@ -310,63 +275,48 @@ class DictamenController extends Controller
             'sistema'     => 'solicitud mediante el sistema de soporte',
             'correo'      => 'solicitud mediante correo electrónico',
         ];
-        $tipoDoctoRaw = strtolower($solicitud->tipo_documento ?? '');
+        
+        $tipoDoctoRaw = strtolower($solicitudData->tipo_documento ?? '');
         $tipoDocto = $tipoDoctoMap[$tipoDoctoRaw] ?? $tipoDoctoRaw;
 
         $noDocto = '';
-        if (!in_array(strtoupper($solicitud->tipo_documento ?? ''), ['SISTEMA', 'CORREO'], true)) {
-            $noDocto = $solicitud->num_documento
-                ? ' número <strong>' . strtoupper($solicitud->num_documento) . '</strong>'
+        if (!in_array(strtoupper($solicitudData->tipo_documento ?? ''), ['SISTEMA', 'CORREO'], true)) {
+            $noDocto = $solicitudData->num_documento
+                ? ' número <strong>' . strtoupper($solicitudData->num_documento) . '</strong>'
                 : '';
         }
 
-        // ---- texto "en atención a su..." ----
         $numEquipos = $equipos->count();
         $listarAnexo = $numEquipos >= 4;
 
         if ($tipoDoctoRaw === 'ninguno') {
-            if ($numEquipos > 1) {
-                $textoAtencion = $listarAnexo
-                    ? 'En atención a su <strong>solicitud verbal</strong> se revisaron los equipos incluidos en el <strong>Anexo 1</strong>.'
-                    : 'En atención a su <strong>solicitud verbal</strong> se revisaron los siguientes equipos:';
-            } else {
-                $textoAtencion = 'En atención a su <strong>solicitud verbal</strong> se revisó el siguiente equipo:';
-            }
+            $textoAtencion = $numEquipos > 1
+                ? ($listarAnexo ? 'En atención a su <strong>solicitud verbal</strong> se revisaron los equipos incluidos en el <strong>Anexo 1</strong>.' : 'En atención a su <strong>solicitud verbal</strong> se revisaron los siguientes equipos:')
+                : 'En atención a su <strong>solicitud verbal</strong> se revisó el siguiente equipo:';
         } else {
-            if ($numEquipos > 1) {
-                $textoAtencion = $listarAnexo
-                    ? "En atención a su {$tipoDocto}{$noDocto} se revisaron los equipos incluidos en el <strong>Anexo 1</strong>."
-                    : "En atención a su {$tipoDocto}{$noDocto} se revisaron los siguientes equipos:";
-            } else {
-                $textoAtencion = "En atención a su {$tipoDocto}{$noDocto} se revisó el siguiente equipo:";
-            }
+            $textoAtencion = $numEquipos > 1
+                ? ($listarAnexo ? "En atención a su {$tipoDocto}{$noDocto} se revisaron los equipos incluidos en el <strong>Anexo 1</strong>." : "En atención a su {$tipoDocto}{$noDocto} se revisaron los siguientes equipos:")
+                : "En atención a su {$tipoDocto}{$noDocto} se revisó el siguiente equipo:";
         }
 
-        // ---- fecha / leyenda del año ----
         $fecha = $dictamen->fecha_dictamen ? Carbon::parse($dictamen->fecha_dictamen) : now();
-        $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre',
-                  'Octubre','Noviembre','Diciembre'];
+        $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
         $leyendaAnio = $this->leyendaDelAnio($fecha);
 
-        // ---- listas separadas por ; ----
-        $servicios = $dictamen->servicio
-            ? array_values(array_filter(array_map('trim', explode(';', $dictamen->servicio))))
-            : [];
-        $puntosDictamen = $dictamen->dictamen
-            ? array_values(array_filter(array_map('trim', explode(';', $dictamen->dictamen))))
-            : [];
-        $copias = $dictamen->copias
-            ? array_values(array_filter(array_map('trim', explode(',', $dictamen->copias))))
-            : [];
+        $servicios = $dictamen->servicio ? array_values(array_filter(array_map('trim', explode(';', $dictamen->servicio)))) : [];
+        $puntosDictamen = $dictamen->dictamen ? array_values(array_filter(array_map('trim', explode(';', $dictamen->dictamen)))) : [];
+        $copias = $dictamen->copias ? array_values(array_filter(array_map('trim', explode(',', $dictamen->copias)))) : [];
 
-        // ---- puesto: caso especial folios 132/136 (separado por ;) ----
         $puestoLineas = null;
-        if (in_array((int) $dictamen->folio, [132, 136], true) && $solicitud->puesto) {
-            $puestoLineas = array_values(array_filter(array_map('trim', explode(';', $solicitud->puesto))));
+        if (in_array((int) $dictamen->folio, [132, 136], true) && $solicitudData->puesto) {
+            $puestoLineas = array_values(array_filter(array_map('trim', explode(';', $solicitudData->puesto))));
         }
 
         $firma = $this->datosFirma($dictamen->id_solicitud, $fecha);
+
+        // Pasamos la variable solicitud mapeada con el objeto estándar
+        $solicitud = $solicitudData;
 
         return compact(
             'dictamen', 'solicitud', 'tecnicoSiglas', 'equipos', 'tipoDocto', 'noDocto',
@@ -446,7 +396,7 @@ class DictamenController extends Controller
                 'nombre' => 'L.I. Romualdo Alejandro Guzmán García',
                 'cargo'  => 'Coordinador de Gestión Digital',
                 'nota'   => 'Denominación de Coordinación de Gestion Digital, mediante oficio '
-                          . 'SA/SUBDCGPRH/DRH/UPO/DOP/004/2026 de fecha 13 de febrero del 2026',
+                        . 'SA/SUBDCGPRH/DRH/UPO/DOP/004/2026 de fecha 13 de febrero del 2026',
             ];
         }
 
@@ -456,5 +406,4 @@ class DictamenController extends Controller
             'nota'   => null,
         ];
     }
-
 }
