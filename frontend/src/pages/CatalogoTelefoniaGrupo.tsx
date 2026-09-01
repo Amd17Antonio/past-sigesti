@@ -6,7 +6,7 @@ export default function CatalogoTelefoniaGrupo() {
       titulo="Catálogos · Telefonía"
       botones={[
         { label: 'Categorías de Telefonía', to: '/catalogos/categoria-telefonia', icono: '📶' },
-        { label: 'Teléfonos', to: '/catalogos/telefonos', icono: '📞' },
+        //{ label: 'Teléfonos', to: '/catalogos/telefonos', icono: '📞' },
       ]}
     />
   );

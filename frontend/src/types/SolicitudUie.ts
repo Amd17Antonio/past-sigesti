@@ -13,6 +13,7 @@ export interface SolicitudUieRow {
   fecha_autoriza_dictamen: string | null;
   fecha_asignacion: string | null;
   NoDictamen: string | null;
+  id_dictamen: number | null;
   ejercicio: number | null;
   folio: number | null;
   no_inventario: string | null;

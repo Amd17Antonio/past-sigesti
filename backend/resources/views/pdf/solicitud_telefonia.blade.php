@@ -13,8 +13,8 @@
 
         body { 
             font-family: 'Montserrat', sans-serif; 
-            font-size: 13px;  /* 13 px */
-            line-height: 1.25; 
+            font-size: 12px;  
+            line-height: 1.2; 
             color: #111; 
         }
 
@@ -34,13 +34,13 @@
         .membrete {
             width: 100%;
             padding-bottom: 0px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .membrete table { width: 100%; border: none; }
         .membrete td { border: none; vertical-align: middle; padding: 0; }
         .membrete .logo-cell img { 
             display: block; 
-            height: 74px; 
+            height: 68px; 
             width: auto; 
             margin: 0 !important; 
             padding: 0 !important;
@@ -48,38 +48,38 @@
 
         /* Leyenda debajo del logo */
         .leyenda-logo {
-            font-size: 11px;  /* 11 px */
+            font-size: 10px;  
             font-weight: bold;
             text-align: center;
             margin-top: 0px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .subtitulo { 
             text-align: center; 
-            font-size: 16px; /* 16 px */
+            font-size: 15px; 
             font-weight: bold; 
-            margin: 10px 0 14px 0; 
+            margin: 8px 0 10px 0; 
             text-transform: uppercase; 
         }
 
-        /* Ajustes para Fecha y Ticket alineados al 100% con las tablas */
+        /* Ajustes para Fecha y Ticket */
         .fecha-ticket { 
             width: 100%; 
-            margin-bottom: 12px; 
+            margin-bottom: 10px; 
             box-sizing: border-box;
         }
         .fecha-ticket table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .fecha-ticket td { border: none; padding: 0; vertical-align: middle; }
         .fecha-ticket .etiqueta { font-weight: bold; white-space: nowrap; }
-        .fecha-ticket .caja { border: 1px solid #333; padding: 4px; text-align: center; }
+        .fecha-ticket .caja { border: 1px solid #333; padding: 3px; text-align: center; }
 
         /* ---------- Títulos de sección centrados ---------- */
         .seccion-titulo-centrado { 
             text-align: center; 
             font-weight: bold; 
-            font-size: 14px;  /* 14 px */
-            margin: 12px 0 6px 0;
+            font-size: 13px;  
+            margin: 10px 0 4px 0;
         }
 
         /* ---------- Estructura de tablas ---------- */
@@ -87,12 +87,12 @@
             border-collapse: collapse;
             width: 100%;
             border: 1px solid #333;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             table-layout: fixed;
         }
 
         .tabla-datos td {
-            padding: 8px 8px; 
+            padding: 5px 6px; 
             vertical-align: middle;
             word-wrap: break-word;
         }
@@ -100,28 +100,29 @@
         .tabla-datos td.etiqueta {
             background-color: #e0e0e0;
             font-weight: bold;
-            width: 32%;
+            width: 25.6%; /* Reducido un 20% desde 32% */
             border-right: 1px solid #333;
             border-bottom: 1px solid #333;
         }
 
         .subtexto-etiqueta {
-            font-size: 11px; /* 11 px */
-            font-weight: normal;
+            font-size: 10px; 
+            font-weight: bold; 
             font-style: italic;
             display: block;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         .tabla-datos td.valor {
             border-bottom: 1px solid #333;
-            width: 68%;
+            width: 74.4%; /* Incrementado con el espacio restado a la etiqueta */
         }
 
         .tabla-datos td.valor-matriz {
             padding: 0 !important;
             border-bottom: 1px solid #333;
             vertical-align: top;
+            width: 74.4%;
         }
 
         .tabla-datos td.sin-borde-inferior {
@@ -145,21 +146,21 @@
             border-right: 1px solid #333;
             border-bottom: 1px solid #333;
             text-align: center;
-            padding: 4px 2px !important;
+            padding: 3px 2px !important;
             vertical-align: middle;
             word-wrap: break-word;
         }
         .subtabla-solicitud tr:first-child td {
             border-top: none;
-            height: 35px;
+            height: 30px; 
         }
         .subtabla-solicitud tr:last-child td {
             border-bottom: none;
             background-color: #e0e0e0;
             font-weight: bold;
             font-style: italic;
-            font-size: 10.5px;  /* 10.5 px */
-            height: 32px;
+            font-size: 9.5px;  
+            height: 28px; 
         }
 
         .subtabla-solicitud td:last-child {
@@ -176,11 +177,11 @@
         table.solicita-autoriza { width: 100%; border-collapse: collapse; margin-top: 0px; }
         table.solicita-autoriza td { border: none; padding: 4px; vertical-align: bottom; text-align: center; }
         table.solicita-autoriza .col-firma { width: 36%; }
-        table.solicita-autoriza .col-sello { width: 28%; font-weight: bold; text-align: center; vertical-align: bottom; }
+        table.solicita-autoriza .col-sello { width: 28%; font-weight: normal; text-align: center; vertical-align: bottom; }
         
-        .firma-linea { border-top: 1px solid #333; margin: 0 10px; padding-top: 5px; }
+        .firma-linea { border-top: 1px solid #333; margin: 0 10px; padding-top: 4px; }
 
-        .nota-roja { font-size: 12.5px; margin-top: 20px; font-weight: bold; text-align: left; }
+        .nota-roja { font-size: 11.5px; margin-top: 15px; font-weight: bold; text-align: left; }
     </style>
 </head>
 <body>
@@ -202,15 +203,11 @@
     </div>
 
     <!-- Leyenda a 0px del logo -->
-    <p class="leyenda-logo">"2025, Bicentenario de la Primera Constitución Política del Estado Libre y Soberano de Oaxaca"</p>
-
-    <br>
+    <p class="leyenda-logo">"2025, Bicentenario de la Primera Constitución Política del Estado Libre y Soberano de Oaxaca"</p> <br>
 
     <p class="subtitulo">Solicitud de marcación de usuario de telefonía</p>
 
-    <br>
-
-    <!-- Fecha y Ticket con el ticket perfectamente limitado al borde de las tablas -->
+    <!-- Fecha y Ticket -->
     <div class="fecha-ticket">
         <table>
             <tr>
@@ -293,7 +290,7 @@
                         <td class="col-5">
                             {{ $tramiteActual === 'OTRO' ? 'X' : '' }}
                             @if($tramiteActual === 'OTRO')
-                                <br><span style="font-size:10px; font-weight:normal;">({{ str_replace('_', ' ', $s->tipo_tramite) }})</span>
+                                <br><span style="font-size:9px; font-weight:normal;">({{ str_replace('_', ' ', $s->tipo_tramite) }})</span>
                             @endif
                         </td>
                     </tr>
@@ -312,18 +309,16 @@
                 Justificación para Solicitud:
                 <span class="subtexto-etiqueta">Porque requiere la solicitud, con base a sus actividades laborales.</span>
             </td>
-            <td class="valor" style="min-height: 40px; vertical-align: top;">{{ $s->observaciones ?? '-' }}</td>
+            <td class="valor" style="min-height: 35px; vertical-align: top;">{{ $s->observaciones ?? '-' }}</td>
         </tr>
     </table>
-
-    <br>
 
     <!-- Área de Firmas y Sello -->
     <table class="solicita-autoriza">
         <tr>
             <td class="col-firma">
                 <div style="font-weight: bold;">Usuario</div>
-                <br><br><br><br>
+                <br><br><br>
                 <div style="margin-bottom: 4px; font-weight: bold;">
                     {{ trim(($s->nombre ?? '') . ' ' . ($s->apellido_paterno ?? '') . ' ' . ($s->apellido_materno ?? '')) ?: '-' }}
                 </div>
@@ -336,10 +331,10 @@
             </td>
             <td class="col-firma">
                 <div style="font-weight: bold;">Autoriza</div>
-                <br><br><br><br>
+                <br><br><br>
                 <div style="margin-bottom: 4px; font-weight: bold;">
                     {{ $s->autoriza_nombre ?? '-' }}<br>
-                    <span style="font-weight:normal; font-size:11px;">{{ $s->autoriza_cargo ?? '' }}</span>
+                    <span style="font-weight:normal; font-size:10px;">{{ $s->autoriza_cargo ?? '' }}</span>
                 </div>
                 <div class="firma-linea">
                     Nombre y Firma

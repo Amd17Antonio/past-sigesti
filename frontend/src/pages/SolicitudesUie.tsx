@@ -11,6 +11,7 @@ import {
   getArchivosSolicitud,
 } from '../services/solicitudUieService';
 import { abrirPdfEquipoMantenimiento } from '../services/equipoMantenimientoCgdService';
+import { abrirDictamenPdf } from '../services/dictamenService';
 import type { SolicitudUieRow } from '../types/SolicitudUie';
 import ActionsDropdown from '../components/common/ActionsDropdown';
 import AgregarEquipoModal from '../components/solicitudes/AgregarEquipoModal';
@@ -150,6 +151,14 @@ export default function SolicitudesUie() {
       await abrirPdfEquipoMantenimiento(idEquipoSolicitud);
     } catch {
       alert('No fue posible abrir el checklist de mantenimiento.');
+    }
+  };
+
+  const handleVerDictamen = async (idDictamen: number) => {
+    try {
+      await abrirDictamenPdf(idDictamen);
+    } catch {
+      alert('No fue posible abrir el dictamen.');
     }
   };
 
@@ -312,7 +321,16 @@ export default function SolicitudesUie() {
                         Acuse Dictamen
                       </button>
                     )}
-                    {r.tiene_checklist && r.id_equipo_solicitud && (
+                    {r.id_dictamen && (
+                      <button
+                        onClick={() => handleVerDictamen(r.id_dictamen!)}
+                        className="bg-blue-700 hover:bg-blue-800 text-white text-xs px-2 py-1 rounded block w-full transition shadow-sm"
+                        title="Ver / imprimir el dictamen"
+                      >
+                        📄 Dictamen
+                      </button>
+                    )}
+                    {Boolean(r.tiene_checklist) && !!r.id_equipo_solicitud && (
                       <button
                         onClick={() => handleVerChecklist(r.id_equipo_solicitud!)}
                         className="bg-gray-700 hover:bg-gray-800 text-white text-xs px-2 py-1 rounded block w-full transition shadow-sm"
